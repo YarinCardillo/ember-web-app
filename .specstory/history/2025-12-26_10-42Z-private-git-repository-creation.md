@@ -21311,24 +21311,22 @@ Now let me also update the control buttons to be smaller on mobile and update th
 
 <details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
 
-Status: **loading**
+**Chunk 1**
+Lines added: 2, lines removed: 2
 
-```typescriptreact
-        {/* Help Button */}
-        {onHelpClick && (
-          <button
-            onClick={onHelpClick}
-            className="
-              w-10 h-10 md:w-12 md:h-12 rounded-full transition-all duration-300
-              bg-gray-800 hover:bg-gray-700 border border-gray-700
-              text-gray-400 hover:text-ember-orange
-              flex items-center justify-center
-              text-lg md:text-xl font-light
-            "
-            title="Setup Guide"
-          >
-            ?
-          </button>
+```diff
+@@ -59,9 +59,9 @@
+              onClick={onHelpClick}
+              className="
+-               w-12 h-12 rounded-full transition-all duration-300
++               w-10 h-10 md:w-12 md:h-12 rounded-full transition-all duration-300
+                bg-gray-800 hover:bg-gray-700 border border-gray-700
+                text-gray-400 hover:text-ember-orange
+                flex items-center justify-center
+-               text-xl font-light
++               text-lg md:text-xl font-light
+              "
+              title="Setup Guide"
 ```
 
 </details>
@@ -21337,7 +21335,180 @@ Status: **loading**
 
 ---
 
+<think><details><summary>Thought Process</summary>
+Let me also update the bypass and power buttons for mobile.</details></think>
 
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+**Chunk 1**
+Lines added: 2, lines removed: 2
+
+```diff
+@@ -83,6 +83,6 @@
+            disabled={!isRunning}
+            className={&#96;
+-             px-4 py-3 rounded-lg font-semibold transition-all duration-300
+-             flex items-center gap-2 border-2
++             px-3 py-2 md:px-4 md:py-3 rounded-lg font-semibold transition-all duration-300
++             flex items-center gap-2 border-2 text-sm md:text-base
+              ${!isRunning
+                ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me also update the power button for mobile.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+**Chunk 1**
+Lines added: 2, lines removed: 2
+
+```diff
+@@ -111,6 +111,6 @@
+            onClick={onPowerToggle}
+            className={&#96;
+-             px-6 py-3 rounded-lg font-semibold transition-all duration-300
+-             flex items-center gap-2
++             px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-all duration-300
++             flex items-center gap-2 text-sm md:text-base
+              ${isRunning
+                ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30'
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me also update the PresetSelector for mobile.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/ui/PresetSelector.tsx</summary>
+
+**Chunk 1**
+Lines added: 2, lines removed: 2
+
+```diff
+@@ -36,7 +36,7 @@
+        className="
+          bg-gray-800 border border-gray-700 rounded-lg
+-         px-4 py-3 text-text-light
++         px-3 py-2 md:px-4 md:py-3 text-sm md:text-base text-text-light
+          focus:outline-none focus:ring-2 focus:ring-ember-orange
+-         cursor-pointer min-w-[180px]
++         cursor-pointer min-w-[140px] md:min-w-[180px]
+        "
+      &gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me check lints for all modified files.</details></think>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="read_lints">
+<details>
+          <summary>Tool use: **read_lints** • Read lints for 3 files</summary>
+      
+Lint paths:
+
+- `/Users/yarin/development/ember-web-app/src/components/layout/AmpRack.tsx`
+- `/Users/yarin/development/ember-web-app/src/components/layout/Header.tsx`
+- `/Users/yarin/development/ember-web-app/src/components/ui/PresetSelector.tsx`
+
+Lint results
+
+
+**No lint errors found**
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+All good! Let me verify the build still works.</details></think>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/yarin/development/ember-web-app && npm run build</summary>
+
+```bash
+cd /Users/yarin/development/ember-web-app && npm run build
+```
+
+```
+
+&gt; ember-web-app@0.1.0 build
+&gt; tsc &amp;&amp; vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 68 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.46 kB │ gzip:  0.30 kB
+dist/assets/index-9NARuRiq.css   19.72 kB │ gzip:  4.56 kB
+dist/assets/index-BNs0E1L6.js   187.93 kB │ gzip: 58.82 kB
+✓ built in 779ms
+
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+All done!</details></think>
+
+---
+
+Done! Added responsive mobile support:
+
+**Changes made:**
+
+1. **Mobile notice banner** — Shows only on mobile (`md:hidden`) explaining it's a desktop app
+
+2. **Responsive padding** — `p-4` on mobile, `p-8` on desktop
+
+3. **Header layout** — 
+   - Stacks vertically on mobile (`flex-col md:flex-row`)
+   - Smaller logo (`w-16 h-16` → `w-28 h-28`)
+   - Smaller title (`text-2xl` → `text-5xl`)
+   - Controls wrap on mobile (`flex-wrap`)
+
+4. **Buttons** — Smaller padding/text on mobile (`px-3 py-2` → `px-4 py-3`)
+
+5. **Preset selector** — Smaller on mobile (`min-w-[140px]` → `min-w-[180px]`)
+
+6. **Existing grid** — Already had `grid-cols-1 md:grid-cols-3` so stages stack on mobile
+
+The app will now look presentable on mobile with a clear message that it's designed for desktop. The layout stacks vertically and controls are appropriately sized.
 
 ---
 

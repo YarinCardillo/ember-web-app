@@ -12,6 +12,8 @@ export function Credits(): JSX.Element {
           <p className="opacity-80 leading-relaxed">
             EMBER AMP is a browser-based HiFi amplifier simulator with real-time DSP processing.
             All audio processing happens locally in your browser using the Web Audio API. Open source on GitHub. Supported for desktop browsers only.
+            <br /><br />
+            To my audiophile friend Luigi.
           </p>
         </div>
 
