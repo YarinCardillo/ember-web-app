@@ -20485,7 +20485,675 @@ Now let me fix the AmpRack.tsx null checks. I need to add non-null assertions or
 
 ---
 
+<think><details><summary>Thought Process</summary>
+The issue is that TypeScript knows the `nodes` object has nullable properties, but we just created them on lines 71-78, so they can't be null. I should use non-null assertions (`!`) or add proper null checks. Since we just created these nodes, using non-null assertions is fine.
 
+Let me update the code to use non-null assertions.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/AmpRack.tsx</summary>
+
+**Chunk 1**
+Lines added: 6, lines removed: 6
+
+```diff
+@@ -80,21 +80,21 @@
+        // Initialize saturation worklet
+        console.log('Initializing saturation worklet...');
+-       await nodes.saturation.initialize();
++       await nodes.saturation!.initialize();
+  
+        // Connect signal chain using getInput() for proper node connections
+        // Input -&gt; Preamp
+-       nodes.input.connect(nodes.preamp.getInput());
++       nodes.input!.connect(nodes.preamp!.getInput());
+        
+        // Preamp -&gt; ToneStack
+-       nodes.preamp.connect(nodes.toneStack.getInput());
++       nodes.preamp!.connect(nodes.toneStack!.getInput());
+        
+        // ToneStack -&gt; Saturation
+-       nodes.toneStack.connect(nodes.saturation.inputGain);
++       nodes.toneStack!.connect(nodes.saturation!.inputGain);
+        
+        // Saturation -&gt; SpeakerSim
+-       nodes.saturation.connect(nodes.speakerSim.getInput());
++       nodes.saturation!.connect(nodes.speakerSim!.getInput());
+        
+        // SpeakerSim -&gt; Output (includes analog soft clipper)
+-       nodes.speakerSim.connect(nodes.output.getInput());
++       nodes.speakerSim!.connect(nodes.output!.getInput());
+  
+        console.log('Signal chain connected');
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me run the build again to check if the errors are fixed.</details></think>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/yarin/development/ember-web-app && npm run build</summary>
+
+```bash
+cd /Users/yarin/development/ember-web-app && npm run build
+```
+
+```
+
+&gt; ember-web-app@0.1.0 build
+&gt; tsc &amp;&amp; vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 68 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.46 kB │ gzip:  0.30 kB
+dist/assets/index-BaecpGu3.css   19.01 kB │ gzip:  4.39 kB
+dist/assets/index-CujanVL8.js   186.90 kB │ gzip: 58.61 kB
+✓ built in 853ms
+
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Build successful! All TypeScript errors are now fixed.</details></think>
+
+---
+
+Build successful! Fixed all 13 TypeScript errors:
+
+1. **OutputNode.ts** — Removed unused `ctx` property and added type cast for `Float32Array<ArrayBuffer>`
+2. **AmpRack.tsx** — Added non-null assertions (`!`) to the nodes since we just created them and they can't be null at that point
+
+The production build is now complete and ready in the `dist/` folder.
+
+---
+
+_**User (2025-12-26 10:47Z)**_
+
+do you mind adding a help button that prompts again the initial setup guide pop up when pressed?
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants to add a help button that reopens the setup guide popup. I need to:
+
+1. Add a help button to the Header
+2. Expose a way to trigger the SetupGuide modal from App.tsx
+3. Connect them together
+
+Let me check the current App.tsx and Header to see how to implement this.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/yarin/development/ember-web-app/src/App.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I need to:1. Pass a callback to AmpRack to open the setup guide2. AmpRack will pass it to Header
+3. Header will have a help button that triggers itLet me implement this.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/App.tsx</summary>
+
+**Chunk 1**
+Lines added: 5, lines removed: 1
+
+```diff
+@@ -23,9 +23,13 @@
+      localStorage.setItem('ember-amp-seen-setup-guide', 'true');
+    };
++ 
++   const handleOpenSetupGuide = (): void =&gt; {
++     setShowSetupGuide(true);
++   };
+  
+    return (
+      &lt;&gt;
+        &lt;EmberSparks /&gt;
+-       &lt;AmpRack /&gt;
++       &lt;AmpRack onHelpClick={handleOpenSetupGuide} /&gt;
+        {showSetupGuide &amp;&amp; &lt;SetupGuide onClose={handleCloseSetupGuide} /&gt;}
+      &lt;/&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update AmpRack to accept the onHelpClick prop and pass it to Header.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/yarin/development/ember-web-app/src/components/layout/AmpRack.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I need to add props to AmpRack and pass onHelpClick to Header. Let me update the AmpRack function signature and also update the Header component call.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/AmpRack.tsx</summary>
+
+**Chunk 1**
+Lines added: 5, lines removed: 1
+
+```diff
+@@ -30,5 +30,9 @@
+  }
+  
+- export function AmpRack(): JSX.Element {
++ interface AmpRackProps {
++   onHelpClick?: () =&gt; void;
++ }
++ 
++ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
+    const [inputDevices, setInputDevices] = useState&lt;Array&lt;{ deviceId: string; label: string; kind: MediaDeviceKind }&gt;&gt;([]);
+    const [outputDevices, setOutputDevices] = useState&lt;Array&lt;{ deviceId: string; label: string; kind: MediaDeviceKind }&gt;&gt;([]);
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update the Header component call to pass onHelpClick. Let me find where Header is rendered.</details></think>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="grep">
+<details>
+<summary>Tool use: **grep** • Grep for "<Header" in "/Users/yarin/development/ember-web-app/src/components/layout/AmpRack.tsx" • 1 match</summary>
+
+Output mode: content
+
+
+| File | Content | Line |
+|------|------|------|
+| `src/components/layout/AmpRack.tsx` | `<Header presets=\{presets\} onPowerToggle=\{handlePowerToggle\} />` | L339 |
+
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Found it. Let me update the Header call to include onHelpClick.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/AmpRack.tsx</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -337,5 +337,5 @@
+        &lt;div className="max-w-7xl mx-auto"&gt;
+          {/* Header */}
+-         &lt;Header presets={presets} onPowerToggle={handlePowerToggle} /&gt;
++         &lt;Header presets={presets} onPowerToggle={handlePowerToggle} onHelpClick={onHelpClick} /&gt;
+  
+          {/* Error Message */}
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to update the Header component to accept onHelpClick and render a help button.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me update the Header to add the onHelpClick prop and a help button.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+**Chunk 1**
+Lines added: 2, lines removed: 1
+
+```diff
+@@ -10,7 +10,8 @@
+    presets: PresetCollection;
+    onPowerToggle: () =&gt; void;
++   onHelpClick?: () =&gt; void;
+  }
+  
+- export function Header({ presets, onPowerToggle }: HeaderProps): JSX.Element {
++ export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JSX.Element {
+    const isRunning = useAudioStore((state) =&gt; state.isRunning);
+    const currentPreset = useAudioStore((state) =&gt; state.currentPreset);
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to add a help button in the controls section. I'll add it before the preset selector.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+**Chunk 1**
+Lines added: 28, lines removed: undefined
+
+```diff
+@@ -54,4 +54,32 @@
+        {/* Controls */}
+        &lt;div className="flex items-center gap-4"&gt;
++         {/* Help Button */}
++         {onHelpClick &amp;&amp; (
++           &lt;button
++             onClick={onHelpClick}
++             className="
++               p-3 rounded-lg transition-all duration-300
++               bg-gray-800 hover:bg-gray-700 border border-gray-700
++               text-gray-400 hover:text-text-light
++             "
++             title="Setup Guide"
++           &gt;
++             &lt;svg 
++               xmlns="http://www.w3.org/2000/svg" 
++               className="w-5 h-5" 
++               fill="none" 
++               viewBox="0 0 24 24" 
++               stroke="currentColor"
++             &gt;
++               &lt;path 
++                 strokeLinecap="round" 
++                 strokeLinejoin="round" 
++                 strokeWidth={2} 
++                 d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
++               /&gt;
++             &lt;/svg&gt;
++           &lt;/button&gt;
++         )}
++ 
+          {/* Preset Selector */}
+          &lt;PresetSelector
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me check for lint errors.</details></think>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="read_lints">
+<details>
+          <summary>Tool use: **read_lints** • Read lints for 3 files</summary>
+      
+Lint paths:
+
+- `/Users/yarin/development/ember-web-app/src/App.tsx`
+- `/Users/yarin/development/ember-web-app/src/components/layout/AmpRack.tsx`
+- `/Users/yarin/development/ember-web-app/src/components/layout/Header.tsx`
+
+Lint results
+
+
+**No lint errors found**
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me verify the build still works.</details></think>
+
+---
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_cmd">
+<details><summary>Tool use: **run_terminal_cmd** • Run command: cd /Users/yarin/development/ember-web-app && npm run build</summary>
+
+```bash
+cd /Users/yarin/development/ember-web-app && npm run build
+```
+
+```
+
+&gt; ember-web-app@0.1.0 build
+&gt; tsc &amp;&amp; vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 68 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.46 kB │ gzip:  0.30 kB
+dist/assets/index-DsvnST_O.css   19.26 kB │ gzip:  4.43 kB
+dist/assets/index-BbMCndbZ.js   187.60 kB │ gzip: 58.88 kB
+✓ built in 840ms
+
+```
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Build successful! All done.</details></think>
+
+---
+
+Done! Added a help button (question mark icon) to the header controls. 
+
+**Features:**
+- Located before the preset selector
+- Question mark icon in a circular button
+- Shows "Setup Guide" tooltip on hover
+- Clicking it reopens the initial setup guide popup
+- Styled to match the app's dark theme
+
+Refresh to see the new help button!
+
+---
+
+_**User (2025-12-26 10:47Z)**_
+
+couldn't you find a cooler question mark? more minimal
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants a simpler, more minimal question mark icon. Let me replace the current SVG with a simpler text-based question mark or a cleaner SVG icon.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+**Chunk 1**
+Lines added: 5, lines removed: 16
+
+```diff
+@@ -59,24 +59,13 @@
+              onClick={onHelpClick}
+              className="
+-               p-3 rounded-lg transition-all duration-300
++               w-10 h-10 rounded-full transition-all duration-300
+                bg-gray-800 hover:bg-gray-700 border border-gray-700
+-               text-gray-400 hover:text-text-light
++               text-gray-400 hover:text-ember-orange
++               flex items-center justify-center
++               text-lg font-light
+              "
+              title="Setup Guide"
+            &gt;
+-             &lt;svg 
+-               xmlns="http://www.w3.org/2000/svg" 
+-               className="w-5 h-5" 
+-               fill="none" 
+-               viewBox="0 0 24 24" 
+-               stroke="currentColor"
+-             &gt;
+-               &lt;path 
+-                 strokeLinecap="round" 
+-                 strokeLinejoin="round" 
+-                 strokeWidth={2} 
+-                 d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+-               /&gt;
+-             &lt;/svg&gt;
++             ?
+            &lt;/button&gt;
+          )}
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me check for lint errors.</details></think>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="read_lints">
+<details>
+          <summary>Tool use: **read_lints** • Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `/Users/yarin/development/ember-web-app/src/components/layout/Header.tsx`
+
+Lint results
+
+
+**No lint errors found**
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+All done! Replaced the complex SVG with a simple text "?" in a circular button.</details></think>
+
+---
+
+Done! Replaced with a minimal text-based "?" in a circular button:
+- Clean circular shape (`rounded-full`)
+- Simple `?` character with light font weight
+- Glows ember-orange on hover
+- Much more minimal and elegant
+
+Refresh to see it!
+
+---
+
+_**User (2025-12-26 10:47Z)**_
+
+nice. Now can you make the help and select preset menu button the same height as the bypass and power on buttons?
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants the help button and preset selector to match the height of the bypass and power buttons. Let me check the current styles to see what height the buttons use.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I see the bypass and power buttons use `py-3` (12px padding on y-axis). The help button currently uses `h-10` (40px). The total height of the bypass/power buttons with py-3 would be approximately 48px (12+12 padding + content).
+
+Let me update the help button to match, and also check the PresetSelector to update its height.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+**Chunk 1**
+Lines added: 2, lines removed: 2
+
+```diff
+@@ -59,9 +59,9 @@
+              onClick={onHelpClick}
+              className="
+-               w-10 h-10 rounded-full transition-all duration-300
++               w-12 h-12 rounded-full transition-all duration-300
+                bg-gray-800 hover:bg-gray-700 border border-gray-700
+                text-gray-400 hover:text-ember-orange
+                flex items-center justify-center
+-               text-lg font-light
++               text-xl font-light
+              "
+              title="Setup Guide"
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me check and update the PresetSelector to have matching height.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/yarin/development/ember-web-app/src/components/ui/PresetSelector.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+The PresetSelector already has `py-3` which matches the bypass and power buttons. The help button is now `h-12` (48px) which should match the button height with py-3 padding.
+
+Let me verify there are no lint errors.</details></think>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="read_lints">
+<details>
+          <summary>Tool use: **read_lints** • Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `/Users/yarin/development/ember-web-app/src/components/layout/Header.tsx`
+
+Lint results
+
+
+**No lint errors found**
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+The PresetSelector already has `py-3` which should match the other buttons. The help button is now `h-12` (48px). All should be aligned now.</details></think>
+
+---
+
+Done! 
+
+- **Help button**: Changed from `h-10` to `h-12` (48px) to match the other buttons
+- **PresetSelector**: Already has `py-3` which matches the bypass and power buttons
+
+All four controls should now have the same height. Refresh to check the alignment!
+
+---
+
+_**User (2025-12-26 10:47Z)**_
+
+preset selector height doesnt match the others. Where can i edit it?
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user is saying the preset selector height doesn't match the others. Let me tell them where to edit it - it's in the PresetSelector.tsx file, specifically the `py-3` class on the select element. They might need to add explicit height or adjust the padding.</details></think>
+
+---
+
+The preset selector is in `src/components/ui/PresetSelector.tsx` on lines 36-41:
+
+```36:41:src/components/ui/PresetSelector.tsx
+      className="
+        bg-gray-800 border border-gray-700 rounded-lg
+        px-4 py-3 text-text-light
+        focus:outline-none focus:ring-2 focus:ring-ember-orange
+        cursor-pointer min-w-[180px]
+      "
+```
+
+To match the other buttons exactly, you can add `h-12` (48px height) to make it explicit:
+
+```tsx
+className="
+  bg-gray-800 border border-gray-700 rounded-lg
+  px-4 py-3 h-12 text-text-light
+  focus:outline-none focus:ring-2 focus:ring-ember-orange
+  cursor-pointer min-w-[180px]
+"
+```
+
+Want me to make that change for you?
 
 ---
 

@@ -29,7 +29,11 @@ interface AudioNodes {
   output: OutputNode | null;
 }
 
-export function AmpRack(): JSX.Element {
+interface AmpRackProps {
+  onHelpClick?: () => void;
+}
+
+export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const [inputDevices, setInputDevices] = useState<Array<{ deviceId: string; label: string; kind: MediaDeviceKind }>>([]);
   const [outputDevices, setOutputDevices] = useState<Array<{ deviceId: string; label: string; kind: MediaDeviceKind }>>([]);
   const [isOutputDeviceSupported, setIsOutputDeviceSupported] = useState(false);
@@ -332,7 +336,7 @@ export function AmpRack(): JSX.Element {
     <div className="min-h-screen bg-dark-bg p-8 select-none">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <Header presets={presets} onPowerToggle={handlePowerToggle} />
+        <Header presets={presets} onPowerToggle={handlePowerToggle} onHelpClick={onHelpClick} />
 
         {/* Error Message */}
         {error && (

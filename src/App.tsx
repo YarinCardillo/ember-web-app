@@ -23,10 +23,14 @@ function App(): JSX.Element {
     localStorage.setItem('ember-amp-seen-setup-guide', 'true');
   };
 
+  const handleOpenSetupGuide = (): void => {
+    setShowSetupGuide(true);
+  };
+
   return (
     <>
       <EmberSparks />
-      <AmpRack />
+      <AmpRack onHelpClick={handleOpenSetupGuide} />
       {showSetupGuide && <SetupGuide onClose={handleCloseSetupGuide} />}
     </>
   );

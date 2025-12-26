@@ -9,9 +9,10 @@ import type { PresetCollection } from '../../types/audio.types';
 interface HeaderProps {
   presets: PresetCollection;
   onPowerToggle: () => void;
+  onHelpClick?: () => void;
 }
 
-export function Header({ presets, onPowerToggle }: HeaderProps): JSX.Element {
+export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JSX.Element {
   const isRunning = useAudioStore((state) => state.isRunning);
   const currentPreset = useAudioStore((state) => state.currentPreset);
   const loadPreset = useAudioStore((state) => state.loadPreset);
@@ -52,6 +53,23 @@ export function Header({ presets, onPowerToggle }: HeaderProps): JSX.Element {
 
       {/* Controls */}
       <div className="flex items-center gap-4">
+        {/* Help Button */}
+        {onHelpClick && (
+          <button
+            onClick={onHelpClick}
+            className="
+              w-12 h-12 rounded-full transition-all duration-300
+              bg-gray-800 hover:bg-gray-700 border border-gray-700
+              text-gray-400 hover:text-ember-orange
+              flex items-center justify-center
+              text-xl font-light
+            "
+            title="Setup Guide"
+          >
+            ?
+          </button>
+        )}
+
         {/* Preset Selector */}
         <PresetSelector
           presets={presets}
