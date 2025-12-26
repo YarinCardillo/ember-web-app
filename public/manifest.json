@@ -1,0 +1,14 @@
+{
+  "name": "Ember Amp",
+  "short_name": "Ember",
+  "description": "Browser-based HiFi amplifier simulator with real-time DSP",
+  "theme_color": "#1a1a1a",
+  "background_color": "#1a1a1a",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+

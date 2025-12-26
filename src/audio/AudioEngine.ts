@@ -14,6 +14,8 @@ class AudioEngine {
   private isInitialized: boolean = false;
   private workletsLoaded: boolean = false;
   private hasPermission: boolean = false;
+  private keepAliveOscillator: OscillatorNode | null = null;
+  private keepAliveGain: GainNode | null = null;
 
   private constructor() {
     // Private constructor for singleton
@@ -198,9 +200,50 @@ class AudioEngine {
   }
 
   /**
+   * Start silent oscillator to keep audio context active (prevents background throttling)
+   */
+  startKeepAlive(): void {
+    if (!this.ctx || this.keepAliveOscillator) return;
+    
+    // Create silent oscillator (inaudible, keeps audio context active)
+    this.keepAliveOscillator = this.ctx.createOscillator();
+    this.keepAliveGain = this.ctx.createGain();
+    this.keepAliveGain.gain.value = 0; // Silent
+    
+    this.keepAliveOscillator.connect(this.keepAliveGain);
+    this.keepAliveGain.connect(this.ctx.destination);
+    this.keepAliveOscillator.start();
+    
+    console.log('Audio keep-alive started');
+  }
+
+  /**
+   * Stop the keep-alive oscillator
+   */
+  stopKeepAlive(): void {
+    const wasActive = this.keepAliveOscillator !== null || this.keepAliveGain !== null;
+    
+    if (this.keepAliveOscillator) {
+      this.keepAliveOscillator.stop();
+      this.keepAliveOscillator.disconnect();
+      this.keepAliveOscillator = null;
+    }
+    if (this.keepAliveGain) {
+      this.keepAliveGain.disconnect();
+      this.keepAliveGain = null;
+    }
+    
+    if (wasActive) {
+      console.log('Audio keep-alive stopped');
+    }
+  }
+
+  /**
    * Cleanup and dispose of AudioContext
    */
   dispose(): void {
+    this.stopKeepAlive();
+    
     if (this.ctx) {
       this.ctx.close().catch(console.error);
       this.ctx = null;

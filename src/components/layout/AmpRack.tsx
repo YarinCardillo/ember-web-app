@@ -127,6 +127,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       const deviceId = useAudioStore.getState().inputDeviceId || undefined;
       await nodes.input.setInput(deviceId);
       console.log('Audio input started');
+      
+      // Start keep-alive to prevent background throttling
+      const engine = AudioEngine.getInstance();
+      engine.startKeepAlive();
+      
       setRunning(true);
       setError(null);
     } catch (err) {
@@ -156,6 +161,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     if (audioNodesRef.current.input) {
       audioNodesRef.current.input.disconnect();
     }
+    
+    // Stop keep-alive
+    const engine = AudioEngine.getInstance();
+    engine.stopKeepAlive();
+    
     setRunning(false);
   }, [setRunning]);
 
