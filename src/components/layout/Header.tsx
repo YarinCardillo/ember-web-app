@@ -36,9 +36,14 @@ export function Header({ presets, onPowerToggle }: HeaderProps): JSX.Element {
           className="w-28 h-28 rounded-lg"
         />
         <div>
-          <h1 className="text-5xl font-bold text-ember-orange tracking-tight">
-            EMBER AMP
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-5xl font-bold text-ember-orange tracking-tight">
+              EMBER AMP
+            </h1>
+            <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-ember-orange/20 text-ember-orange border border-ember-orange/40 rounded-full uppercase tracking-wider">
+              Beta
+            </span>
+          </div>
           <p className="text-2xs text-text-light opacity-60">
             HiFi Amplifier DSP
           </p>

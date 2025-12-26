@@ -79,23 +79,23 @@ export function AmpRack(): JSX.Element {
 
       // Initialize saturation worklet
       console.log('Initializing saturation worklet...');
-      await nodes.saturation.initialize();
+      await nodes.saturation!.initialize();
 
       // Connect signal chain using getInput() for proper node connections
       // Input -> Preamp
-      nodes.input.connect(nodes.preamp.getInput());
+      nodes.input!.connect(nodes.preamp!.getInput());
       
       // Preamp -> ToneStack
-      nodes.preamp.connect(nodes.toneStack.getInput());
+      nodes.preamp!.connect(nodes.toneStack!.getInput());
       
       // ToneStack -> Saturation
-      nodes.toneStack.connect(nodes.saturation.inputGain);
+      nodes.toneStack!.connect(nodes.saturation!.inputGain);
       
       // Saturation -> SpeakerSim
-      nodes.saturation.connect(nodes.speakerSim.getInput());
+      nodes.saturation!.connect(nodes.speakerSim!.getInput());
       
       // SpeakerSim -> Output (includes analog soft clipper)
-      nodes.speakerSim.connect(nodes.output.getInput());
+      nodes.speakerSim!.connect(nodes.output!.getInput());
 
       console.log('Signal chain connected');
 

@@ -9,10 +9,10 @@
 
 Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube amplifiers directly in your web browser. Route your system audio (Spotify, YouTube, games, etc.) through a virtual audio cable, and the app applies real-time DSP processing including:
 
-- **Tube Saturation** - Soft clipping with harmonic generation
-- **4-Band Tone Stack** - Bass, Mid, Treble, Presence EQ
-- **Opto-Style Compression** - Smooth dynamics control
-- **Cabinet Simulation** - Speaker response modeling (IR-based)
+- **Tube Saturation** - Analog-modeled soft clipping with harmonic generation
+- **4-Band EQ** - Bass, Mid, Treble, Presence (fixed frequency parametric)
+- **Hard Clipper** - 0dB output protection circuit
+- **Master Bypass** - True bypass for instant A/B comparison
 
 ### Target Users
 
@@ -70,9 +70,9 @@ npm run preview
 
 1. Open `http://localhost:5173` in your browser
 2. Follow the Setup Guide to configure your virtual audio cable
-3. Click **Power On** to initialize the audio engine
-4. Select your virtual audio cable as the input device
-5. Click **Start** to begin processing
+3. Select your input device (virtual audio cable)
+4. Select your output device (headphones/speakers)
+5. Click **Power On** to initialize the audio engine
 
 ---
 
@@ -109,6 +109,30 @@ pactl load-module module-loopback source=virtual_cable.monitor
 
 ---
 
+## Features
+
+### Analog VU Meters
+
+Beautiful needle-style VU meters with:
+- Analog ballistics (smooth needle movement)
+- Color-coded scale (green → yellow → red zones)
+- Peak hold indicator (click to reset)
+- dB scale markings
+
+### Master Bypass
+
+True bypass mode that routes audio directly from input to output, bypassing all processing. Perfect for instant A/B comparisons.
+
+### Output Device Selection
+
+Select your output device directly in the app (Chrome/Edge only). Firefox and Safari users need to set system default output.
+
+### Ambient Effects
+
+Subtle ember spark animation overlay for an atmospheric touch.
+
+---
+
 ## Project Structure
 
 ```
@@ -116,7 +140,8 @@ ember-web-app/
 ├── public/
 │   ├── worklets/                 # AudioWorklet processors
 │   │   └── tube-saturation.worklet.js
-│   └── ir/                       # Impulse response files
+│   ├── ir/                       # Impulse response files
+│   └── ember_app_icon.png        # App icon
 │
 ├── src/
 │   ├── audio/
@@ -126,28 +151,28 @@ ember-web-app/
 │   │   │   ├── PreampNode.ts
 │   │   │   ├── ToneStackNode.ts
 │   │   │   ├── TubeSaturationNode.ts
-│   │   │   ├── CompressorNode.ts
 │   │   │   ├── SpeakerSimNode.ts
-│   │   │   └── OutputNode.ts
+│   │   │   └── OutputNode.ts     # Includes hard clipper
 │   │   └── presets/
 │   │       └── amp-presets.json
 │   │
 │   ├── components/
 │   │   ├── ui/                   # Reusable UI components
 │   │   │   ├── Knob.tsx
-│   │   │   ├── VUMeter.tsx
+│   │   │   ├── VUMeter.tsx       # Analog needle meter
 │   │   │   ├── Toggle.tsx
 │   │   │   ├── Slider.tsx
-│   │   │   └── PresetSelector.tsx
+│   │   │   ├── PresetSelector.tsx
+│   │   │   └── EmberSparks.tsx   # Ambient animation
 │   │   ├── stages/               # Signal chain UI sections
 │   │   │   ├── InputStage.tsx
 │   │   │   ├── ToneStage.tsx
 │   │   │   ├── SaturationStage.tsx
-│   │   │   ├── CompressorStage.tsx
 │   │   │   └── OutputStage.tsx
 │   │   └── layout/
 │   │       ├── AmpRack.tsx       # Main container
 │   │       ├── Header.tsx
+│   │       ├── Credits.tsx       # About section
 │   │       └── SetupGuide.tsx
 │   │
 │   ├── store/
@@ -166,6 +191,9 @@ ember-web-app/
 │   ├── App.tsx
 │   ├── main.tsx
 │   └── index.css
+│
+├── docs/
+│   └── ARCHITECTURE.md           # Technical documentation
 │
 ├── package.json
 ├── tsconfig.json
@@ -186,15 +214,16 @@ ember-web-app/
                                                │
                                                ▼
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Output    │◀────│  Speaker    │◀────│ Compressor  │
-│   Stage     │     │    Sim      │     │             │
+│   Output    │◀────│   Speaker   │◀────│    Tube     │
+│ (+ Clipper) │     │     Sim     │     │ Saturation  │
 └─────────────┘     └─────────────┘     └─────────────┘
        │                   ▲                   ▲
        ▼                   │                   │
-  ┌─────────┐        ┌─────────────┐     ┌─────────────┐
-  │ Speakers│        │    Tube     │◀────│   Tone      │
-  └─────────┘        │ Saturation  │     │   Stack     │
-                     └─────────────┘     └─────────────┘
+  ┌─────────┐              └───────────────────┤
+  │ Speakers│                            ┌─────────────┐
+  └─────────┘                            │   Tone      │
+                                         │   Stack     │
+                                         └─────────────┘
 ```
 
 ### Processing Stages
@@ -203,9 +232,8 @@ ember-web-app/
 2. **PreampNode** - Gain staging with soft-clip protection
 3. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
 4. **TubeSaturationNode** - AudioWorklet with tanh clipping, harmonic generation
-5. **CompressorNode** - DynamicsCompressorNode wrapper
-6. **SpeakerSimNode** - ConvolverNode for cabinet simulation
-7. **OutputNode** - Final gain, output metering
+5. **SpeakerSimNode** - ConvolverNode for cabinet simulation (bypassed by default)
+6. **OutputNode** - Final gain, hard clipper (0dB), output metering
 
 ---
 
@@ -217,7 +245,7 @@ ember-web-app/
 | **Tube Warm** | Rich tube amplifier character |
 | **Modern Clean** | Transparent with subtle enhancement |
 | **Lo-Fi** | Vintage radio vibes |
-| **Flat** | Bypass all processing |
+| **Flat** | EQ only, saturation bypassed |
 
 ---
 
@@ -250,12 +278,12 @@ npm run lint     # Run ESLint
 
 ## Browser Support
 
-| Browser | Support |
-|---------|---------|
-| Chrome 66+ | Full support |
-| Firefox 76+ | Full support |
-| Safari 14.1+ | Full support |
-| Edge 79+ | Full support |
+| Browser | Support | Notes |
+|---------|---------|-------|
+| Chrome 110+ | Full support | Output device selection available |
+| Edge 110+ | Full support | Output device selection available |
+| Firefox 76+ | Partial | No output device selection |
+| Safari 14.1+ | Partial | No output device selection |
 
 Requires AudioWorklet support for tube saturation processing.
 
@@ -267,4 +295,4 @@ MIT
 
 ---
 
-*Built with love by Yarin Cardillo*
+*Vibecoded with 🧡 by [Yarin Cardillo](https://yarincardillo.com)*

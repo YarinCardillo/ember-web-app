@@ -11,10 +11,8 @@ export class OutputNode {
   private gainNode: GainNode;
   private clipperNode: WaveShaperNode;
   private analyserNode: AnalyserNode;
-  private ctx: AudioContext;
 
   constructor(ctx: AudioContext) {
-    this.ctx = ctx;
     this.gainNode = ctx.createGain();
     this.clipperNode = ctx.createWaveShaper();
     this.analyserNode = ctx.createAnalyser();
@@ -22,7 +20,7 @@ export class OutputNode {
     this.analyserNode.smoothingTimeConstant = 0.8;
 
     // Create hard clipping curve at 0dB
-    this.clipperNode.curve = this.createHardClipCurve();
+    this.clipperNode.curve = this.createHardClipCurve() as Float32Array<ArrayBuffer>;
     this.clipperNode.oversample = '4x'; // Reduce aliasing artifacts
 
     // Signal chain: gain -> clipper -> analyser -> destination

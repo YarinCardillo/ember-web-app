@@ -39,9 +39,9 @@ Ember Amp Web is a client-side audio processing application built entirely with 
 │  │                                                  │            │  │
 │  │  ┌───────────────────────────────────────────────▼──────────┐ │  │
 │  │  │                   Web Audio API                           │ │  │
-│  │  │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐│ │  │
-│  │  │  │Input│→│Preamp│→│Tone │→│Satur│→│Comp │→│Spkr │→│Outpt││ │  │
-│  │  │  └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘│ │  │
+│  │  │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────────────┐│ │  │
+│  │  │  │Input│→│Preamp│→│Tone │→│Satur│→│Spkr │→│Output+Clip  ││ │  │
+│  │  │  └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────────────┘│ │  │
 │  │  └──────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
@@ -57,7 +57,8 @@ The `AudioEngine` class is a singleton responsible for:
 
 - Managing the `AudioContext` lifecycle
 - Loading AudioWorklet modules
-- Enumerating audio input devices
+- Enumerating audio input/output devices
+- Setting output device via `setSinkId` (Chrome/Edge only)
 - Providing the context to DSP nodes
 
 ```typescript
@@ -87,9 +88,13 @@ class AudioEngine {
     await this.ctx.audioWorklet.addModule('/worklets/tube-saturation.worklet.js');
   }
   
-  getContext(): AudioContext {
-    if (!this.ctx) throw new Error('Not initialized');
-    return this.ctx;
+  async setOutputDevice(deviceId: string): Promise<boolean> {
+    // Uses AudioContext.setSinkId (Chrome 110+, Edge 110+)
+    if (typeof this.ctx.setSinkId === 'function') {
+      await this.ctx.setSinkId(deviceId);
+      return true;
+    }
+    return false;
   }
 }
 ```
@@ -99,6 +104,7 @@ class AudioEngine {
 1. **Singleton Pattern** - Only one AudioContext should exist per application
 2. **Lazy Initialization** - Context created only after user interaction (browser policy)
 3. **Worklet Preloading** - All worklets loaded during initialization
+4. **Output Device Support** - Uses `setSinkId` for output routing (with fallback)
 
 ---
 
@@ -112,6 +118,8 @@ Each DSP module is a class that wraps one or more Web Audio nodes and provides a
 interface AudioNodeWrapper {
   connect(destination: AudioNode): void;
   disconnect(): void;
+  getInput(): AudioNode;
+  getOutput(): AudioNode;
   // Parameter setters...
 }
 ```
@@ -132,6 +140,7 @@ class InputNode {
   private mediaStream: MediaStreamAudioSourceNode | null;
   
   async setInput(deviceId?: string): Promise<void> {
+    // Uses native device settings (no processing constraints)
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: deviceId ? { deviceId: { exact: deviceId } } : true
     });
@@ -216,16 +225,6 @@ const addThirdHarmonic = (sample, amount) => {
 };
 ```
 
-### CompressorNode
-
-Wraps the native `DynamicsCompressorNode` with a user-friendly API.
-
-**Parameters:**
-- `threshold` - Compression threshold in dB
-- `ratio` - Compression ratio (e.g., 4 for 4:1)
-- `attack` - Attack time in seconds
-- `release` - Release time in seconds
-
 ### SpeakerSimNode
 
 Cabinet simulation using convolution.
@@ -244,11 +243,26 @@ async loadImpulseResponse(url: string): Promise<void> {
 
 ### OutputNode
 
-Final gain stage with output metering.
+Final gain stage with hard clipper and output metering.
 
 **Web Audio Nodes Used:**
 - `GainNode` - Output level control
+- `WaveShaperNode` - Hard clipper (0dB ceiling with 4x oversampling)
 - `AnalyserNode` - VU metering
+
+**Hard Clipper Implementation:**
+
+```typescript
+// Create hard clipping curve at 0dB
+const curve = new Float32Array(65537);
+for (let i = 0; i < 65537; i++) {
+  const x = (i - 32768) / 32768;
+  // Linear below ±1.0, hard clip at ±1.0
+  curve[i] = Math.max(-1.0, Math.min(1.0, x));
+}
+this.clipperNode.curve = curve;
+this.clipperNode.oversample = '4x'; // Reduces aliasing
+```
 
 ---
 
@@ -264,26 +278,23 @@ interface AudioState {
   isInitialized: boolean;
   isRunning: boolean;
   inputDeviceId: string | null;
+  outputDeviceId: string | null;
   
   // Parameters (in dB where applicable)
-  inputGain: number;
-  bass: number;
-  mid: number;
-  treble: number;
-  presence: number;
-  drive: number;          // 0-1
-  harmonics: number;      // 0-1
-  saturationMix: number;  // 0-1
-  compThreshold: number;  // dB
-  compRatio: number;      // ratio
-  compAttack: number;     // seconds
-  compRelease: number;    // seconds
-  outputGain: number;     // dB
+  inputGain: number;       // -36 to +36 dB
+  bass: number;            // ±12 dB
+  mid: number;             // ±12 dB
+  treble: number;          // ±12 dB
+  presence: number;        // ±12 dB
+  drive: number;           // 0-1
+  harmonics: number;       // 0-1
+  saturationMix: number;   // 0-1
+  outputGain: number;      // dB
   
   // Bypass states
+  bypassAll: boolean;          // Master bypass
   bypassToneStack: boolean;
   bypassSaturation: boolean;
-  bypassCompressor: boolean;
   bypassSpeakerSim: boolean;
   
   // Presets
@@ -309,50 +320,59 @@ interface AudioState {
 
 ```
 App
+├── EmberSparks (ambient animation overlay)
 └── AmpRack
     ├── Header
     │   ├── PresetSelector
+    │   ├── BypassButton
     │   └── PowerButton
     ├── InputStage
     │   ├── DeviceSelector
     │   ├── Knob (Gain)
-    │   └── VUMeter
+    │   └── VUMeter (analog needle)
     ├── ToneStage
+    │   ├── Toggle (Bypass)
     │   ├── Knob (Bass)
     │   ├── Knob (Mid)
     │   ├── Knob (Treble)
     │   └── Knob (Presence)
     ├── SaturationStage
+    │   ├── Toggle (Bypass)
     │   ├── Knob (Drive)
     │   ├── Knob (Harmonics)
-    │   ├── Knob (Mix)
-    │   └── Toggle (Bypass)
-    ├── CompressorStage
-    │   ├── Knob (Threshold)
-    │   ├── Knob (Ratio)
-    │   ├── Slider (Attack)
-    │   └── Slider (Release)
-    └── OutputStage
-        ├── Knob (Gain)
-        └── VUMeter
+    │   └── Knob (Mix)
+    ├── OutputStage
+    │   ├── DeviceSelector (output)
+    │   ├── Knob (Gain)
+    │   └── VUMeter (analog needle)
+    └── Credits
 ```
 
 ### Knob Component
 
 Rotary control with:
 - Vertical drag interaction
-- Double-click to reset
+- Double-click to reset to default
 - Keyboard navigation (arrow keys)
-- Value display
-- Skeuomorphic styling
+- Value display with fixed width (prevents layout shifts)
+- Skeuomorphic styling with glow effects
 
 ### VUMeter Component
 
-Animated level meter with:
-- `requestAnimationFrame` updates at 60fps
-- RMS and peak level display
-- Peak hold with decay
-- Color gradient (green → yellow → red)
+Analog needle-style VU meter with:
+- Semi-circular arc scale (±60 to +6 dB)
+- Smooth needle animation (analog ballistics: 10ms attack, 300ms release)
+- Color-coded zones (green → yellow → red)
+- Peak hold indicator (small dot, click to reset)
+- High-DPI canvas rendering
+
+### EmberSparks Component
+
+Ambient fire spark animation:
+- 20 floating ember particles
+- Random positions, sizes, delays
+- CSS keyframe animation (8-20 second cycles)
+- Fixed position overlay, pointer-events disabled
 
 ---
 
@@ -387,6 +407,17 @@ User Drags Knob
 └─────────────────────────┘
 ```
 
+### Master Bypass Flow
+
+```
+When bypassAll = true:
+  InputNode.getOutput() ──────────────────▶ AudioContext.destination
+  (all processing nodes disconnected)
+
+When bypassAll = false:
+  InputNode → Preamp → ToneStack → Saturation → SpeakerSim → OutputNode → destination
+```
+
 ### Audio Flow
 
 ```
@@ -399,7 +430,8 @@ MediaStreamAudioSourceNode → GainNode → AnalyserNode
                                     [REST OF SIGNAL CHAIN]
                                               │
                                               ▼
-                            GainNode → AnalyserNode → AudioContext.destination
+                   GainNode → WaveShaperNode → AnalyserNode → AudioContext.destination
+                              (hard clipper)
 ```
 
 ---
@@ -419,6 +451,7 @@ MediaStreamAudioSourceNode → GainNode → AnalyserNode
 3. **Use `requestAnimationFrame`** for VU meter updates (not setInterval)
 4. **Avoid creating nodes on every render** - Create once, update parameters
 5. **Use `getFloatTimeDomainData()`** for accurate metering
+6. **Canvas High-DPI scaling** - Use `devicePixelRatio` for crisp rendering
 
 ### Memory Management
 
@@ -475,4 +508,3 @@ if (ctx.state === 'suspended') {
 ---
 
 *Last updated: December 2024*
-

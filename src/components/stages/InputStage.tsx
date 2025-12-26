@@ -23,10 +23,10 @@ export function InputStage({
   const inputDeviceId = useAudioStore((state) => state.inputDeviceId);
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full">
       <h3 className="text-lg font-semibold text-ember-orange">INPUT</h3>
       
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 min-h-[60px]">
         <label className="text-xs text-text-light opacity-80">Device</label>
         <select
           value={inputDeviceId || ''}
@@ -39,9 +39,9 @@ export function InputStage({
           }}
           className="
             bg-gray-800 border border-gray-700 rounded
-            px-3 py-2 text-text-light
+            px-3 py-2 text-text-light text-sm
             focus:outline-none focus:ring-2 focus:ring-ember-orange
-            cursor-pointer
+            cursor-pointer w-full
           "
         >
           <option value="">Default Input</option>
