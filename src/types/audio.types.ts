@@ -6,7 +6,6 @@ export interface AudioParams {
   gainDb: number;      // Always in dB, convert to linear when needed
   frequency: number;   // Always in Hz
   q: number;          // Quality factor
-  ratio: number;      // Compression ratio (e.g., 4 for 4:1)
 }
 
 export interface PresetConfig {
@@ -21,14 +20,12 @@ export interface PresetConfig {
   drive: number;      // 0-1 saturation amount
   harmonics?: number; // 0-1 harmonic generation
   saturationMix?: number; // 0-1 dry/wet
-  // Compressor
-  compThreshold?: number; // dB
-  compRatio?: number;     // ratio (e.g., 4 for 4:1)
-  compAttack?: number;    // seconds
-  compRelease?: number;   // seconds
   // Gain
   inputGain?: number; // dB (optional)
   outputGain?: number; // dB (optional)
+  // Module activation (false = active, true = bypassed)
+  bypassToneStack?: boolean;
+  bypassSaturation?: boolean;
 }
 
 export interface AudioDeviceInfo {

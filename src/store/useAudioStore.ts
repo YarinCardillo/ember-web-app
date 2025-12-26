@@ -23,16 +23,12 @@ interface AudioState {
   drive: number;        // 0-1
   harmonics: number;    // 0-1
   saturationMix: number; // 0-1
-  compThreshold: number; // dB
-  compRatio: number;     // ratio
-  compAttack: number;    // seconds
-  compRelease: number;   // seconds
   outputGain: number;
 
   // Bypass states
+  bypassAll: boolean;          // Master bypass - routes input directly to output
   bypassToneStack: boolean;
   bypassSaturation: boolean;
-  bypassCompressor: boolean;
   bypassSpeakerSim: boolean;
 
   // Presets
@@ -57,7 +53,7 @@ export const useAudioStore = create<AudioState>()(
       inputDeviceId: null,
       outputDeviceId: null,
       availableDevices: [],
-      inputGain: 0,
+      inputGain: -6,
       bass: 0,
       mid: 0,
       treble: 0,
@@ -65,14 +61,10 @@ export const useAudioStore = create<AudioState>()(
       drive: 0.3,
       harmonics: 0.5,
       saturationMix: 1.0,
-      compThreshold: -24,
-      compRatio: 4,
-      compAttack: 0.003,
-      compRelease: 0.25,
       outputGain: 0,
+      bypassAll: false,
       bypassToneStack: false,
       bypassSaturation: false,
-      bypassCompressor: false,
       bypassSpeakerSim: true, // Bypassed by default (no IR loaded)
       currentPreset: null,
 
@@ -90,12 +82,11 @@ export const useAudioStore = create<AudioState>()(
           drive: preset.drive,
           harmonics: preset.harmonics ?? 0.5,
           saturationMix: preset.saturationMix ?? 1.0,
-          compThreshold: preset.compThreshold ?? -24,
-          compRatio: preset.compRatio ?? 4,
-          compAttack: preset.compAttack ?? 0.003,
-          compRelease: preset.compRelease ?? 0.25,
-          inputGain: preset.inputGain ?? 0,
+          inputGain: preset.inputGain ?? -6,
           outputGain: preset.outputGain ?? 0,
+          // Module activation (default to active if not specified)
+          bypassToneStack: preset.bypassToneStack ?? false,
+          bypassSaturation: preset.bypassSaturation ?? false,
           currentPreset: preset.name,
         });
       },
@@ -131,16 +122,12 @@ export const useAudioStore = create<AudioState>()(
         drive: state.drive,
         harmonics: state.harmonics,
         saturationMix: state.saturationMix,
-        compThreshold: state.compThreshold,
-        compRatio: state.compRatio,
-        compAttack: state.compAttack,
-        compRelease: state.compRelease,
         outputGain: state.outputGain,
         inputDeviceId: state.inputDeviceId,
         outputDeviceId: state.outputDeviceId,
+        bypassAll: state.bypassAll,
         bypassToneStack: state.bypassToneStack,
         bypassSaturation: state.bypassSaturation,
-        bypassCompressor: state.bypassCompressor,
         bypassSpeakerSim: state.bypassSpeakerSim,
       }),
     }

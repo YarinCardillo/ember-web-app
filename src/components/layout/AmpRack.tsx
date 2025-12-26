@@ -7,7 +7,6 @@ import { Header } from './Header';
 import { InputStage } from '../stages/InputStage';
 import { ToneStage } from '../stages/ToneStage';
 import { SaturationStage } from '../stages/SaturationStage';
-import { CompressorStage } from '../stages/CompressorStage';
 import { OutputStage } from '../stages/OutputStage';
 import { useAudioStore } from '../../store/useAudioStore';
 import AudioEngine from '../../audio/AudioEngine';
@@ -15,7 +14,6 @@ import { InputNode } from '../../audio/nodes/InputNode';
 import { PreampNode } from '../../audio/nodes/PreampNode';
 import { ToneStackNode } from '../../audio/nodes/ToneStackNode';
 import { TubeSaturationNode } from '../../audio/nodes/TubeSaturationNode';
-import { CompressorNode } from '../../audio/nodes/CompressorNode';
 import { SpeakerSimNode } from '../../audio/nodes/SpeakerSimNode';
 import { OutputNode } from '../../audio/nodes/OutputNode';
 import presetsData from '../../audio/presets/amp-presets.json';
@@ -26,7 +24,6 @@ interface AudioNodes {
   preamp: PreampNode | null;
   toneStack: ToneStackNode | null;
   saturation: TubeSaturationNode | null;
-  compressor: CompressorNode | null;
   speakerSim: SpeakerSimNode | null;
   output: OutputNode | null;
 }
@@ -42,7 +39,6 @@ export function AmpRack(): JSX.Element {
     preamp: null,
     toneStack: null,
     saturation: null,
-    compressor: null,
     speakerSim: null,
     output: null,
   });
@@ -53,6 +49,7 @@ export function AmpRack(): JSX.Element {
   const isInitialized = useAudioStore((state) => state.isInitialized);
   const setInitialized = useAudioStore((state) => state.setInitialized);
   const setRunning = useAudioStore((state) => state.setRunning);
+  const bypassAll = useAudioStore((state) => state.bypassAll);
 
   // Initialize audio engine and create nodes
   const initializeAudio = useCallback(async (): Promise<AudioNodes> => {
@@ -68,7 +65,6 @@ export function AmpRack(): JSX.Element {
         preamp: new PreampNode(ctx),
         toneStack: new ToneStackNode(ctx),
         saturation: new TubeSaturationNode(ctx),
-        compressor: new CompressorNode(ctx),
         speakerSim: new SpeakerSimNode(ctx),
         output: new OutputNode(ctx),
       };
@@ -87,13 +83,10 @@ export function AmpRack(): JSX.Element {
       // ToneStack -> Saturation
       nodes.toneStack.connect(nodes.saturation.inputGain);
       
-      // Saturation -> Compressor
-      nodes.saturation.connect(nodes.compressor.getInput());
+      // Saturation -> SpeakerSim
+      nodes.saturation.connect(nodes.speakerSim.getInput());
       
-      // Compressor -> SpeakerSim
-      nodes.compressor.connect(nodes.speakerSim.getInput());
-      
-      // SpeakerSim -> Output
+      // SpeakerSim -> Output (includes analog soft clipper)
       nodes.speakerSim.connect(nodes.output.getInput());
 
       console.log('Signal chain connected');
@@ -182,11 +175,6 @@ export function AmpRack(): JSX.Element {
   const harmonics = useAudioStore((state) => state.harmonics);
   const saturationMix = useAudioStore((state) => state.saturationMix);
   const bypassSaturation = useAudioStore((state) => state.bypassSaturation);
-  const compThreshold = useAudioStore((state) => state.compThreshold);
-  const compRatio = useAudioStore((state) => state.compRatio);
-  const compAttack = useAudioStore((state) => state.compAttack);
-  const compRelease = useAudioStore((state) => state.compRelease);
-  const bypassCompressor = useAudioStore((state) => state.bypassCompressor);
   const outputGain = useAudioStore((state) => state.outputGain);
 
   // Update audio nodes when parameters change
@@ -209,12 +197,6 @@ export function AmpRack(): JSX.Element {
       nodes.saturation.setMix(saturationMix);
       nodes.saturation.setBypass(bypassSaturation);
     }
-    if (nodes.compressor) {
-      nodes.compressor.setThreshold(compThreshold);
-      nodes.compressor.setRatio(compRatio);
-      nodes.compressor.setAttack(compAttack);
-      nodes.compressor.setRelease(compRelease);
-    }
     if (nodes.output) {
       nodes.output.setGain(outputGain);
     }
@@ -229,13 +211,47 @@ export function AmpRack(): JSX.Element {
     harmonics,
     saturationMix,
     bypassSaturation,
-    compThreshold,
-    compRatio,
-    compAttack,
-    compRelease,
-    bypassCompressor,
     outputGain,
   ]);
+
+  // Handle master bypass - reroute signal chain
+  useEffect(() => {
+    const nodes = audioNodesRef.current;
+    if (!isInitialized || !nodes.input || !nodes.output) return;
+
+    const engine = AudioEngine.getInstance();
+    const ctx = engine.getContext();
+
+    if (bypassAll) {
+      // Disconnect ALL nodes to prevent any signal bleeding
+      nodes.input.getOutput().disconnect();
+      nodes.preamp?.disconnect();
+      nodes.toneStack?.disconnect();
+      nodes.saturation?.disconnect();
+      nodes.speakerSim?.disconnect();
+      
+      // TRUE BYPASS: Connect input directly to AudioContext destination
+      // This completely skips all processing including the output clipper
+      nodes.input.getOutput().connect(ctx.destination);
+      
+      console.log('Master bypass ENABLED - true dry signal to destination');
+    } else {
+      // Disconnect bypass route
+      nodes.input.getOutput().disconnect();
+      
+      // Restore internal routing for saturation (may have been broken by disconnect)
+      nodes.saturation?.restoreRouting();
+      
+      // Reconnect normal signal chain
+      nodes.input.connect(nodes.preamp!.getInput());
+      nodes.preamp!.connect(nodes.toneStack!.getInput());
+      nodes.toneStack!.connect(nodes.saturation!.inputGain);
+      nodes.saturation!.connect(nodes.speakerSim!.getInput());
+      nodes.speakerSim!.connect(nodes.output.getInput());
+      
+      console.log('Master bypass DISABLED - processing active');
+    }
+  }, [isInitialized, bypassAll]);
 
   // Handle input device change
   const handleInputDeviceChange = useCallback(
@@ -326,7 +342,6 @@ export function AmpRack(): JSX.Element {
           />
           <ToneStage />
           <SaturationStage />
-          <CompressorStage />
           <OutputStage
             outputAnalyser={audioNodes.output?.getAnalyser() || null}
             outputDevices={outputDevices}

@@ -9,10 +9,9 @@
     "drive": 0.25,
     "harmonics": 0.4,
     "saturationMix": 0.6,
-    "compThreshold": -18,
-    "compRatio": 2,
-    "compAttack": 0.01,
-    "compRelease": 0.25
+    "inputGain": -6,
+    "bypassToneStack": false,
+    "bypassSaturation": false
   },
   "tube-warm": {
     "name": "Tube Warm",
@@ -24,10 +23,9 @@
     "drive": 0.5,
     "harmonics": 0.6,
     "saturationMix": 0.8,
-    "compThreshold": -24,
-    "compRatio": 3,
-    "compAttack": 0.003,
-    "compRelease": 0.3
+    "inputGain": -6,
+    "bypassToneStack": false,
+    "bypassSaturation": false
   },
   "modern-clean": {
     "name": "Modern Clean",
@@ -39,10 +37,9 @@
     "drive": 0.1,
     "harmonics": 0.2,
     "saturationMix": 0.3,
-    "compThreshold": -12,
-    "compRatio": 1.5,
-    "compAttack": 0.005,
-    "compRelease": 0.15
+    "inputGain": -6,
+    "bypassToneStack": false,
+    "bypassSaturation": false
   },
   "lo-fi": {
     "name": "Lo-Fi",
@@ -54,14 +51,13 @@
     "drive": 0.7,
     "harmonics": 0.8,
     "saturationMix": 1.0,
-    "compThreshold": -30,
-    "compRatio": 6,
-    "compAttack": 0.02,
-    "compRelease": 0.4
+    "inputGain": -6,
+    "bypassToneStack": false,
+    "bypassSaturation": false
   },
   "flat": {
     "name": "Flat",
-    "description": "Bypass all processing",
+    "description": "EQ only, no saturation",
     "bass": 0,
     "mid": 0,
     "treble": 0,
@@ -69,9 +65,8 @@
     "drive": 0,
     "harmonics": 0,
     "saturationMix": 0,
-    "compThreshold": 0,
-    "compRatio": 1,
-    "compAttack": 0.003,
-    "compRelease": 0.25
+    "inputGain": -6,
+    "bypassToneStack": false,
+    "bypassSaturation": true
   }
 }

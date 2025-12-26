@@ -109,12 +109,27 @@ export class TubeSaturationNode {
   }
 
   /**
-   * Disconnect from destination
+   * Disconnect output from destination
+   * Only disconnects the output, preserves internal routing
    */
   disconnect(): void {
     this.bypassGain.disconnect();
+    // Don't disconnect workletNode - it's internal routing
+  }
+
+  /**
+   * Restore internal routing (call after reconnection)
+   */
+  restoreRouting(): void {
     if (this.workletNode) {
-      this.workletNode.disconnect();
+      // Ensure worklet is connected to bypass gain
+      try {
+        this.workletNode.disconnect();
+      } catch {
+        // Already disconnected
+      }
+      this.workletNode.connect(this.bypassGain);
     }
+    this.updateRouting();
   }
 }
