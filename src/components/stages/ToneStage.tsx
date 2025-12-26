@@ -19,7 +19,6 @@ export function ToneStage(): JSX.Element {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-ember-orange">EQUALIZER</h3>
         <Toggle
-          label="Active"
           checked={!bypassToneStack}
           onChange={(checked) => setParameter('bypassToneStack', !checked)}
         />

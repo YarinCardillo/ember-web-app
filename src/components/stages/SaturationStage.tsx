@@ -18,7 +18,6 @@ export function SaturationStage(): JSX.Element {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-ember-orange">TUBES</h3>
         <Toggle
-          label="Active"
           checked={!bypassSaturation}
           onChange={(checked) => setParameter('bypassSaturation', !checked)}
         />

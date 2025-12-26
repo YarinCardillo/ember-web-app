@@ -3,7 +3,7 @@
  */
 
 interface ToggleProps {
-  label: string;
+  label?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
 }
@@ -11,7 +11,7 @@ interface ToggleProps {
 export function Toggle({ label, checked, onChange }: ToggleProps): JSX.Element {
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="text-xs text-text-light opacity-80">{label}</div>
+      {label && <div className="text-xs text-text-light opacity-80">{label}</div>}
       <button
         type="button"
         onClick={() => onChange(!checked)}
@@ -23,7 +23,7 @@ export function Toggle({ label, checked, onChange }: ToggleProps): JSX.Element {
         `}
         role="switch"
         aria-checked={checked}
-        aria-label={label}
+        aria-label={label || 'Toggle'}
       >
         {/* Toggle thumb */}
         <div
