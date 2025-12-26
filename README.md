@@ -84,11 +84,11 @@ To route system audio through Ember Amp Web, you need a virtual audio cable.
 
 1. Download [BlackHole](https://existential.audio/blackhole/) (2ch version)
 2. Install the package
-3. Open **Audio MIDI Setup** (Spotlight → "Audio MIDI Setup")
-4. Click **+** → Create Multi-Output Device
-5. Check both **BlackHole 2ch** and your speakers/headphones
-6. Set Multi-Output as system output (System Preferences → Sound)
-7. In Ember Amp Web, select **BlackHole 2ch** as input
+3. Set **BlackHole 2ch** as system output (System Preferences → Sound → Output)
+4. In Ember Amp Web, select **BlackHole 2ch** as **input**
+5. In Ember Amp Web, select your speakers/headphones as **output**
+
+**Signal flow:** System Audio → BlackHole → Ember Amp (processing) → Speakers
 
 ### Windows: VB-Cable
 
