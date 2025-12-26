@@ -35,9 +35,9 @@ export function PresetSelector({
       onChange={handleChange}
       className="
         bg-gray-800 border border-gray-700 rounded-lg
-        px-4 py-3 text-text-light
+        px-3 py-2 md:px-4 md:py-3 text-sm md:text-base text-text-light
         focus:outline-none focus:ring-2 focus:ring-ember-orange
-        cursor-pointer min-w-[180px]
+        cursor-pointer min-w-[140px] md:min-w-[180px]
       "
     >
       <option value="">Select Preset</option>

@@ -28,41 +28,41 @@ export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JS
   };
 
   return (
-    <header className="flex items-center justify-between mb-8 pb-4 border-b border-gray-800">
+    <header className="flex flex-col md:flex-row items-center justify-between mb-6 md:mb-8 pb-4 border-b border-gray-800 gap-4">
       {/* Logo/Title */}
       <div className="flex items-center gap-3">
         <img 
           src="/ember_app_icon.png" 
           alt="Ember Amp" 
-          className="w-28 h-28 rounded-lg"
+          className="w-16 h-16 md:w-28 md:h-28 rounded-lg"
         />
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-5xl font-bold text-ember-orange tracking-tight">
+            <h1 className="text-2xl md:text-5xl font-bold text-ember-orange tracking-tight">
               EMBER AMP
             </h1>
-            <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-ember-orange/20 text-ember-orange border border-ember-orange/40 rounded-full uppercase tracking-wider">
+            <span className="ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 text-[10px] md:text-xs font-semibold bg-ember-orange/20 text-ember-orange border border-ember-orange/40 rounded-full uppercase tracking-wider">
               Beta
             </span>
           </div>
-          <p className="text-2xs text-text-light opacity-60">
+          <p className="text-xs md:text-2xs text-text-light opacity-60">
             HiFi Amplifier DSP
           </p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4">
         {/* Help Button */}
         {onHelpClick && (
           <button
             onClick={onHelpClick}
             className="
-              w-12 h-12 rounded-full transition-all duration-300
+              w-10 h-10 md:w-12 md:h-12 rounded-full transition-all duration-300
               bg-gray-800 hover:bg-gray-700 border border-gray-700
               text-gray-400 hover:text-ember-orange
               flex items-center justify-center
-              text-xl font-light
+              text-lg md:text-xl font-light
             "
             title="Setup Guide"
           >
@@ -82,8 +82,8 @@ export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JS
           onClick={handleBypassToggle}
           disabled={!isRunning}
           className={`
-            px-4 py-3 rounded-lg font-semibold transition-all duration-300
-            flex items-center gap-2 border-2
+            px-3 py-2 md:px-4 md:py-3 rounded-lg font-semibold transition-all duration-300
+            flex items-center gap-2 border-2 text-sm md:text-base
             ${!isRunning
               ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
               : bypassAll
@@ -110,8 +110,8 @@ export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JS
         <button
           onClick={onPowerToggle}
           className={`
-            px-6 py-3 rounded-lg font-semibold transition-all duration-300
-            flex items-center gap-2
+            px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-all duration-300
+            flex items-center gap-2 text-sm md:text-base
             ${isRunning
               ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30'
               : 'bg-ember-orange hover:bg-amber-glow text-white shadow-lg shadow-ember-orange/30'

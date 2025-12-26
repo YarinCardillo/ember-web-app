@@ -333,8 +333,15 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const presets = presetsData as PresetCollection;
 
   return (
-    <div className="min-h-screen bg-dark-bg p-8 select-none">
+    <div className="min-h-screen bg-dark-bg p-4 md:p-8 select-none">
       <div className="max-w-7xl mx-auto">
+        {/* Mobile Notice */}
+        <div className="md:hidden mb-4 p-3 bg-ember-orange/20 border border-ember-orange/40 rounded-lg text-center">
+          <p className="text-sm text-ember-orange">
+            Ember Amp is designed for desktop browsers with virtual audio cables.
+          </p>
+        </div>
+
         {/* Header */}
         <Header presets={presets} onPowerToggle={handlePowerToggle} onHelpClick={onHelpClick} />
 

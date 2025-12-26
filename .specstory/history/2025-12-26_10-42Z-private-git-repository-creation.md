@@ -21157,3 +21157,187 @@ Want me to make that change for you?
 
 ---
 
+_**User (2025-12-26 10:47Z)**_
+
+i dont want this web app to deal with mobile because its not possible, but at least having the page layout change accordingly to mobile screens just to not suck if visited?
+
+---
+
+_**Agent (model claude-4.5-opus-high-thinking, mode Agent)**_
+
+<think><details><summary>Thought Process</summary>
+The user wants to add basic responsive design so the page doesn't look broken on mobile, even though the app isn't meant for mobile use. This is a reasonable request - we should make it look presentable on mobile screens even if the functionality is limited.
+
+Key things to do:
+1. Add a mobile notice/message explaining this is a desktop app
+2. Make the layout stack vertically on small screens3. Adjust font sizes and spacing for mobile4. Maybe hide/simplify some elements on mobileThe main layout changes would be in AmpRack.tsx where the grid is defined. Let me implement a sensible mobile layout.</details></think>
+
+---
+
+Good idea! I'll add basic responsive styling so it looks presentable on mobile, plus a notice that it's a desktop app. Let me update the key files:
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/yarin/development/ember-web-app/src/components/layout/AmpRack.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+The grid is already using `grid-cols-1 md:grid-cols-3` which stacks on mobile. Good! I need to:
+
+1. Add a mobile notice at the top
+2. Adjust padding and spacing for mobile3. Make the header responsive4. Possibly hide the ember sparks on mobile for performance
+
+Let me update the AmpRack to add a mobile notice.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/AmpRack.tsx</summary>
+
+**Chunk 1**
+Lines added: 8, lines removed: 1
+
+```diff
+@@ -334,6 +334,13 @@
+  
+    return (
+-     &lt;div className="min-h-screen bg-dark-bg p-8 select-none"&gt;
++     &lt;div className="min-h-screen bg-dark-bg p-4 md:p-8 select-none"&gt;
+        &lt;div className="max-w-7xl mx-auto"&gt;
++         {/* Mobile Notice */}
++         &lt;div className="md:hidden mb-4 p-3 bg-ember-orange/20 border border-ember-orange/40 rounded-lg text-center"&gt;
++           &lt;p className="text-sm text-ember-orange"&gt;
++             Ember Amp is designed for desktop browsers with virtual audio cables.
++           &lt;/p&gt;
++         &lt;/div&gt;
++ 
+          {/* Header */}
+          &lt;Header presets={presets} onPowerToggle={handlePowerToggle} onHelpClick={onHelpClick} /&gt;
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me update the Header to be more responsive on mobile. The controls should wrap or stack on mobile.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Let me update the Header to be more responsive - make the header flex-wrap and adjust sizes on mobile.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+**Chunk 1**
+Lines added: 5, lines removed: 5
+
+```diff
+@@ -29,22 +29,22 @@
+  
+    return (
+-     &lt;header className="flex items-center justify-between mb-8 pb-4 border-b border-gray-800"&gt;
++     &lt;header className="flex flex-col md:flex-row items-center justify-between mb-6 md:mb-8 pb-4 border-b border-gray-800 gap-4"&gt;
+        {/* Logo/Title */}
+        &lt;div className="flex items-center gap-3"&gt;
+          &lt;img 
+            src="/ember_app_icon.png" 
+            alt="Ember Amp" 
+-           className="w-28 h-28 rounded-lg"
++           className="w-16 h-16 md:w-28 md:h-28 rounded-lg"
+          /&gt;
+          &lt;div&gt;
+            &lt;div className="flex items-center gap-2"&gt;
+-             &lt;h1 className="text-5xl font-bold text-ember-orange tracking-tight"&gt;
++             &lt;h1 className="text-2xl md:text-5xl font-bold text-ember-orange tracking-tight"&gt;
+                EMBER AMP
+              &lt;/h1&gt;
+-             &lt;span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-ember-orange/20 text-ember-orange border border-ember-orange/40 rounded-full uppercase tracking-wider"&gt;
++             &lt;span className="ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 text-[10px] md:text-xs font-semibold bg-ember-orange/20 text-ember-orange border border-ember-orange/40 rounded-full uppercase tracking-wider"&gt;
+                Beta
+              &lt;/span&gt;
+            &lt;/div&gt;
+-           &lt;p className="text-2xs text-text-light opacity-60"&gt;
++           &lt;p className="text-xs md:text-2xs text-text-light opacity-60"&gt;
+              HiFi Amplifier DSP
+            &lt;/p&gt;
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -53,5 +53,5 @@
+  
+        {/* Controls */}
+-       &lt;div className="flex items-center gap-4"&gt;
++       &lt;div className="flex flex-wrap items-center justify-center gap-2 md:gap-4"&gt;
+          {/* Help Button */}
+          {onHelpClick &amp;&amp; (
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me also update the control buttons to be smaller on mobile and update the PresetSelector for mobile.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/yarin/development/ember-web-app/src/components/layout/Header.tsx</summary>
+
+Status: **loading**
+
+```typescriptreact
+        {/* Help Button */}
+        {onHelpClick && (
+          <button
+            onClick={onHelpClick}
+            className="
+              w-10 h-10 md:w-12 md:h-12 rounded-full transition-all duration-300
+              bg-gray-800 hover:bg-gray-700 border border-gray-700
+              text-gray-400 hover:text-ember-orange
+              flex items-center justify-center
+              text-lg md:text-xl font-light
+            "
+            title="Setup Guide"
+          >
+            ?
+          </button>
+```
+
+</details>
+
+</tool-use>
+
+---
+
+
+
+---
+
