@@ -23,7 +23,7 @@
     "drive": 0.5,
     "harmonics": 0.6,
     "saturationMix": 0.8,
-    "inputGain": -6,
+    "inputGain": -9,
     "bypassToneStack": false,
     "bypassSaturation": false
   },
