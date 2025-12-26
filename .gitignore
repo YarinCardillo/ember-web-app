@@ -40,3 +40,7 @@ coverage/
 # Misc
 *.local
 
+# Cursor / AI tools
+.specstory/
+.cursor/
+
