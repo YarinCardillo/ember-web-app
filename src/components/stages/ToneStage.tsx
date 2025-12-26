@@ -3,6 +3,7 @@
  */
 
 import { Knob } from '../ui/Knob';
+import { Toggle } from '../ui/Toggle';
 import { useAudioStore } from '../../store/useAudioStore';
 
 export function ToneStage(): JSX.Element {
@@ -16,16 +17,12 @@ export function ToneStage(): JSX.Element {
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-ember-orange">Tone Stack</h3>
-        <label className="flex items-center gap-2 text-sm text-text-light">
-          <input
-            type="checkbox"
-            checked={!bypassToneStack}
-            onChange={(e) => setParameter('bypassToneStack', !e.target.checked)}
-            className="w-4 h-4"
-          />
-          <span>Active</span>
-        </label>
+        <h3 className="text-lg font-semibold text-ember-orange">EQUALIZER</h3>
+        <Toggle
+          label="Active"
+          checked={!bypassToneStack}
+          onChange={(checked) => setParameter('bypassToneStack', !checked)}
+        />
       </div>
 
       <div className="flex items-center justify-around gap-4">

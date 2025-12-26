@@ -60,6 +60,13 @@ export function AmpRack(): JSX.Element {
       const ctx = engine.getContext();
       console.log('AudioContext created, state:', ctx.state);
 
+      // Apply stored output device if one was selected before initialization
+      const storedOutputDeviceId = useAudioStore.getState().outputDeviceId;
+      if (storedOutputDeviceId) {
+        console.log('Applying stored output device:', storedOutputDeviceId);
+        await engine.setOutputDevice(storedOutputDeviceId);
+      }
+
       const nodes: AudioNodes = {
         input: new InputNode(ctx),
         preamp: new PreampNode(ctx),
@@ -334,14 +341,19 @@ export function AmpRack(): JSX.Element {
         )}
 
         {/* Signal Chain */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          <InputStage
-            devices={inputDevices}
-            inputAnalyser={audioNodes.input?.getAnalyser() || null}
-            onDeviceChange={handleInputDeviceChange}
-          />
-          <ToneStage />
-          <SaturationStage />
+        <div className="flex flex-col gap-6">
+          {/* Top Row: 3 columns - Input, Tone Stack, Saturation */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <InputStage
+              devices={inputDevices}
+              inputAnalyser={audioNodes.input?.getAnalyser() || null}
+              onDeviceChange={handleInputDeviceChange}
+            />
+            <ToneStage />
+            <SaturationStage />
+          </div>
+
+          {/* Bottom Row: Full-width Output */}
           <OutputStage
             outputAnalyser={audioNodes.output?.getAnalyser() || null}
             outputDevices={outputDevices}

@@ -142,7 +142,7 @@ export function Knob({
       </div>
       <div className="text-center">
         <div className="text-xs text-text-light opacity-80">{label}</div>
-        <div className="text-sm font-mono text-ember-orange">
+        <div className="text-sm font-mono text-ember-orange min-w-[70px]">
           {formatDisplayValue(value)}
         </div>
       </div>

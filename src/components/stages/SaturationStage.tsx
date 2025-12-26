@@ -16,7 +16,7 @@ export function SaturationStage(): JSX.Element {
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-ember-orange">Tube Saturation</h3>
+        <h3 className="text-lg font-semibold text-ember-orange">TUBES</h3>
         <Toggle
           label="Active"
           checked={!bypassSaturation}

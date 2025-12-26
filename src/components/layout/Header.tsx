@@ -30,15 +30,17 @@ export function Header({ presets, onPowerToggle }: HeaderProps): JSX.Element {
     <header className="flex items-center justify-between mb-8 pb-4 border-b border-gray-800">
       {/* Logo/Title */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-ember-orange to-amber-glow rounded-lg flex items-center justify-center">
-          <span className="text-2xl">🔥</span>
-        </div>
+        <img 
+          src="/ember_app_icon.png" 
+          alt="Ember Amp" 
+          className="w-28 h-28 rounded-lg"
+        />
         <div>
           <h1 className="text-2xl font-bold text-ember-orange tracking-tight">
-            Ember Amp Web
+            EMBER AMP
           </h1>
           <p className="text-xs text-text-light opacity-60">
-            HiFi Amplifier Simulator
+            HiFi Amplifier DSP
           </p>
         </div>
       </div>

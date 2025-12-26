@@ -60,7 +60,7 @@ export const useAudioStore = create<AudioState>()(
       presence: 0,
       drive: 0.3,
       harmonics: 0.5,
-      saturationMix: 1.0,
+      saturationMix: 0.6,
       outputGain: 0,
       bypassAll: false,
       bypassToneStack: false,

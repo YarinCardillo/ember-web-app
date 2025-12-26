@@ -24,7 +24,7 @@ export function InputStage({
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-      <h3 className="text-lg font-semibold text-ember-orange">Input</h3>
+      <h3 className="text-lg font-semibold text-ember-orange">INPUT</h3>
       
       <div className="flex flex-col gap-2">
         <label className="text-xs text-text-light opacity-80">Device</label>
@@ -57,12 +57,12 @@ export function InputStage({
         <Knob
           label="Gain"
           value={inputGain}
-          min={-12}
-          max={12}
+          min={-36}
+          max={36}
           step={0.5}
           unit=" dB"
           onChange={(value) => setParameter('inputGain', value)}
-          defaultValue={0}
+          defaultValue={-12}
         />
         <VUMeter analyser={inputAnalyser} label="Input" />
       </div>

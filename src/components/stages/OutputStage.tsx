@@ -26,7 +26,7 @@ export function OutputStage({
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-      <h3 className="text-lg font-semibold text-ember-orange">Output</h3>
+      <h3 className="text-lg font-semibold text-ember-orange">OUTPUT</h3>
       
       {/* Output Device Selector */}
       <div className="flex flex-col gap-2">
@@ -78,3 +78,4 @@ export function OutputStage({
     </div>
   );
 }
+
