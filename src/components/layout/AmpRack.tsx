@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Header } from './Header';
+import { Credits } from './Credits';
 import { InputStage } from '../stages/InputStage';
 import { ToneStage } from '../stages/ToneStage';
 import { SaturationStage } from '../stages/SaturationStage';
@@ -328,7 +329,7 @@ export function AmpRack(): JSX.Element {
   const presets = presetsData as PresetCollection;
 
   return (
-    <div className="min-h-screen bg-dark-bg p-8">
+    <div className="min-h-screen bg-dark-bg p-8 select-none">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <Header presets={presets} onPowerToggle={handlePowerToggle} />
@@ -353,13 +354,18 @@ export function AmpRack(): JSX.Element {
             <SaturationStage />
           </div>
 
-          {/* Bottom Row: Full-width Output */}
-          <OutputStage
-            outputAnalyser={audioNodes.output?.getAnalyser() || null}
-            outputDevices={outputDevices}
-            onOutputDeviceChange={handleOutputDeviceChange}
-            isOutputDeviceSupported={isOutputDeviceSupported}
-          />
+          {/* Bottom Row: Output (1 column width) + Credits (2 columns width) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <OutputStage
+              outputAnalyser={audioNodes.output?.getAnalyser() || null}
+              outputDevices={outputDevices}
+              onOutputDeviceChange={handleOutputDeviceChange}
+              isOutputDeviceSupported={isOutputDeviceSupported}
+            />
+            <div className="md:col-span-2">
+              <Credits />
+            </div>
+          </div>
         </div>
       </div>
     </div>

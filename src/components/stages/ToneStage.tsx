@@ -15,7 +15,7 @@ export function ToneStage(): JSX.Element {
   const bypassToneStack = useAudioStore((state) => state.bypassToneStack);
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-ember-orange">EQUALIZER</h3>
         <Toggle
@@ -25,7 +25,7 @@ export function ToneStage(): JSX.Element {
         />
       </div>
 
-      <div className="flex items-center justify-around gap-4">
+      <div className="flex items-center justify-around gap-4 flex-1 my-auto pb-6">
         <Knob
           label="Bass"
           value={bass}

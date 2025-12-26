@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { AmpRack } from './components/layout/AmpRack';
 import { SetupGuide } from './components/layout/SetupGuide';
+import { EmberSparks } from './components/ui/EmberSparks';
 
 function App(): JSX.Element {
   const [showSetupGuide, setShowSetupGuide] = useState(false);
@@ -24,6 +25,7 @@ function App(): JSX.Element {
 
   return (
     <>
+      <EmberSparks />
       <AmpRack />
       {showSetupGuide && <SetupGuide onClose={handleCloseSetupGuide} />}
     </>

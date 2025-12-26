@@ -14,7 +14,7 @@ export function SaturationStage(): JSX.Element {
   const setParameter = useAudioStore((state) => state.setParameter);
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-ember-orange">TUBES</h3>
         <Toggle
@@ -24,7 +24,7 @@ export function SaturationStage(): JSX.Element {
         />
       </div>
       
-      <div className="flex items-center justify-around gap-4">
+      <div className="flex items-center justify-around gap-4 flex-1 my-auto pb-6">
         <Knob
           label="Drive"
           value={drive}
@@ -53,7 +53,7 @@ export function SaturationStage(): JSX.Element {
           step={0.01}
           formatValue={(value) => `${(value * 100).toFixed(0)}%`}
           onChange={(value) => setParameter('saturationMix', value)}
-          defaultValue={1.0}
+          defaultValue={0.6}
         />
       </div>
     </div>
