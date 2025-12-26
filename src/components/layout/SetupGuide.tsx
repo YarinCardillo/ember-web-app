@@ -53,21 +53,23 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
           <div>
             <h4 className="font-semibold mb-2">macOS:</h4>
             <ol className="list-decimal list-inside space-y-1 ml-4">
-              <li>Download and install <strong>BlackHole</strong> from{' '}
+              <li>Download and install <strong>BlackHole</strong> (2ch version) from{' '}
                 <a
-                  href="https://github.com/ExistentialAudio/BlackHole"
+                  href="https://existential.audio/blackhole/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-ember-orange hover:underline"
                 >
-                  GitHub
+                  existential.audio
                 </a>
               </li>
-              <li>Open Audio MIDI Setup and create a Multi-Output Device</li>
-              <li>Add both your speakers and BlackHole to the device</li>
-              <li>Set this Multi-Output Device as your system output</li>
-              <li>In this app, select "BlackHole" as your input device</li>
+              <li>Set <strong>BlackHole 2ch</strong> as your system output (System Preferences → Sound → Output)</li>
+              <li>In this app, select <strong>BlackHole 2ch</strong> as your <strong>input</strong> device</li>
+              <li>In this app, select your speakers/headphones as your <strong>output</strong> device</li>
             </ol>
+            <p className="mt-2 text-sm text-text-secondary">
+              Signal flow: System Audio → BlackHole → Ember Amp (processing) → Speakers
+            </p>
           </div>
 
           <div>
