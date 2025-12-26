@@ -29,7 +29,7 @@ export function Credits(): JSX.Element {
           <ul className="text-xs opacity-70 space-y-1">
             <li>• Zero-latency audio processing</li>
             <li>• Analog-modeled tube saturation</li>
-            <li>• 4-band fixedparametric EQ</li>
+            <li>• 4-band parametric EQ</li>
             <li>• Hard clipper output circuit</li>
             <li>• Some cool presets</li>
           </ul>
