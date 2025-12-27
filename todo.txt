@@ -1,0 +1,4 @@
+- slower button near output
+- consider packing the desktop app with drivers 
+  to install to avoid having the user to use virtual cables
+- bass and presence eq curves should emulate pultec technique
