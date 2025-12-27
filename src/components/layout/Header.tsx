@@ -40,6 +40,8 @@ export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JS
           src="/ember_app_icon.png" 
           alt="Ember Amp" 
           className="w-16 h-16 md:w-28 md:h-28 rounded-lg"
+          loading="eager"
+          fetchPriority="high"
         />
         <div>
           <div className="flex items-center gap-2">

@@ -409,9 +409,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
         )}
 
         {/* Signal Chain */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 min-w-0">
           {/* Top Row: 3 columns - Input, Tone Stack, Saturation */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
             <InputStage
               devices={inputDevices}
               inputAnalyser={audioNodes.input?.getAnalyser() || null}
@@ -422,7 +422,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           </div>
 
           {/* Bottom Row: Output (1 column width) + Credits (2 columns width) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
             <OutputStage
               preClipperAnalyser={audioNodes.output?.getPreClipperAnalyser() || null}
               postGainAnalyser={audioNodes.output?.getPostGainAnalyser() || null}

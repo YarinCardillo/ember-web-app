@@ -63,8 +63,8 @@ export function TapeButton({ checked, onChange }: TapeButtonProps): JSX.Element 
       setStaticFrameLoaded(false);
     };
     
-    // Load with cache buster to ensure fresh load
-    captureImg.src = `/assets/Ampex_orange_transparent.gif?t=${Date.now()}`;
+    // Load without cache buster - rely on browser cache for performance
+    captureImg.src = `/assets/Ampex_orange_transparent.gif`;
   }, [staticFrameLoaded]);
 
   return (
@@ -87,6 +87,8 @@ export function TapeButton({ checked, onChange }: TapeButtonProps): JSX.Element 
         src="/assets/Ampex_orange_transparent.gif"
         alt=""
         className="hidden"
+        loading="eager"
+        fetchPriority="high"
       />
       
       {/* Always render canvas (hidden when active) so we can draw to it */}
@@ -102,12 +104,17 @@ export function TapeButton({ checked, onChange }: TapeButtonProps): JSX.Element 
           src="/assets/Ampex_orange_transparent.gif"
           alt="Tape simulation"
           className="w-12 h-12 object-contain"
+          loading="eager"
+          fetchPriority="high"
         />
       )}
       
-      {/* Placeholder while canvas loads when inactive */}
+      {/* Placeholder while canvas loads when inactive - match exact dimensions */}
       {!checked && !staticFrameLoaded && (
-        <div className="w-12 h-12 bg-gray-700/30 rounded opacity-50" />
+        <div className="w-12 h-12 flex items-center justify-center opacity-50">
+          {/* Empty placeholder with correct size to prevent layout shift */}
+          <div className="w-full h-full bg-transparent" />
+        </div>
       )}
     </button>
   );

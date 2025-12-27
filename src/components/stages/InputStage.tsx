@@ -25,7 +25,7 @@ export function InputStage({
   const bypassTapeSim = useAudioStore((state) => state.bypassTapeSim);
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full">
+    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full min-w-0 overflow-hidden">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-ember-orange leading-none -mt-2" style={{ lineHeight: '1.2' }}>INPUT</h3>
         <div className="flex flex-col items-center gap-2" style={{ marginTop: '-12px' }}>
@@ -63,8 +63,8 @@ export function InputStage({
         </select>
       </div>
 
-      <div className="flex items-start">
-        <div className="flex-1 flex justify-center" style={{ marginTop: '40px', marginRight: '20px' }}>
+      <div className="flex items-start min-w-0">
+        <div className="flex-1 flex justify-center min-w-0" style={{ marginTop: '40px', marginRight: '20px' }}>
           <Knob
             label="Gain"
             value={inputGain}
@@ -76,7 +76,9 @@ export function InputStage({
             defaultValue={0}
           />
         </div>
-        <VUMeter analyser={inputAnalyser} label="Input" />
+        <div className="flex-shrink-0">
+          <VUMeter analyser={inputAnalyser} label="Input" />
+        </div>
       </div>
     </div>
   );

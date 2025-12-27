@@ -36,7 +36,7 @@ export function OutputStage({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full">
+    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full min-w-0 overflow-hidden">
       <h3 className="text-lg font-semibold text-ember-orange">OUTPUT</h3>
       
       {/* Output Device Selector */}
@@ -73,7 +73,7 @@ export function OutputStage({
         )}
       </div>
 
-      <div className="flex flex-col items-center justify-center gap-2 flex-1 my-auto pb-4 px-4">
+      <div className="flex flex-col items-center justify-center gap-2 flex-1 my-auto pb-4 px-4 min-w-0">
         {/* Pre-clipper gain control, post-clipper metering */}
         <div className="w-full max-w-xs">
           <MasterSlider
