@@ -1,6 +1,6 @@
 /**
  * ToneStackNode - 4-band EQ using BiquadFilters
- * Bass (100Hz), Mid (1kHz), Treble (4kHz), Presence (8kHz)
+ * Bass/Sub (75Hz), Mid (800Hz), Treble (4kHz), Presence (11kHz)
  */
 
 export class ToneStackNode {
@@ -10,16 +10,16 @@ export class ToneStackNode {
   private presenceFilter: BiquadFilterNode;
 
   constructor(ctx: AudioContext) {
-    // Bass - lowshelf at 100Hz
+    // Bass/Sub - lowshelf at 75Hz
     this.bassFilter = ctx.createBiquadFilter();
     this.bassFilter.type = 'lowshelf';
-    this.bassFilter.frequency.value = 100;
+    this.bassFilter.frequency.value = 75;
     this.bassFilter.gain.value = 0;
 
-    // Mid - peaking at 1kHz
+    // Mid - peaking at 800Hz
     this.midFilter = ctx.createBiquadFilter();
     this.midFilter.type = 'peaking';
-    this.midFilter.frequency.value = 1000;
+    this.midFilter.frequency.value = 800;
     this.midFilter.Q.value = 1;
     this.midFilter.gain.value = 0;
 
@@ -30,10 +30,10 @@ export class ToneStackNode {
     this.trebleFilter.Q.value = 1;
     this.trebleFilter.gain.value = 0;
 
-    // Presence - highshelf at 8kHz
+    // Presence - highshelf at 11kHz
     this.presenceFilter = ctx.createBiquadFilter();
     this.presenceFilter.type = 'highshelf';
-    this.presenceFilter.frequency.value = 8000;
+    this.presenceFilter.frequency.value = 11000;
     this.presenceFilter.gain.value = 0;
 
     // Connect chain: bass -> mid -> treble -> presence

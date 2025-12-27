@@ -57,17 +57,7 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
    * @returns {number} Sample with 2nd harmonic
    */
   addSecondHarmonic(sample, amount) {
-    return sample + amount * 0.3 * sample * Math.abs(sample);
-  }
-
-  /**
-   * Add odd harmonics (3rd) - "tube" character
-   * @param {number} sample - Input sample
-   * @param {number} amount - Harmonic amount (0-1)
-   * @returns {number} Sample with 3rd harmonic
-   */
-  addThirdHarmonic(sample, amount) {
-    return sample + amount * 0.2 * Math.pow(sample, 3);
+    return sample + amount * 0.45 * sample * Math.abs(sample);
   }
 
   process(inputs, outputs, parameters) {
@@ -98,12 +88,10 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
         // Apply saturation
         let wetSample = this.saturate(drySample, driveValue);
 
-        // Add harmonics if enabled
+        // Add harmonics if enabled (only even harmonics)
         if (harmonicsValue > 0.01) {
           // 2nd harmonic (even) - warm character
           wetSample = this.addSecondHarmonic(wetSample, harmonicsValue);
-          // 3rd harmonic (odd) - tube character
-          wetSample = this.addThirdHarmonic(wetSample, harmonicsValue * 0.7);
         }
 
         // Soft limit to prevent harsh clipping
