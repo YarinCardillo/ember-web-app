@@ -22,6 +22,7 @@ export interface PresetConfig {
   saturationMix?: number; // 0-1 dry/wet
   // Gain
   inputGain?: number; // dB (optional)
+  preGain?: number;   // Pre-clipper gain in dB (optional)
   outputGain?: number; // dB (optional)
   // Module activation (false = active, true = bypassed)
   bypassTapeSim?: boolean;
