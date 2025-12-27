@@ -5,7 +5,7 @@ import './index.css'
 
 // One-time cache clear for existing users with stale PWA cache
 // This version number should be incremented when a breaking cache issue is fixed
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_CLEARED_KEY = `ember-amp-cache-cleared-${CACHE_VERSION}`;
 
 async function clearStaleCaches(): Promise<void> {
