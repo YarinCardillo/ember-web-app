@@ -2,9 +2,10 @@
  * Header - Application header with title and controls
  */
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { PresetSelector } from '../ui/PresetSelector';
 import { useAudioStore } from '../../store/useAudioStore';
+import { isMobileDevice } from '../../utils/device-detection';
 import type { PresetCollection } from '../../types/audio.types';
 
 interface HeaderProps {
@@ -13,25 +14,15 @@ interface HeaderProps {
   onHelpClick?: () => void;
 }
 
-const MOBILE_BREAKPOINT = 768;
-
 export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JSX.Element {
-  const [isMobile, setIsMobile] = useState(false);
+  // Detect mobile once on mount (user agent doesn't change during session)
+  const isMobile = useMemo(() => isMobileDevice(), []);
+  
   const isRunning = useAudioStore((state) => state.isRunning);
   const currentPreset = useAudioStore((state) => state.currentPreset);
   const loadPreset = useAudioStore((state) => state.loadPreset);
   const bypassAll = useAudioStore((state) => state.bypassAll);
   const setParameter = useAudioStore((state) => state.setParameter);
-
-  useEffect(() => {
-    const checkMobile = (): void => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const handlePresetSelect = (_presetId: string, preset: typeof presets[string]): void => {
     loadPreset(preset);

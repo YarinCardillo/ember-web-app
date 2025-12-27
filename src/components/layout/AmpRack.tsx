@@ -2,7 +2,7 @@
  * AmpRack - Main container with stage components, preset selector, power button
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Header } from './Header';
 import { Credits } from './Credits';
 import { InputStage } from '../stages/InputStage';
@@ -18,6 +18,7 @@ import { ToneStackNode } from '../../audio/nodes/ToneStackNode';
 import { TubeSaturationNode } from '../../audio/nodes/TubeSaturationNode';
 import { SpeakerSimNode } from '../../audio/nodes/SpeakerSimNode';
 import { OutputNode } from '../../audio/nodes/OutputNode';
+import { isMobileDevice } from '../../utils/device-detection';
 import presetsData from '../../audio/presets/amp-presets.json';
 import type { PresetCollection } from '../../types/audio.types';
 
@@ -36,6 +37,9 @@ interface AmpRackProps {
 }
 
 export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
+  // Detect mobile once on mount (user agent doesn't change during session)
+  const isMobile = useMemo(() => isMobileDevice(), []);
+  
   const [inputDevices, setInputDevices] = useState<Array<{ deviceId: string; label: string; kind: MediaDeviceKind }>>([]);
   const [outputDevices, setOutputDevices] = useState<Array<{ deviceId: string; label: string; kind: MediaDeviceKind }>>([]);
   const [isOutputDeviceSupported, setIsOutputDeviceSupported] = useState(false);
@@ -388,12 +392,14 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   return (
     <div className="min-h-screen bg-dark-bg p-4 md:p-8 select-none">
       <div className="max-w-7xl mx-auto">
-        {/* Mobile Notice */}
-        <div className="md:hidden mb-4 p-3 bg-ember-orange/20 border border-ember-orange/40 rounded-lg text-center">
-          <p className="text-sm text-ember-orange">
-            Ember Amp is designed for desktop browsers with virtual audio cables.
-          </p>
-        </div>
+        {/* Mobile Notice - shown only on actual mobile devices */}
+        {isMobile && (
+          <div className="mb-4 p-3 bg-ember-orange/20 border border-ember-orange/40 rounded-lg text-center">
+            <p className="text-sm text-ember-orange">
+              Ember Amp is designed for desktop browsers with virtual audio cables.
+            </p>
+          </div>
+        )}
 
         {/* Header */}
         <Header presets={presets} onPowerToggle={handlePowerToggle} onHelpClick={onHelpClick} />
