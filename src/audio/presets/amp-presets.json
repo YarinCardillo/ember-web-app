@@ -10,6 +10,7 @@
     "harmonics": 0.4,
     "saturationMix": 0.6,
     "inputGain": -6,
+    "bypassTapeSim": true,
     "bypassToneStack": false,
     "bypassSaturation": false
   },
@@ -24,6 +25,7 @@
     "harmonics": 0.6,
     "saturationMix": 0.8,
     "inputGain": -9,
+    "bypassTapeSim": true,
     "bypassToneStack": false,
     "bypassSaturation": false
   },
@@ -38,6 +40,7 @@
     "harmonics": 0.2,
     "saturationMix": 0.3,
     "inputGain": -6,
+    "bypassTapeSim": true,
     "bypassToneStack": false,
     "bypassSaturation": false
   },
@@ -52,6 +55,7 @@
     "harmonics": 0.8,
     "saturationMix": 1.0,
     "inputGain": -18,
+    "bypassTapeSim": true,
     "bypassToneStack": false,
     "bypassSaturation": false
   },
@@ -66,6 +70,7 @@
     "harmonics": 0,
     "saturationMix": 0,
     "inputGain": -6,
+    "bypassTapeSim": true,
     "bypassToneStack": false,
     "bypassSaturation": true
   }

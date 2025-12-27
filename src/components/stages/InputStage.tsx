@@ -4,6 +4,7 @@
 
 import { Knob } from '../ui/Knob';
 import { VUMeter } from '../ui/VUMeter';
+import { TapeButton } from '../ui/TapeButton';
 import { useAudioStore } from '../../store/useAudioStore';
 import type { AudioDeviceInfo } from '../../types/audio.types';
 
@@ -21,10 +22,19 @@ export function InputStage({
   const inputGain = useAudioStore((state) => state.inputGain);
   const setParameter = useAudioStore((state) => state.setParameter);
   const inputDeviceId = useAudioStore((state) => state.inputDeviceId);
+  const bypassTapeSim = useAudioStore((state) => state.bypassTapeSim);
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full">
-      <h3 className="text-lg font-semibold text-ember-orange">INPUT</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-ember-orange leading-none -mt-2" style={{ lineHeight: '1.2' }}>INPUT</h3>
+        <div className="flex flex-col items-center gap-2" style={{ marginTop: '-12px' }}>
+          <TapeButton
+            checked={!bypassTapeSim}
+            onChange={(checked) => setParameter('bypassTapeSim', !checked)}
+          />
+        </div>
+      </div>
       
       <div className="flex flex-col gap-2 min-h-[60px]">
         <label className="text-xs text-text-light opacity-80">Device</label>

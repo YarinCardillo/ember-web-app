@@ -9,6 +9,7 @@
 
 Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube amplifiers directly in your web browser. Route your system audio (Spotify, YouTube, games, etc.) through a virtual audio cable, and the app applies real-time DSP processing including:
 
+- **Tape Simulation** - Wow/flutter, head bump, HF rolloff, stereo widening (AudioWorklet)
 - **Tube Saturation** - Analog-modeled soft clipping with harmonic generation
 - **4-Band EQ** - Bass, Mid, Treble, Presence (fixed frequency parametric)
 - **Hard Clipper** - 0dB output protection circuit
@@ -139,7 +140,10 @@ Subtle ember spark animation overlay for an atmospheric touch.
 ember-web-app/
 ├── public/
 │   ├── worklets/                 # AudioWorklet processors
-│   │   └── tube-saturation.worklet.js
+│   │   ├── tube-saturation.worklet.js
+│   │   └── tape-wobble.worklet.js
+│   ├── assets/                   # UI assets
+│   │   └── Ampex_orange_transparent.gif
 │   ├── ir/                       # Impulse response files
 │   └── ember_app_icon.png        # App icon
 │
@@ -148,6 +152,7 @@ ember-web-app/
 │   │   ├── AudioEngine.ts        # Singleton managing AudioContext
 │   │   ├── nodes/                # DSP node wrappers
 │   │   │   ├── InputNode.ts
+│   │   │   ├── TapeSimNode.ts    # Wow/flutter, head bump, HF rolloff
 │   │   │   ├── PreampNode.ts
 │   │   │   ├── ToneStackNode.ts
 │   │   │   ├── TubeSaturationNode.ts
@@ -161,6 +166,7 @@ ember-web-app/
 │   │   │   ├── Knob.tsx
 │   │   │   ├── VUMeter.tsx       # Analog needle meter
 │   │   │   ├── Toggle.tsx
+│   │   │   ├── TapeButton.tsx    # Animated tape sim toggle
 │   │   │   ├── Slider.tsx
 │   │   │   ├── PresetSelector.tsx
 │   │   │   └── EmberSparks.tsx   # Ambient animation
@@ -207,20 +213,22 @@ ember-web-app/
 ## Signal Flow
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Virtual   │────▶│   Input     │────▶│   Preamp    │────▶│   Tone      │────▶│    Tube     │────▶│   Speaker   │────▶│   Output    │────▶│  Speakers   │
-│ Audio Cable │     │   (Gain)    │     │   (Gain)    │     │   Stack     │     │ Saturation  │     │     Sim     │     │ (+ Clipper) │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐
+│ Virtual │──▶│  Input  │──▶│  Tape   │──▶│ Preamp  │──▶│  Tone   │──▶│  Tube   │──▶│ Output  │──▶│Speakers │
+│  Cable  │   │ (Gain)  │   │  Sim    │   │ (Gain)  │   │  Stack  │   │Saturation│   │(+Clipper)│   │         │
+└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘
 ```
 
 ### Processing Stages
 
 1. **InputNode** - Captures audio via `getUserMedia()`, gain control, level metering
-2. **PreampNode** - Gain staging with soft-clip protection
-3. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
-4. **TubeSaturationNode** - AudioWorklet with tanh clipping, harmonic generation
-5. **SpeakerSimNode** - ConvolverNode for cabinet simulation (bypassed by default)
+2. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening
+3. **PreampNode** - Gain staging with soft-clip protection
+4. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
+5. **TubeSaturationNode** - AudioWorklet with tanh clipping, harmonic generation
 6. **OutputNode** - Final gain, hard clipper (0dB), output metering
+
+**Note:** `SpeakerSimNode` exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions for cabinet simulation via impulse response convolution.
 
 ---
 

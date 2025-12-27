@@ -27,6 +27,7 @@ interface AudioState {
 
   // Bypass states
   bypassAll: boolean;          // Master bypass - routes input directly to output
+  bypassTapeSim: boolean;
   bypassToneStack: boolean;
   bypassSaturation: boolean;
   bypassSpeakerSim: boolean;
@@ -63,6 +64,7 @@ export const useAudioStore = create<AudioState>()(
       saturationMix: 0.6,
       outputGain: 0,
       bypassAll: false,
+      bypassTapeSim: false, // Active by default
       bypassToneStack: false,
       bypassSaturation: false,
       bypassSpeakerSim: true, // Bypassed by default (no IR loaded)
@@ -85,6 +87,7 @@ export const useAudioStore = create<AudioState>()(
           inputGain: preset.inputGain ?? -6,
           outputGain: preset.outputGain ?? 0,
           // Module activation (default to active if not specified)
+          bypassTapeSim: preset.bypassTapeSim ?? true, // Default to inactive in presets
           bypassToneStack: preset.bypassToneStack ?? false,
           bypassSaturation: preset.bypassSaturation ?? false,
           currentPreset: preset.name,
@@ -126,6 +129,7 @@ export const useAudioStore = create<AudioState>()(
         inputDeviceId: state.inputDeviceId,
         outputDeviceId: state.outputDeviceId,
         bypassAll: state.bypassAll,
+        bypassTapeSim: state.bypassTapeSim,
         bypassToneStack: state.bypassToneStack,
         bypassSaturation: state.bypassSaturation,
         bypassSpeakerSim: state.bypassSpeakerSim,

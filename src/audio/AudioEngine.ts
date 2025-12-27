@@ -48,7 +48,10 @@ class AudioEngine {
     // Load AudioWorklet modules
     if (!this.workletsLoaded) {
       try {
-        await this.ctx.audioWorklet.addModule('/worklets/tube-saturation.worklet.js');
+        await Promise.all([
+          this.ctx.audioWorklet.addModule('/worklets/tube-saturation.worklet.js'),
+          this.ctx.audioWorklet.addModule('/worklets/tape-wobble.worklet.js')
+        ]);
         this.workletsLoaded = true;
       } catch (error) {
         console.error('Failed to load AudioWorklet:', error);

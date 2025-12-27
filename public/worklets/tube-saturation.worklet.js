@@ -109,6 +109,11 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
         // Soft limit to prevent harsh clipping
         wetSample = Math.tanh(wetSample * 0.9) / 0.9;
 
+        // Gain compensation: reduce output proportional to drive + harmonics
+        // This keeps perceived loudness more consistent
+        const gainCompensation = 1.0 / (1.0 + driveValue * 0.3 + harmonicsValue * 0.25);
+        wetSample *= gainCompensation;
+
         // Dry/wet mix
         outputChannel[i] = drySample * (1 - mixValue) + wetSample * mixValue;
       }

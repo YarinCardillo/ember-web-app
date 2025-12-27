@@ -24,6 +24,7 @@ export interface PresetConfig {
   inputGain?: number; // dB (optional)
   outputGain?: number; // dB (optional)
   // Module activation (false = active, true = bypassed)
+  bypassTapeSim?: boolean;
   bypassToneStack?: boolean;
   bypassSaturation?: boolean;
 }

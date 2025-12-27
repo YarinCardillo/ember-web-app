@@ -12,6 +12,7 @@ import { OutputStage } from '../stages/OutputStage';
 import { useAudioStore } from '../../store/useAudioStore';
 import AudioEngine from '../../audio/AudioEngine';
 import { InputNode } from '../../audio/nodes/InputNode';
+import { TapeSimNode } from '../../audio/nodes/TapeSimNode';
 import { PreampNode } from '../../audio/nodes/PreampNode';
 import { ToneStackNode } from '../../audio/nodes/ToneStackNode';
 import { TubeSaturationNode } from '../../audio/nodes/TubeSaturationNode';
@@ -22,6 +23,7 @@ import type { PresetCollection } from '../../types/audio.types';
 
 interface AudioNodes {
   input: InputNode | null;
+  tapeSim: TapeSimNode | null;
   preamp: PreampNode | null;
   toneStack: ToneStackNode | null;
   saturation: TubeSaturationNode | null;
@@ -41,6 +43,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
 
   const audioNodesRef = useRef<AudioNodes>({
     input: null,
+    tapeSim: null,
     preamp: null,
     toneStack: null,
     saturation: null,
@@ -74,6 +77,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
 
       const nodes: AudioNodes = {
         input: new InputNode(ctx),
+        tapeSim: new TapeSimNode(ctx),
         preamp: new PreampNode(ctx),
         toneStack: new ToneStackNode(ctx),
         saturation: new TubeSaturationNode(ctx),
@@ -81,13 +85,23 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
         output: new OutputNode(ctx),
       };
 
-      // Initialize saturation worklet
+      // Initialize worklets
       console.log('Initializing saturation worklet...');
       await nodes.saturation!.initialize();
+      
+      console.log('Initializing tape simulation...');
+      await nodes.tapeSim!.initialize();
+      
+      // Sync bypass state from store
+      const bypassTapeSim = useAudioStore.getState().bypassTapeSim;
+      nodes.tapeSim!.setBypass(bypassTapeSim);
 
       // Connect signal chain using getInput() for proper node connections
-      // Input -> Preamp
-      nodes.input!.connect(nodes.preamp!.getInput());
+      // Input -> TapeSim
+      nodes.input!.connect(nodes.tapeSim!.getInput());
+      
+      // TapeSim -> Preamp
+      nodes.tapeSim!.connect(nodes.preamp!.getInput());
       
       // Preamp -> ToneStack
       nodes.preamp!.connect(nodes.toneStack!.getInput());
@@ -247,6 +261,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     if (bypassAll) {
       // Disconnect ALL nodes to prevent any signal bleeding
       nodes.input.getOutput().disconnect();
+      nodes.tapeSim?.disconnect();
       nodes.preamp?.disconnect();
       nodes.toneStack?.disconnect();
       nodes.saturation?.disconnect();
@@ -265,7 +280,8 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.saturation?.restoreRouting();
       
       // Reconnect normal signal chain
-      nodes.input.connect(nodes.preamp!.getInput());
+      nodes.input.connect(nodes.tapeSim!.getInput());
+      nodes.tapeSim!.connect(nodes.preamp!.getInput());
       nodes.preamp!.connect(nodes.toneStack!.getInput());
       nodes.toneStack!.connect(nodes.saturation!.inputGain);
       nodes.saturation!.connect(nodes.speakerSim!.getInput());
@@ -274,6 +290,30 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       console.log('Master bypass DISABLED - processing active');
     }
   }, [isInitialized, bypassAll]);
+
+  // Handle tape sim bypass state
+  const bypassTapeSim = useAudioStore((state) => state.bypassTapeSim);
+  useEffect(() => {
+    const nodes = audioNodesRef.current;
+    if (!isInitialized || !nodes.tapeSim || !nodes.input || !nodes.preamp) return;
+
+    // Update bypass state in TapeSimNode FIRST
+    nodes.tapeSim.setBypass(bypassTapeSim);
+    
+    // The TapeSimNode handles internal routing via getInput(),
+    // so we need to reconnect the signal chain when bypass state changes
+    if (!bypassAll) {
+      // Disconnect current connections
+      nodes.input.getOutput().disconnect();
+      nodes.tapeSim.disconnect();
+      
+      // Reconnect with updated routing (getInput() will return correct node based on bypass state)
+      nodes.input.connect(nodes.tapeSim.getInput());
+      nodes.tapeSim.connect(nodes.preamp.getInput());
+      
+      console.log(`Tape sim ${bypassTapeSim ? 'bypassed' : 'active'}`);
+    }
+  }, [isInitialized, bypassTapeSim, bypassAll]);
 
   // Handle input device change
   const handleInputDeviceChange = useCallback(

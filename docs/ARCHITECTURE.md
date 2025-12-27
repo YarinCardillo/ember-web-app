@@ -39,9 +39,9 @@ Ember Amp Web is a client-side audio processing application built entirely with 
 │  │                                                  │            │  │
 │  │  ┌───────────────────────────────────────────────▼──────────┐ │  │
 │  │  │                   Web Audio API                           │ │  │
-│  │  │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────────────┐│ │  │
-│  │  │  │Input│→│Preamp│→│Tone │→│Satur│→│Spkr │→│Output+Clip  ││ │  │
-│  │  │  └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────────────┘│ │  │
+│  │  │  ┌─────┐ ┌────┐ ┌─────┐ ┌────┐ ┌─────┐ ┌─────┐ ┌──────┐│ │  │
+│  │  │  │Input│→│Tape│→│Preamp│→│Tone│→│Satur│→│Spkr │→│Output││ │  │
+│  │  │  └─────┘ └────┘ └─────┘ └────┘ └─────┘ └─────┘ └──────┘│ │  │
 │  │  └──────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
@@ -85,7 +85,10 @@ class AudioEngine {
     }
     
     // Load AudioWorklet modules
-    await this.ctx.audioWorklet.addModule('/worklets/tube-saturation.worklet.js');
+    await Promise.all([
+      this.ctx.audioWorklet.addModule('/worklets/tube-saturation.worklet.js'),
+      this.ctx.audioWorklet.addModule('/worklets/tape-wobble.worklet.js')
+    ]);
   }
   
   async setOutputDevice(deviceId: string): Promise<boolean> {
@@ -153,6 +156,33 @@ class InputNode {
   }
 }
 ```
+
+### TapeSimNode
+
+Analog tape simulation with wow/flutter pitch modulation, head bump EQ, and high-frequency rolloff.
+
+**Signal Chain Inside TapeSimNode:**
+```
+Input → HeadBumpFilter → HFRolloffFilter → WowFlutterWorklet → Output
+           (peaking)        (lowpass)        (pitch mod)
+```
+
+**Web Audio Nodes Used:**
+- `BiquadFilterNode` (peaking) - Head bump at 80Hz, +2dB
+- `BiquadFilterNode` (lowpass) - HF rolloff at 15kHz
+- `AudioWorkletNode` - tape-wobble processor
+
+**AudioWorklet Features (tape-wobble.worklet.js):**
+- **Wow LFO**: ~0.5Hz, ±4 cents pitch modulation (slow tape speed variation)
+- **Flutter LFO**: ~7Hz, ±1.5 cents (faster mechanical vibration)
+- **Drift LFO**: ~0.1Hz, ±1 cent (slow organic drift)
+- **Stereo Delay LFO**: ~0.3Hz, ±0.3ms inter-channel delay variation (creates stereo width)
+
+**Fixed Parameters (no user controls):**
+- All tape characteristics are fixed for authentic analog feel
+- Toggle via TapeButton in InputStage (on/off only)
+
+---
 
 ### PreampNode
 
@@ -227,7 +257,7 @@ const addThirdHarmonic = (sample, amount) => {
 
 ### SpeakerSimNode
 
-Cabinet simulation using convolution.
+Cabinet simulation using convolution. **Note: This node exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions.**
 
 **Web Audio Nodes Used:**
 - `ConvolverNode` - Loads impulse response files
@@ -240,6 +270,12 @@ async loadImpulseResponse(url: string): Promise<void> {
   this.convolver.buffer = audioBuffer;
 }
 ```
+
+**Current Status:**
+- Node is created and connected in the signal chain
+- Always bypassed (no IR loaded)
+- No UI controls available
+- Reserved for future implementation
 
 ### OutputNode
 
@@ -293,6 +329,7 @@ interface AudioState {
   
   // Bypass states
   bypassAll: boolean;          // Master bypass
+  bypassTapeSim: boolean;      // Tape simulation
   bypassToneStack: boolean;
   bypassSaturation: boolean;
   bypassSpeakerSim: boolean;
@@ -327,6 +364,7 @@ App
     │   ├── BypassButton
     │   └── PowerButton
     ├── InputStage
+    │   ├── TapeButton (tape sim toggle)
     │   ├── DeviceSelector
     │   ├── Knob (Gain)
     │   └── VUMeter (analog needle)
@@ -415,7 +453,8 @@ When bypassAll = true:
   (all processing nodes disconnected)
 
 When bypassAll = false:
-  InputNode → Preamp → ToneStack → Saturation → SpeakerSim → OutputNode → destination
+  InputNode → TapeSim → Preamp → ToneStack → Saturation → OutputNode → destination
+  (Note: SpeakerSimNode exists but is bypassed/not used)
 ```
 
 ### Audio Flow
@@ -500,7 +539,7 @@ if (ctx.state === 'suspended') {
 ## Future Enhancements
 
 1. **Additional Presets** - More amp models and user-saveable presets
-2. **IR Library** - Collection of cabinet impulse responses
+2. **Speaker Simulation** - Implement SpeakerSimNode with IR loading UI (node exists but not currently used)
 3. **Spectrum Analyzer** - Frequency visualization
 4. **MIDI Support** - External controller mapping
 5. **WebRTC Output** - Stream processed audio to other applications
