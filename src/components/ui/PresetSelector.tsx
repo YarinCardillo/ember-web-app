@@ -3,6 +3,9 @@
  */
 
 import type { PresetConfig } from '../../types/audio.types';
+import presets from '../../audio/presets/amp-presets.json';
+
+const STARTER_PRESET = presets.starter as PresetConfig;
 
 interface PresetSelectorProps {
   presets: Record<string, PresetConfig>;
@@ -17,14 +20,17 @@ export function PresetSelector({
 }: PresetSelectorProps): JSX.Element {
   const presetEntries = Object.entries(presets);
 
-  // Find the preset ID that matches the current preset name
-  const currentPresetId = presetEntries.find(
-    ([, preset]) => preset.name === currentPreset
-  )?.[0] || '';
+  // Check if current preset is Starter Preset or a custom preset
+  const isStarterPreset = currentPreset === 'Starter Preset';
+  const currentPresetId = isStarterPreset 
+    ? 'starter' 
+    : presetEntries.find(([, preset]) => preset.name === currentPreset)?.[0] || '';
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
     const presetId = e.target.value;
-    if (presetId && presets[presetId]) {
+    if (presetId === 'starter') {
+      onSelect('starter', STARTER_PRESET);
+    } else if (presetId && presets[presetId]) {
       onSelect(presetId, presets[presetId]);
     }
   };
@@ -36,16 +42,18 @@ export function PresetSelector({
       className="
         bg-gray-800 border border-gray-700 rounded-lg
         px-3 py-2 md:px-4 md:py-3 text-sm md:text-base text-text-light
-        focus:outline-none focus:ring-2 focus:ring-ember-orange
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
         cursor-pointer min-w-[140px] md:min-w-[180px]
       "
     >
-      <option value="">Select Preset</option>
-      {presetEntries.map(([id, preset]) => (
-        <option key={id} value={id}>
-          {preset.name}
-        </option>
-      ))}
+      <option value="starter">Starter Preset</option>
+      {presetEntries
+        .filter(([id]) => id !== 'starter')
+        .map(([id, preset]) => (
+          <option key={id} value={id}>
+            {preset.name}
+          </option>
+        ))}
     </select>
   );
 }

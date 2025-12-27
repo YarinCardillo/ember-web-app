@@ -55,7 +55,7 @@ export function OutputStage({
             className="
               bg-gray-800 border border-gray-700 rounded
               px-3 py-2 text-text-light text-sm
-              focus:outline-none focus:ring-2 focus:ring-ember-orange
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
               cursor-pointer w-full
             "
           >
@@ -96,7 +96,7 @@ export function OutputStage({
             label="Master"
             value={outputGain}
             minDb={-96}
-            maxDb={6}
+            maxDb={12}
             centerDb={0}
             step={0.5}
             formatValue={formatGainValue}

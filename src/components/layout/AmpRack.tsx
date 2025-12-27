@@ -13,7 +13,6 @@ import { useAudioStore } from '../../store/useAudioStore';
 import AudioEngine from '../../audio/AudioEngine';
 import { InputNode } from '../../audio/nodes/InputNode';
 import { TapeSimNode } from '../../audio/nodes/TapeSimNode';
-import { PreampNode } from '../../audio/nodes/PreampNode';
 import { ToneStackNode } from '../../audio/nodes/ToneStackNode';
 import { TubeSaturationNode } from '../../audio/nodes/TubeSaturationNode';
 import { SpeakerSimNode } from '../../audio/nodes/SpeakerSimNode';
@@ -25,7 +24,6 @@ import type { PresetCollection } from '../../types/audio.types';
 interface AudioNodes {
   input: InputNode | null;
   tapeSim: TapeSimNode | null;
-  preamp: PreampNode | null;
   toneStack: ToneStackNode | null;
   saturation: TubeSaturationNode | null;
   speakerSim: SpeakerSimNode | null;
@@ -48,7 +46,6 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const audioNodesRef = useRef<AudioNodes>({
     input: null,
     tapeSim: null,
-    preamp: null,
     toneStack: null,
     saturation: null,
     speakerSim: null,
@@ -82,7 +79,6 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       const nodes: AudioNodes = {
         input: new InputNode(ctx),
         tapeSim: new TapeSimNode(ctx),
-        preamp: new PreampNode(ctx),
         toneStack: new ToneStackNode(ctx),
         saturation: new TubeSaturationNode(ctx),
         speakerSim: new SpeakerSimNode(ctx),
@@ -104,11 +100,8 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       // Input -> TapeSim
       nodes.input!.connect(nodes.tapeSim!.getInput());
       
-      // TapeSim -> Preamp
-      nodes.tapeSim!.connect(nodes.preamp!.getInput());
-      
-      // Preamp -> ToneStack
-      nodes.preamp!.connect(nodes.toneStack!.getInput());
+      // TapeSim -> ToneStack (no preamp - it was just a passthrough)
+      nodes.tapeSim!.connect(nodes.toneStack!.getInput());
       
       // ToneStack -> Saturation
       nodes.toneStack!.connect(nodes.saturation!.inputGain);
@@ -143,6 +136,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     try {
       console.log('Requesting audio input...');
       const deviceId = useAudioStore.getState().inputDeviceId || undefined;
+      
       await nodes.input.setInput(deviceId);
       console.log('Audio input started');
       
@@ -262,23 +256,19 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     const nodes = audioNodesRef.current;
     if (!isInitialized || !nodes.input || !nodes.output) return;
 
-    const engine = AudioEngine.getInstance();
-    const ctx = engine.getContext();
-
     if (bypassAll) {
       // Disconnect ALL nodes to prevent any signal bleeding
       nodes.input.getOutput().disconnect();
       nodes.tapeSim?.disconnect();
-      nodes.preamp?.disconnect();
       nodes.toneStack?.disconnect();
       nodes.saturation?.disconnect();
       nodes.speakerSim?.disconnect();
       
-      // TRUE BYPASS: Connect input directly to AudioContext destination
-      // This completely skips all processing including the output clipper
-      nodes.input.getOutput().connect(ctx.destination);
+      // BYPASS: Connect input directly to master gain (skip all processing but keep volume control)
+      // This skips clipper and all DSP, but master volume still works
+      nodes.input.getOutput().connect(nodes.output.getMasterGainNode());
       
-      console.log('Master bypass ENABLED - true dry signal to destination');
+      console.log('Master bypass ENABLED - dry signal through master gain');
     } else {
       // Disconnect bypass route
       nodes.input.getOutput().disconnect();
@@ -288,8 +278,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       
       // Reconnect normal signal chain
       nodes.input.connect(nodes.tapeSim!.getInput());
-      nodes.tapeSim!.connect(nodes.preamp!.getInput());
-      nodes.preamp!.connect(nodes.toneStack!.getInput());
+      nodes.tapeSim!.connect(nodes.toneStack!.getInput());
       nodes.toneStack!.connect(nodes.saturation!.inputGain);
       nodes.saturation!.connect(nodes.speakerSim!.getInput());
       nodes.speakerSim!.connect(nodes.output.getInput());
@@ -302,7 +291,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const bypassTapeSim = useAudioStore((state) => state.bypassTapeSim);
   useEffect(() => {
     const nodes = audioNodesRef.current;
-    if (!isInitialized || !nodes.tapeSim || !nodes.input || !nodes.preamp) return;
+    if (!isInitialized || !nodes.tapeSim || !nodes.input || !nodes.toneStack) return;
 
     // Update bypass state in TapeSimNode FIRST
     nodes.tapeSim.setBypass(bypassTapeSim);
@@ -316,7 +305,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       
       // Reconnect with updated routing (getInput() will return correct node based on bypass state)
       nodes.input.connect(nodes.tapeSim.getInput());
-      nodes.tapeSim.connect(nodes.preamp.getInput());
+      nodes.tapeSim.connect(nodes.toneStack.getInput());
       
       console.log(`Tape sim ${bypassTapeSim ? 'bypassed' : 'active'}`);
     }
@@ -345,6 +334,14 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
         const success = await engine.setOutputDevice(deviceId);
         if (!success) {
           setError('Failed to change output device');
+        } else {
+          // Reconnect output node to destination after sinkId change
+          // This ensures audio routes to the new output device in PWA context
+          const outputNode = audioNodesRef.current.output;
+          if (outputNode) {
+            const ctx = engine.getContext();
+            outputNode.reconnectToDestination(ctx);
+          }
         }
       } catch (err) {
         console.error('Failed to change output device:', err);

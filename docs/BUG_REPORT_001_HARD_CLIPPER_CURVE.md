@@ -147,4 +147,5 @@ private createHardClipCurve(): Float32Array {
 
 - [Web Audio API WaveShaperNode](https://developer.mozilla.org/en-US/docs/Web/API/WaveShaperNode)
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - OutputNode section
+- [ARCHITECTURE.md - PWA Cache Management](./ARCHITECTURE.md#pwa-cache-management) - How to force cache clear for users after deploying fixes
 

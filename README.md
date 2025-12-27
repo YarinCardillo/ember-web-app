@@ -161,7 +161,6 @@ ember-web-app/
 │   │   ├── nodes/                # DSP node wrappers
 │   │   │   ├── InputNode.ts
 │   │   │   ├── TapeSimNode.ts    # Wow/flutter, head bump, HF rolloff
-│   │   │   ├── PreampNode.ts
 │   │   │   ├── ToneStackNode.ts
 │   │   │   ├── TubeSaturationNode.ts
 │   │   │   ├── SpeakerSimNode.ts
@@ -223,20 +222,19 @@ ember-web-app/
 ## Signal Flow
 
 ```
-┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌──────────────────────────────────────────────┐   ┌─────────┐
-│ Virtual │──▶│  Input  │──▶│  Tape   │──▶│ Preamp  │──▶│  Tone   │──▶│  Tube   │──▶│        Output                                │──▶│Speakers │
-│  Cable  │   │ (Gain)  │   │  Sim    │   │(Linear) │   │  Stack  │   │Saturation│   │ PreGain→ClipperMeter→Clip→Master→DACMeter  │   │         │
-└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └──────────────────────────────────────────────┘   └─────────┘
+┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌──────────────────────────────────────────────┐   ┌─────────┐
+│ Virtual │──▶│  Input  │──▶│  Tape   │──▶│  Tone   │──▶│  Tube   │──▶│        Output                                │──▶│Speakers │
+│  Cable  │   │ (Gain)  │   │  Sim    │   │  Stack  │   │Saturation│   │ PreGain→ClipperMeter→Clip→Master→DACMeter  │   │         │
+└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └──────────────────────────────────────────────┘   └─────────┘
 ```
 
 ### Processing Stages
 
 1. **InputNode** - Captures audio via `getUserMedia()`, gain control, level metering
 2. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening
-3. **PreampNode** - Linear gain staging (no coloration)
-4. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
-5. **TubeSaturationNode** - AudioWorklet with tanh clipping, harmonic generation (Drive knob)
-6. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
+3. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
+4. **TubeSaturationNode** - AudioWorklet with tanh clipping, harmonic generation (Drive knob)
+5. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
 
 **Note:** `SpeakerSimNode` exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions for cabinet simulation via impulse response convolution.
 

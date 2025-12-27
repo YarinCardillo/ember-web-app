@@ -18,6 +18,25 @@
   * {
     @apply box-border;
   }
+
+  /* Remove focus outline for mouse clicks, keep for keyboard navigation (accessibility) */
+  *:focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Specifically target select elements which have stubborn browser styles */
+  select:focus:not(:focus-visible),
+  select:focus {
+    outline: none !important;
+    outline-width: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Chrome-specific fix for focus outline */
+  select:-webkit-direct-focus {
+    outline: none !important;
+  }
 }
 
 @layer utilities {

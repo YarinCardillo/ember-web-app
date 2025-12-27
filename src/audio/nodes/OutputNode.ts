@@ -120,4 +120,25 @@ export class OutputNode {
     // Output node is always connected to destination
     // This disconnects any input source
   }
+
+  /**
+   * Reconnect to AudioContext destination
+   * Call this after setSinkId to ensure audio routes to new output device
+   * This is needed because changing sinkId may not automatically re-route existing connections in some contexts (e.g., PWA)
+   */
+  reconnectToDestination(ctx: AudioContext): void {
+    // Disconnect from old destination
+    this.postGainAnalyser.disconnect();
+    
+    // Reconnect to (potentially new) destination
+    this.postGainAnalyser.connect(ctx.destination);
+  }
+
+  /**
+   * Get the master gain node (post-clipper) for bypass routing
+   * In bypass mode, connect directly here to skip all processing but keep master volume control
+   */
+  getMasterGainNode(): GainNode {
+    return this.gainNode;
+  }
 }

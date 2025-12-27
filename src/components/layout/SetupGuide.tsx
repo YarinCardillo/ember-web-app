@@ -22,6 +22,14 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
         </div>
 
         <div className="space-y-6 text-text-light">
+          <div className="bg-amber-900/30 border border-amber-700/50 p-4 rounded">
+            <p className="text-sm">
+              <strong className="text-amber-glow">⚠️ Browser Compatibility:</strong> Ember Amp Web is fully supported only on{' '}
+              <strong>Chromium-based browsers</strong> (Chrome, Edge, Brave, Opera).
+              Firefox and Safari have limited support (output device selection not available).
+            </p>
+          </div>
+
           <div>
             <h3 className="text-lg font-semibold text-amber-glow mb-2">
               Virtual Audio Cable Setup

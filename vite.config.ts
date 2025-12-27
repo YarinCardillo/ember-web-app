@@ -10,6 +10,12 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Force new SW to activate immediately without waiting
+        skipWaiting: true,
+        // Take control of all clients immediately
+        clientsClaim: true,
+        // Clean up old caches from previous versions
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

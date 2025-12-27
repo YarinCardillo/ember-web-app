@@ -50,7 +50,7 @@ export function InputStage({
           className="
             bg-gray-800 border border-gray-700 rounded
             px-3 py-2 text-text-light text-sm
-            focus:outline-none focus:ring-2 focus:ring-ember-orange
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
             cursor-pointer w-full
           "
         >
@@ -63,17 +63,19 @@ export function InputStage({
         </select>
       </div>
 
-      <div className="flex items-center gap-8">
-        <Knob
-          label="Gain"
-          value={inputGain}
-          min={-36}
-          max={36}
-          step={0.5}
-          unit=" dB"
-          onChange={(value) => setParameter('inputGain', value)}
-          defaultValue={-12}
-        />
+      <div className="flex items-start">
+        <div className="flex-1 flex justify-center" style={{ marginTop: '40px', marginRight: '20px' }}>
+          <Knob
+            label="Gain"
+            value={inputGain}
+            min={-36}
+            max={36}
+            step={0.5}
+            unit=" dB"
+            onChange={(value) => setParameter('inputGain', value)}
+            defaultValue={0}
+          />
+        </div>
         <VUMeter analyser={inputAnalyser} label="Input" />
       </div>
     </div>

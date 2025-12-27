@@ -2,7 +2,7 @@
  * VUMeter - Analog needle-style VU meter with arc scale
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { linearToDb } from '../../utils/dsp-math';
 
 interface VUMeterProps {
@@ -15,6 +15,10 @@ interface VUMeterProps {
 const METER_WIDTH = 200;
 const METER_HEIGHT = 110;
 
+// Peak bar configuration
+const PEAK_BAR_WIDTH = 3;
+const PEAK_BAR_MARGIN = 4; // from right edge
+
 export function VUMeter({
   analyser,
   label = 'Level',
@@ -22,8 +26,6 @@ export function VUMeter({
 }: VUMeterProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
-  const [peakHold, setPeakHold] = useState<number>(range.min);
-  const peakHoldTimeoutRef = useRef<number>();
   
   // Smooth needle position for analog feel
   const currentNeedleAngleRef = useRef<number>(-135 * (Math.PI / 180));
@@ -201,24 +203,17 @@ export function VUMeter({
 
       analyser.getFloatTimeDomainData(dataArray);
 
-      // Calculate RMS
+      // Calculate RMS and Peak
       let sum = 0;
+      let peak = 0;
       for (let i = 0; i < bufferLength; i++) {
         sum += dataArray[i] * dataArray[i];
+        const abs = Math.abs(dataArray[i]);
+        if (abs > peak) peak = abs;
       }
       const rmsLevel = Math.sqrt(sum / bufferLength);
       const rmsDb = linearToDb(rmsLevel);
-
-      // Update peak hold based on RMS (tracks where needle actually reaches)
-      if (rmsDb > peakHold) {
-        setPeakHold(rmsDb);
-        if (peakHoldTimeoutRef.current) {
-          clearTimeout(peakHoldTimeoutRef.current);
-        }
-        peakHoldTimeoutRef.current = window.setTimeout(() => {
-          setPeakHold((prev) => Math.max(prev - 1, range.min));
-        }, 1000);
-      }
+      const peakDb = linearToDb(peak);
 
       // Calculate target needle angle
       const normalizedRms = Math.max(0, Math.min(1, (rmsDb - range.min) / dbRange));
@@ -235,17 +230,6 @@ export function VUMeter({
       // Redraw everything
       ctx.clearRect(0, 0, width, height);
       drawStaticElements(ctx);
-
-      // Draw peak hold indicator (small dot) - aligned with needle tip
-      const peakHoldNorm = Math.max(0, Math.min(1, (peakHold - range.min) / dbRange));
-      const peakHoldAngle = startAngle + peakHoldNorm * angleRange;
-      const peakHoldX = centerX + Math.cos(peakHoldAngle) * (radius);
-      const peakHoldY = centerY + Math.sin(peakHoldAngle) * (radius);
-      
-      ctx.fillStyle = '#ff6b35';
-      ctx.beginPath();
-      ctx.arc(peakHoldX, peakHoldY, 3, 0, Math.PI * 2);
-      ctx.fill();
 
       // Draw needle shadow
       const needleAngle = currentNeedleAngleRef.current;
@@ -295,6 +279,31 @@ export function VUMeter({
       ctx.beginPath();
       ctx.arc(centerX, centerY, 2, 0, Math.PI * 2);
       ctx.fill();
+
+      // Draw peak bar on right side
+      const peakBarX = width - PEAK_BAR_MARGIN - PEAK_BAR_WIDTH;
+      const peakBarHeight = height - 8; // Leave margin top and bottom
+      const peakBarY = 4;
+      
+      // Background track
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(peakBarX, peakBarY, PEAK_BAR_WIDTH, peakBarHeight);
+      
+      // Calculate fill height based on peak level
+      const normalizedPeak = Math.max(0, Math.min(1, (peakDb - range.min) / dbRange));
+      const fillHeight = normalizedPeak * peakBarHeight;
+      
+      // Determine color based on level
+      let peakColor = '#22c55e'; // Green
+      if (peakDb > 0) {
+        peakColor = '#ef4444'; // Red
+      } else if (peakDb > -12) {
+        peakColor = '#eab308'; // Yellow
+      }
+      
+      // Draw filled portion (from bottom up)
+      ctx.fillStyle = peakColor;
+      ctx.fillRect(peakBarX, peakBarY + peakBarHeight - fillHeight, PEAK_BAR_WIDTH, fillHeight);
     };
 
     draw();
@@ -303,27 +312,13 @@ export function VUMeter({
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      if (peakHoldTimeoutRef.current) {
-        clearTimeout(peakHoldTimeoutRef.current);
-      }
     };
-  }, [analyser, range, peakHold]);
-
-  // Reset peak hold on click (hidden feature)
-  const handleResetPeak = (): void => {
-    setPeakHold(range.min);
-    if (peakHoldTimeoutRef.current) {
-      clearTimeout(peakHoldTimeoutRef.current);
-    }
-  };
+  }, [analyser, range]);
 
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="text-xs text-text-light opacity-80">{label}</div>
-      <div 
-        className="vu-glow bg-dark-bg border border-gray-700 rounded p-2"
-        onClick={handleResetPeak}
-      >
+      <div className="vu-glow bg-dark-bg border border-gray-700 rounded p-2">
         <canvas
           ref={canvasRef}
           width={METER_WIDTH}
@@ -331,9 +326,6 @@ export function VUMeter({
           style={{ width: METER_WIDTH, height: METER_HEIGHT }}
           className="block"
         />
-      </div>
-      <div className="text-xs font-mono text-amber-glow min-w-[70px] text-center">
-        {peakHold > range.min ? `${peakHold.toFixed(1)} dB` : '---'}
       </div>
     </div>
   );

@@ -48,7 +48,7 @@ class TapeWobbleProcessor extends AudioWorkletProcessor {
     // Dynamic inter-channel delay variation (0.1-0.5ms for analog feel)
     // At 48kHz: 0.3ms = ~14 samples
     // This adds stereo width by varying L/R timing independently
-    this.stereoDelayDepth = 3; // samples (~0.06ms at 48kHz)
+    this.stereoDelayDepth = 3; // samples
   }
 
   /**

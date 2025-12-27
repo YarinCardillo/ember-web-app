@@ -40,7 +40,7 @@ Ember Amp Web is a client-side audio processing application built entirely with 
 │  │  ┌───────────────────────────────────────────────▼──────────┐ │  │
 │  │  │                   Web Audio API                           │ │  │
 │  │  │  ┌─────┐ ┌────┐ ┌─────┐ ┌────┐ ┌─────┐ ┌─────┐ ┌──────┐│ │  │
-│  │  │  │Input│→│Tape│→│Preamp│→│Tone│→│Satur│→│Spkr │→│Output││ │  │
+│  │  │  │Input│→│Tape│→│Tone│→│Satur│→│Spkr │→│Output│       │ │  │
 │  │  │  └─────┘ └────┘ └─────┘ └────┘ └─────┘ └─────┘ └──────┘│ │  │
 │  │  └──────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────┘  │
@@ -183,35 +183,6 @@ Input → HeadBumpFilter → HFRolloffFilter → WowFlutterWorklet → Output
 - Toggle via TapeButton in InputStage (on/off only)
 
 ---
-
-### PreampNode
-
-Provides gain staging with linear passthrough.
-
-**Web Audio Nodes Used:**
-- `GainNode` - Gain control
-- `WaveShaperNode` - Linear passthrough (no coloration)
-
-```typescript
-class PreampNode {
-  constructor(ctx: AudioContext) {
-    this.gainNode = ctx.createGain();
-    this.waveShaperNode = ctx.createWaveShaper();
-    
-    // Linear passthrough - no soft clipping
-    // Saturation is controlled explicitly via TubeSaturationNode
-    const curve = new Float32Array(65537);
-    for (let i = 0; i < 65537; i++) {
-      const x = (i - 32768) / 32768;
-      curve[i] = x; // Linear, no coloration
-    }
-    this.waveShaperNode.curve = curve;
-    this.waveShaperNode.oversample = '4x';
-  }
-}
-```
-
-**Design Decision:** The preamp uses a linear passthrough rather than soft clipping. This gives users full control over saturation via the dedicated TubeSaturationNode (Drive knob). Since virtual audio cables can deliver line-level signals at 0dB or higher, automatic clipping in the preamp would cause unwanted distortion with no way to disable it.
 
 ### ToneStackNode
 
@@ -523,7 +494,7 @@ When bypassAll = true:
   (all processing nodes disconnected)
 
 When bypassAll = false:
-  InputNode → TapeSim → Preamp → ToneStack → Saturation → OutputNode → destination
+  InputNode → TapeSim → ToneStack → Saturation → OutputNode → destination
   (Note: SpeakerSimNode exists but is bypassed/not used)
 ```
 
@@ -605,6 +576,84 @@ if (ctx.state === 'suspended') {
   await ctx.resume();
 }
 ```
+
+---
+
+## PWA Cache Management
+
+### The Problem
+
+PWAs cache JavaScript, CSS, and HTML via Service Workers for offline functionality. When deploying breaking changes, users with stale caches may experience bugs (e.g., audio not working) until their cache is refreshed.
+
+### Solution: Versioned Cache Clearing
+
+The app implements a one-time cache clearing mechanism in `src/main.tsx`:
+
+```typescript
+// Increment this when deploying a fix for cache-related bugs
+const CACHE_VERSION = 'v1';
+const CACHE_CLEARED_KEY = `ember-amp-cache-cleared-${CACHE_VERSION}`;
+
+async function clearStaleCaches(): Promise<void> {
+  if (localStorage.getItem(CACHE_CLEARED_KEY)) {
+    return; // Already cleared for this version
+  }
+
+  // Clear all caches
+  const cacheNames = await caches.keys();
+  await Promise.all(cacheNames.map(name => caches.delete(name)));
+
+  // Unregister service workers
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(registrations.map(reg => reg.unregister()));
+
+  // Mark as cleared and reload
+  localStorage.setItem(CACHE_CLEARED_KEY, 'true');
+  window.location.reload();
+}
+```
+
+### When to Increment CACHE_VERSION
+
+Increment `CACHE_VERSION` (e.g., `'v1'` → `'v2'`) when:
+
+1. **Fixing a bug that affects cached users** - e.g., audio routing issues in PWA
+2. **Changing Service Worker configuration** - e.g., modifying `vite.config.ts` workbox settings
+3. **Breaking changes to cached assets** - e.g., renaming worklet files
+
+### How It Works
+
+1. User opens the PWA with stale cache
+2. Old SW eventually downloads new JS in background
+3. `skipWaiting: true` (in `vite.config.ts`) forces new SW activation
+4. On next page load, new `main.tsx` runs
+5. Cache version check fails → all caches cleared, SW unregistered
+6. Automatic reload → fresh app loads
+7. Flag saved in localStorage → won't repeat
+
+### Service Worker Configuration
+
+The `vite.config.ts` includes aggressive cache invalidation settings:
+
+```typescript
+VitePWA({
+  registerType: 'autoUpdate',
+  workbox: {
+    skipWaiting: true,           // Activate new SW immediately
+    clientsClaim: true,          // Control all clients immediately
+    cleanupOutdatedCaches: true, // Remove old cache versions
+    // ...
+  }
+})
+```
+
+### Developer Checklist for Cache-Related Fixes
+
+- [ ] Fix the underlying bug
+- [ ] Increment `CACHE_VERSION` in `src/main.tsx`
+- [ ] Run `npm run build`
+- [ ] Deploy to production
+- [ ] Users will auto-clear cache on next app open
 
 ---
 

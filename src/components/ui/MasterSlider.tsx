@@ -104,7 +104,7 @@ export function MasterSlider({
           className="
             w-full h-2 appearance-none cursor-pointer
             bg-gray-700 rounded-full
-            focus:outline-none focus:ring-2 focus:ring-ember-orange
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
             [&::-webkit-slider-thumb]:appearance-none
             [&::-webkit-slider-thumb]:w-4
             [&::-webkit-slider-thumb]:h-4

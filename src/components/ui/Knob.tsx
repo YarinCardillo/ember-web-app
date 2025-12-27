@@ -124,7 +124,7 @@ export function Knob({
           cursor-pointer select-none
           transition-all duration-150
           ${isDragging ? 'knob-glow-active scale-105' : 'knob-glow'}
-          focus:outline-none focus:ring-2 focus:ring-ember-orange
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
         `}
         style={{ transform: `rotate(${rotation}deg)` }}
         onMouseDown={handleMouseDown}

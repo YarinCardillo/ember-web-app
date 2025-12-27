@@ -5,6 +5,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { PresetConfig, AudioDeviceInfo } from '../types/audio.types';
+import presets from '../audio/presets/amp-presets.json';
+
+const STARTER_PRESET = presets.starter as PresetConfig;
 
 interface AudioState {
   // Status
@@ -49,28 +52,28 @@ interface AudioState {
 export const useAudioStore = create<AudioState>()(
   persist(
     (set) => ({
-      // Initial state
+      // Initial state - loaded from STARTER_PRESET (single source of truth)
       isInitialized: false,
       isRunning: false,
       inputDeviceId: null,
       outputDeviceId: null,
       availableDevices: [],
-      inputGain: -6,
-      bass: 0,
-      mid: 0,
-      treble: 0,
-      presence: 0,
-      drive: 0.3,
-      harmonics: 0.5,
-      saturationMix: 0.6,
-      preGain: 0,
-      outputGain: 0,
+      inputGain: STARTER_PRESET.inputGain ?? 0,
+      bass: STARTER_PRESET.bass,
+      mid: STARTER_PRESET.mid,
+      treble: STARTER_PRESET.treble,
+      presence: STARTER_PRESET.presence,
+      drive: STARTER_PRESET.drive,
+      harmonics: STARTER_PRESET.harmonics ?? 0.4,
+      saturationMix: STARTER_PRESET.saturationMix ?? 0.6,
+      preGain: STARTER_PRESET.preGain ?? 0,
+      outputGain: 0,  // Master volume starts at 0, not controlled by presets
       bypassAll: false,
-      bypassTapeSim: false, // Active by default
-      bypassToneStack: false,
-      bypassSaturation: false,
-      bypassSpeakerSim: true, // Bypassed by default (no IR loaded)
-      currentPreset: null,
+      bypassTapeSim: STARTER_PRESET.bypassTapeSim ?? false,
+      bypassToneStack: STARTER_PRESET.bypassToneStack ?? false,
+      bypassSaturation: STARTER_PRESET.bypassSaturation ?? false,
+      bypassSpeakerSim: true,  // Speaker sim always bypassed by default (no IR)
+      currentPreset: STARTER_PRESET.name,
 
       // Actions
       setParameter: (param, value) => {
@@ -88,7 +91,7 @@ export const useAudioStore = create<AudioState>()(
           saturationMix: preset.saturationMix ?? 1.0,
           inputGain: preset.inputGain ?? -6,
           preGain: preset.preGain ?? 0,
-          outputGain: preset.outputGain ?? 0,
+          // outputGain is NOT modified by presets - user's master volume setting is preserved
           // Module activation (default to active if not specified)
           bypassTapeSim: preset.bypassTapeSim ?? true, // Default to inactive in presets
           bypassToneStack: preset.bypassToneStack ?? false,

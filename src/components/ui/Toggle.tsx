@@ -18,7 +18,7 @@ export function Toggle({ label, checked, onChange }: ToggleProps): JSX.Element {
         className={`
           relative w-12 h-6 rounded-full
           transition-all duration-300
-          focus:outline-none focus:ring-2 focus:ring-ember-orange
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
           ${checked ? 'bg-ember-orange' : 'bg-gray-700'}
         `}
         role="switch"
