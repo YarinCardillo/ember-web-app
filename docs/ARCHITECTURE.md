@@ -29,19 +29,19 @@ Ember Amp Web is a client-side audio processing application built entirely with 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                              Browser                                 │
+│                              Browser                                │
 │  ┌───────────────────────────────────────────────────────────────┐  │
-│  │                         React App                              │  │
-│  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐   │  │
+│  │                         React App                             │  │
+│  │  ┌───────────── ┐    ┌─────────────┐    ┌─────────────────┐   │  │
 │  │  │ UI Components│───▶│Zustand Store│───▶│  Audio Engine   │   │  │
 │  │  │ (Knobs, VU)  │    │ (Parameters)│    │  (Singleton)    │   │  │
-│  │  └─────────────┘    └─────────────┘    └────────┬────────┘   │  │
+│  │  └───────────── ┘    └─────────────┘    └────────┬────────┘   │  │
 │  │                                                  │            │  │
 │  │  ┌───────────────────────────────────────────────▼──────────┐ │  │
-│  │  │                   Web Audio API                           │ │  │
-│  │  │  ┌─────┐ ┌────┐ ┌─────┐ ┌────┐ ┌─────┐ ┌─────┐ ┌──────┐│ │  │
-│  │  │  │Input│→│Tape│→│Tone│→│Satur│→│Spkr │→│Output│       │ │  │
-│  │  │  └─────┘ └────┘ └─────┘ └────┘ └─────┘ └─────┘ └──────┘│ │  │
+│  │  │                      Web Audio API                       │ │  │
+│  │  │       ┌─────┐ ┌────┐ ┌─────┐ ┌────┐ ┌─────┐ ┌─────┐      │ │  │
+│  │  │       │Input│→│Tape│→│ EQ  │→│Tube│→│Clip │→│ Out │      │ │  │
+│  │  │       └─────┘ └────┘ └─────┘ └────┘ └─────┘ └─────┘      │ │  │
 │  │  └──────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
@@ -159,24 +159,32 @@ class InputNode {
 
 ### TapeSimNode
 
-Analog tape simulation with wow/flutter pitch modulation, head bump EQ, and high-frequency rolloff.
+Analog tape simulation with wow/flutter pitch modulation, head bump EQ, high-frequency rolloff, and odd harmonic saturation.
 
 **Signal Chain Inside TapeSimNode:**
 ```
-Input → HeadBumpFilter → HFRolloffFilter → WowFlutterWorklet → Output
-           (peaking)        (lowpass)        (pitch mod)
+Input → HeadBumpFilter → HFRolloffFilter → WowFlutterWorklet → OddHarmonicSaturator → Output
+           (peaking)        (lowpass)        (pitch mod)          (3rd,5th,7th)
 ```
 
 **Web Audio Nodes Used:**
 - `BiquadFilterNode` (peaking) - Head bump at 80Hz, +2dB
 - `BiquadFilterNode` (lowpass) - HF rolloff at 15kHz
 - `AudioWorkletNode` - tape-wobble processor
+- `WaveShaperNode` - Odd harmonic saturation (3rd, 5th, 7th harmonics with 1/n³ decay)
 
 **AudioWorklet Features (tape-wobble.worklet.js):**
 - **Wow LFO**: ~0.5Hz, ±4 cents pitch modulation (slow tape speed variation)
 - **Flutter LFO**: ~7Hz, ±1.5 cents (faster mechanical vibration)
 - **Drift LFO**: ~0.1Hz, ±1 cent (slow organic drift)
-- **Stereo Delay LFO**: ~0.3Hz, ±0.3ms inter-channel delay variation (creates stereo width)
+- **Stereo Delay LFO**: ~0.1Hz, ±3 samples inter-channel delay variation (creates stereo width)
+
+**Odd Harmonic Saturation:**
+- Adds 3rd, 5th, 7th harmonics with 1/n³ decay law
+- Coefficients: 3rd = 1/27, 5th = 1/125, 7th = 1/343
+- Always active at 100% intensity (no user control)
+- Creates symmetric "tape" distortion characteristic
+- Applied via WaveShaperNode with 4x oversampling
 
 **Fixed Parameters (no user controls):**
 - All tape characteristics are fixed for authentic analog feel
@@ -190,12 +198,12 @@ Input → HeadBumpFilter → HFRolloffFilter → WowFlutterWorklet → Output
 
 **Frequency Bands:**
 
-| Band | Type | Frequency | Range |
-|------|------|-----------|-------|
-| Bass | Low Shelf | 100 Hz | ±12 dB |
-| Mid | Peaking | 1 kHz | ±12 dB |
-| Treble | Peaking | 4 kHz | ±12 dB |
-| Presence | High Shelf | 8 kHz | ±12 dB |
+| Band     | Type       | Frequency | Range  |
+|----------|------------|-----------|--------|
+| Bass     | Low Shelf  | 75 Hz     | ±12 dB |
+| Mid      | Peaking    | 800 Hz    | ±12 dB |
+| Treble   | Peaking    | 4 kHz     | ±12 dB |
+| Presence | High Shelf | 11 kHz    | ±12 dB |
 
 **Web Audio Nodes Used:**
 - 4x `BiquadFilterNode` connected in series
@@ -206,7 +214,7 @@ Custom DSP processing via AudioWorklet for tube-style harmonic distortion.
 
 **AudioWorklet Parameters:**
 - `drive` (0-1) - Saturation amount
-- `harmonics` (0-1) - Harmonic generation intensity
+- `harmonics` (0-1) - Even harmonic generation intensity
 - `mix` (0-1) - Dry/wet blend
 
 **Algorithm:**
@@ -218,16 +226,24 @@ const saturate = (sample, drive) => {
   return Math.tanh(k * sample) / Math.tanh(k);
 };
 
-// 2nd harmonic (even) - warm character
-const addSecondHarmonic = (sample, amount) => {
-  return sample + amount * 0.3 * sample * Math.abs(sample);
-};
-
-// 3rd harmonic (odd) - tube character
-const addThirdHarmonic = (sample, amount) => {
-  return sample + amount * 0.2 * Math.pow(sample, 3);
+// Even harmonics (2nd, 4th, 6th) with 1/n² decay
+const addEvenHarmonics = (x, amount) => {
+  const harmonics = [2, 4, 6];
+  let result = x;
+  for (const n of harmonics) {
+    const coeff = 1.0 / (n * n); // 1/n² decay
+    result += amount * coeff * x * Math.pow(Math.abs(x), n - 1);
+  }
+  return result;
 };
 ```
+
+**Harmonic Coefficients:**
+- 2nd harmonic: 1/4 = 0.25
+- 4th harmonic: 1/16 = 0.0625
+- 6th harmonic: 1/36 = 0.0278
+
+Creates asymmetric "warm" distortion typical of tube amplifiers.
 
 ### SpeakerSimNode
 
@@ -591,7 +607,7 @@ The app implements a one-time cache clearing mechanism in `src/main.tsx`:
 
 ```typescript
 // Increment this when deploying a fix for cache-related bugs
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_CLEARED_KEY = `ember-amp-cache-cleared-${CACHE_VERSION}`;
 
 async function clearStaleCaches(): Promise<void> {
@@ -668,3 +684,7 @@ VitePWA({
 ---
 
 *Last updated: December 2024*
+
+**Browser Compatibility:**
+- **Chrome/Edge (Chromium-based):** Full support including output device selection
+- **Firefox/Safari:** Limited support, output device selection not available (uses system default)

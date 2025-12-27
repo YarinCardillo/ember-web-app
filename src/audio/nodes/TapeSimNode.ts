@@ -1,13 +1,14 @@
 /**
- * TapeSimNode - Analog tape simulation with wow/flutter, head bump, and HF rolloff
+ * TapeSimNode - Analog tape simulation with wow/flutter, head bump, HF rolloff, and odd harmonic saturation
  * 
- * Signal chain: Input → HeadBump → HFRolloff → WowFlutter → Output
+ * Signal chain: Input → HeadBump → HFRolloff → WowFlutter → OddHarmonicSaturation → Output
  */
 
 export class TapeSimNode {
   private headBumpFilter: BiquadFilterNode;
   private hfRolloffFilter: BiquadFilterNode;
   private wobbleWorklet: AudioWorkletNode | null = null;
+  private oddHarmonicSaturator: WaveShaperNode;
   private outputGain: GainNode;
   private bypassGain: GainNode;
   private ctx: AudioContext;
@@ -29,6 +30,12 @@ export class TapeSimNode {
     this.hfRolloffFilter.type = 'lowpass';
     this.hfRolloffFilter.frequency.value = 15000; // Hz - subtle rolloff
     this.hfRolloffFilter.Q.value = 0.5;
+    
+    // Odd harmonic saturation: adds 3rd harmonic (tube character) at 100% intensity
+    // Formula: output = input + 0.2 * input^3
+    this.oddHarmonicSaturator = ctx.createWaveShaper();
+    this.oddHarmonicSaturator.curve = this.createOddHarmonicCurve() as Float32Array<ArrayBuffer>;
+    this.oddHarmonicSaturator.oversample = '4x'; // Reduce aliasing
     
     // Output gain (stereo processing handled in worklet)
     this.outputGain = ctx.createGain();
@@ -53,16 +60,18 @@ export class TapeSimNode {
       this.wobbleWorklet = new AudioWorkletNode(this.ctx, 'tape-wobble');
       
       // Complete the signal chain
-      // HeadBump → HFRolloff → WowFlutter → Output
+      // HeadBump → HFRolloff → WowFlutter → OddHarmonicSaturation → Output
       this.hfRolloffFilter.connect(this.wobbleWorklet);
-      this.wobbleWorklet.connect(this.outputGain);
+      this.wobbleWorklet.connect(this.oddHarmonicSaturator);
+      this.oddHarmonicSaturator.connect(this.outputGain);
       
       this.isInitialized = true;
       console.log('TapeSimNode initialized successfully with wow/flutter');
     } catch (error) {
       console.error('Failed to create TapeWobble AudioWorkletNode:', error);
-      // Fallback: connect filters directly (no wow/flutter)
-      this.hfRolloffFilter.connect(this.outputGain);
+      // Fallback: connect filters + saturation directly (no wow/flutter)
+      this.hfRolloffFilter.connect(this.oddHarmonicSaturator);
+      this.oddHarmonicSaturator.connect(this.outputGain);
       this.isInitialized = true;
       console.log('TapeSimNode initialized with fallback (filters only)');
     }
@@ -107,6 +116,38 @@ export class TapeSimNode {
   disconnect(): void {
     this.bypassGain.disconnect();
     this.outputGain.disconnect();
+  }
+
+  /**
+   * Create WaveShaper curve that adds odd harmonics with 1/n³ decay
+   * Odd harmonics (3rd, 5th, 7th) create symmetric "tape" distortion
+   * Always applied at 100% intensity (no user control)
+   */
+  private createOddHarmonicCurve(): Float32Array {
+    const samples = 65537; // Odd number for symmetry, high resolution
+    const curve = new Float32Array(samples);
+    
+    const baseCoeff = 1.0; // Base coefficient
+    const harmonics = [3, 5, 7]; // Odd harmonic orders
+    
+    for (let i = 0; i < samples; i++) {
+      // Map index to -1.0 to +1.0 range (standard Web Audio input range)
+      const x = (i / (samples - 1)) * 2 - 1;
+      
+      let y = x; // Start with fundamental
+      
+      // Add odd harmonics with 1/n³ decay
+      for (const n of harmonics) {
+        const coeff = baseCoeff / (n * n * n); // 1/n³ decay
+        // Odd harmonics: symmetric, use x^n
+        y += coeff * Math.pow(x, n);
+      }
+      
+      // Soft limit using tanh to prevent harsh clipping
+      curve[i] = Math.tanh(y);
+    }
+    
+    return curve;
   }
 }
 

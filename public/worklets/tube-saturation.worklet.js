@@ -51,13 +51,25 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
   }
 
   /**
-   * Add even harmonics (2nd) - "warm" character
-   * @param {number} sample - Input sample
-   * @param {number} amount - Harmonic amount (0-1)
-   * @returns {number} Sample with 2nd harmonic
+   * Add even harmonics (2nd, 4th, 6th) with 1/n² decay
+   * Even harmonics create asymmetric "warm" distortion
+   * @param {number} x - Input sample
+   * @param {number} amount - Harmonic intensity (0-1)
+   * @returns {number} Sample with even harmonics
    */
-  addSecondHarmonic(sample, amount) {
-    return sample + amount * 0.45 * sample * Math.abs(sample);
+  addEvenHarmonics(x, amount) {
+    const baseCoeff = 1.0; // Base coefficient, scaled by amount
+    const harmonics = [2, 4, 6]; // Even harmonic orders
+    
+    let result = x;
+    for (const n of harmonics) {
+      // 1/n² decay for even harmonics
+      const coeff = baseCoeff / (n * n);
+      // Even harmonics: asymmetric, use x * |x|^(n-1)
+      result += amount * coeff * x * Math.pow(Math.abs(x), n - 1);
+    }
+    
+    return result;
   }
 
   process(inputs, outputs, parameters) {
@@ -88,10 +100,9 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
         // Apply saturation
         let wetSample = this.saturate(drySample, driveValue);
 
-        // Add harmonics if enabled (only even harmonics)
+        // Add even harmonics if enabled (2nd, 4th, 6th with 1/n² decay)
         if (harmonicsValue > 0.01) {
-          // 2nd harmonic (even) - warm character
-          wetSample = this.addSecondHarmonic(wetSample, harmonicsValue);
+          wetSample = this.addEvenHarmonics(wetSample, harmonicsValue);
         }
 
         // Soft limit to prevent harsh clipping

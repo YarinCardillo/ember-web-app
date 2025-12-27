@@ -9,8 +9,8 @@
 
 Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube amplifiers directly in your web browser. Route your system audio (Spotify, YouTube, games, etc.) through a virtual audio cable, and the app applies real-time DSP processing including:
 
-- **Tape Simulation** - Wow/flutter, head bump, HF rolloff, stereo widening (AudioWorklet)
-- **Tube Saturation** - Analog-modeled soft clipping with harmonic generation
+- **Tape Simulation** - Wow/flutter, head bump, HF rolloff, stereo widening, odd harmonic saturation (3rd, 5th, 7th harmonics with 1/n³ decay)
+- **Tube Saturation** - Analog-modeled soft clipping with even harmonic generation (2nd, 4th, 6th harmonics with 1/n² decay)
 - **4-Band EQ** - Bass, Mid, Treble, Presence (fixed frequency parametric)
 - **Hard Clipper** - 0dB output protection circuit
 - **Master Bypass** - True bypass for instant A/B comparison
@@ -230,10 +230,10 @@ ember-web-app/
 
 ### Processing Stages
 
-1. **InputNode** - Captures audio via `getUserMedia()`, gain control, level metering
-2. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening
+1. **InputNode** - Captures audio via `getUserMedia()`, gain control (-36 to +36 dB), level metering (RMS VU meter + peak bar)
+2. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening, odd harmonic saturation (3rd, 5th, 7th with 1/n³ decay)
 3. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
-4. **TubeSaturationNode** - AudioWorklet with tanh clipping, harmonic generation (Drive knob)
+4. **TubeSaturationNode** - AudioWorklet with tanh clipping, even harmonic generation (2nd, 4th, 6th with 1/n² decay), controllable via Drive and Harmonics knobs
 5. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
 
 **Note:** `SpeakerSimNode` exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions for cabinet simulation via impulse response convolution.
@@ -244,6 +244,7 @@ ember-web-app/
 
 | Preset | Description |
 |--------|-------------|
+| **Starter Preset** | Neutral settings, all modules on (default state) |
 | **Vintage Marantz** | Warm 70s receiver sound |
 | **Tube Warm** | Rich tube amplifier character |
 | **Modern Clean** | Transparent with subtle enhancement |
@@ -283,12 +284,15 @@ npm run lint     # Run ESLint
 
 | Browser | Support | Notes |
 |---------|---------|-------|
-| Chrome 110+ | Full support | Output device selection available |
-| Edge 110+ | Full support | Output device selection available |
-| Firefox 76+ | Partial | No output device selection |
-| Safari 14.1+ | Partial | No output device selection |
+| Chrome 110+ | ✅ Full support | Output device selection available |
+| Edge 110+ | ✅ Full support | Output device selection available |
+| Brave, Opera | ✅ Full support | Chromium-based, output device selection available |
+| Firefox 76+ | ⚠️ Partial | No output device selection (uses system default) |
+| Safari 14.1+ | ⚠️ Partial | No output device selection (uses system default) |
 
-Requires AudioWorklet support for tube saturation processing.
+**Recommended:** Use Chromium-based browsers (Chrome, Edge, Brave, Opera) for full functionality.
+
+Requires AudioWorklet support for custom DSP processing.
 
 ---
 
