@@ -1,5 +1,5 @@
 /**
- * PreampNode - Gain staging with soft clip protection
+ * PreampNode - Gain staging with soft clip protection. Currently unused in the signal chain.
  */
 
 import { dbToLinear } from '../../utils/dsp-math';
@@ -12,16 +12,17 @@ export class PreampNode {
     this.gainNode = ctx.createGain();
     this.waveShaperNode = ctx.createWaveShaper();
 
-    // Soft clipping curve for protection
+    // Linear passthrough curve (no clipping in preamp - clipping handled by OutputNode)
+    // Using WaveShaper with linear curve allows future soft-clip option if needed
     const curve = new Float32Array(65537);
     for (let i = 0; i < 65537; i++) {
       const x = (i - 32768) / 32768;
-      // Soft clipping using tanh
-      curve[i] = Math.tanh(x * 0.8) * 0.8;
+      // Linear passthrough: output = input
+      curve[i] = x;
     }
     this.waveShaperNode.curve = curve;
-    this.waveShaperNode.oversample = '4x';
-
+    this.waveShaperNode.oversample = 'none'; // No oversampling needed for linear
+    
     // Connect gain to waveshaper
     this.gainNode.connect(this.waveShaperNode);
   }

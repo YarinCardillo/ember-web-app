@@ -120,6 +120,14 @@ Beautiful needle-style VU meters with:
 - Peak hold indicator (click to reset)
 - dB scale markings
 
+### LED Output Meters
+
+Two horizontal LED-bar meters in the output section:
+- **Clipper Meter** (pre-clipper): Shows peak level entering the hard clipper, warns when clipping occurs
+- **DAC Out Meter** (post-gain): Shows peak level after Master gain, warns when signal exceeds 0dB (potential DAC clipping)
+- Both meters feature 18 circular LED segments with color-coded zones (green → yellow → red)
+- Peak mode measurement for accurate transient detection
+
 ### Master Bypass
 
 True bypass mode that routes audio directly from input to output, bypassing all processing. Perfect for instant A/B comparisons.
@@ -165,6 +173,8 @@ ember-web-app/
 │   │   ├── ui/                   # Reusable UI components
 │   │   │   ├── Knob.tsx
 │   │   │   ├── VUMeter.tsx       # Analog needle meter
+│   │   │   ├── LEDMeter.tsx      # Horizontal LED-bar meter (peak/RMS modes)
+│   │   │   ├── MasterSlider.tsx  # Non-linear master volume slider
 │   │   │   ├── Toggle.tsx
 │   │   │   ├── TapeButton.tsx    # Animated tape sim toggle
 │   │   │   ├── Slider.tsx
@@ -213,20 +223,20 @@ ember-web-app/
 ## Signal Flow
 
 ```
-┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐
-│ Virtual │──▶│  Input  │──▶│  Tape   │──▶│ Preamp  │──▶│  Tone   │──▶│  Tube   │──▶│ Output  │──▶│Speakers │
-│  Cable  │   │ (Gain)  │   │  Sim    │   │ (Gain)  │   │  Stack  │   │Saturation│   │(+Clipper)│   │         │
-└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘
+┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌──────────────────────────────────────────────┐   ┌─────────┐
+│ Virtual │──▶│  Input  │──▶│  Tape   │──▶│ Preamp  │──▶│  Tone   │──▶│  Tube   │──▶│        Output                                │──▶│Speakers │
+│  Cable  │   │ (Gain)  │   │  Sim    │   │(Linear) │   │  Stack  │   │Saturation│   │ PreGain→ClipperMeter→Clip→Master→DACMeter  │   │         │
+└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └──────────────────────────────────────────────┘   └─────────┘
 ```
 
 ### Processing Stages
 
 1. **InputNode** - Captures audio via `getUserMedia()`, gain control, level metering
 2. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening
-3. **PreampNode** - Gain staging with soft-clip protection
+3. **PreampNode** - Linear gain staging (no coloration)
 4. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
-5. **TubeSaturationNode** - AudioWorklet with tanh clipping, harmonic generation
-6. **OutputNode** - Final gain, hard clipper (0dB), output metering
+5. **TubeSaturationNode** - AudioWorklet with tanh clipping, harmonic generation (Drive knob)
+6. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
 
 **Note:** `SpeakerSimNode` exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions for cabinet simulation via impulse response convolution.
 

@@ -186,11 +186,11 @@ Input → HeadBumpFilter → HFRolloffFilter → WowFlutterWorklet → Output
 
 ### PreampNode
 
-Provides gain staging with soft-clip protection.
+Provides gain staging with linear passthrough.
 
 **Web Audio Nodes Used:**
 - `GainNode` - Gain control
-- `WaveShaperNode` - Soft clipping curve
+- `WaveShaperNode` - Linear passthrough (no coloration)
 
 ```typescript
 class PreampNode {
@@ -198,17 +198,20 @@ class PreampNode {
     this.gainNode = ctx.createGain();
     this.waveShaperNode = ctx.createWaveShaper();
     
-    // Create soft-clipping curve using tanh
+    // Linear passthrough - no soft clipping
+    // Saturation is controlled explicitly via TubeSaturationNode
     const curve = new Float32Array(65537);
     for (let i = 0; i < 65537; i++) {
       const x = (i - 32768) / 32768;
-      curve[i] = Math.tanh(x * 0.8) * 0.8;
+      curve[i] = x; // Linear, no coloration
     }
     this.waveShaperNode.curve = curve;
     this.waveShaperNode.oversample = '4x';
   }
 }
 ```
+
+**Design Decision:** The preamp uses a linear passthrough rather than soft clipping. This gives users full control over saturation via the dedicated TubeSaturationNode (Drive knob). Since virtual audio cables can deliver line-level signals at 0dB or higher, automatic clipping in the preamp would cause unwanted distortion with no way to disable it.
 
 ### ToneStackNode
 
@@ -279,25 +282,67 @@ async loadImpulseResponse(url: string): Promise<void> {
 
 ### OutputNode
 
-Final gain stage with hard clipper and output metering.
+Final output stage with pre-clipper gain control, pre-clipper metering, hard clipper, master volume, and post-gain metering.
+
+**Signal Chain Inside OutputNode:**
+```
+Input → PreGainNode → PreClipperAnalyser → ClipperNode → GainNode (Master) → PostGainAnalyser → destination
+```
 
 **Web Audio Nodes Used:**
-- `GainNode` - Output level control
+- `GainNode` (preGain) - Pre-clipper gain control (-36 to +36 dB, 0.1 dB steps)
+- `AnalyserNode` (preClipperAnalyser) - "Clipper" meter, shows level entering clipper (peak mode)
 - `WaveShaperNode` - Hard clipper (0dB ceiling with 4x oversampling)
-- `AnalyserNode` - VU metering
+- `GainNode` (master) - Master volume control (-96 to +6 dB, 0 dB visually centered, non-linear)
+- `AnalyserNode` (postGainAnalyser) - "DAC out" LED meter, shows final output level (peak mode)
+
+**Design Rationale:**
+- The preGain control affects levels *before* the clipper, allowing users to drive the clipper for distortion
+- The "Clipper" meter (preClipperAnalyser) shows peak levels entering the clipper, warning when clipping occurs
+- The hard clipper limits signal to 0dB (±1.0), completely transparent below threshold
+- The Master gain is *after* the clipper, allowing users to attenuate or boost the clipped signal without causing additional clipping
+- The "DAC out" meter (postGainAnalyser) shows the final output level after Master gain, warning if DAC clipping may occur
 
 **Hard Clipper Implementation:**
 
 ```typescript
 // Create hard clipping curve at 0dB
-const curve = new Float32Array(65537);
-for (let i = 0; i < 65537; i++) {
-  const x = (i - 32768) / 32768;
-  // Linear below ±1.0, hard clip at ±1.0
-  curve[i] = Math.max(-1.0, Math.min(1.0, x));
+// IMPORTANT: WaveShaperNode expects curve mapped to input range [-1, +1]
+private createHardClipCurve(): Float32Array {
+  const samples = 65537;
+  const curve = new Float32Array(samples);
+  
+  for (let i = 0; i < samples; i++) {
+    // Map index to -1.0 to +1.0 range (standard Web Audio input range)
+    const x = (i / (samples - 1)) * 2 - 1;
+    // Linear passthrough (clipping happens at boundaries)
+    curve[i] = x;
+  }
+  
+  return curve;
 }
 this.clipperNode.curve = curve;
 this.clipperNode.oversample = '4x'; // Reduces aliasing
+```
+
+**Pre-Clipper Gain:**
+
+```typescript
+setPreGain(db: number): void {
+  // Pre-clipper gain affects level entering clipper
+  // Range: -36 to +36 dB, 0.1 dB steps
+  this.preGainNode.gain.setTargetAtTime(dbToLinear(db), this.ctx.currentTime, 0.01);
+}
+```
+
+**Master Gain Post-Clipper:**
+
+```typescript
+setGain(db: number): void {
+  // Master gain applied AFTER clipping
+  // Range: -96 to +6 dB, 0 dB visually centered (non-linear slider)
+  this.gainNode.gain.setTargetAtTime(dbToLinear(db), this.ctx.currentTime, 0.01);
+}
 ```
 
 ---
@@ -325,7 +370,8 @@ interface AudioState {
   drive: number;           // 0-1
   harmonics: number;       // 0-1
   saturationMix: number;   // 0-1
-  outputGain: number;      // dB
+  preGain: number;         // Pre-clipper gain: -36 to +36 dB, 0.1 dB steps
+  outputGain: number;      // Master volume: -96 to +6 dB, 0 dB centered
   
   // Bypass states
   bypassAll: boolean;          // Master bypass
@@ -381,8 +427,10 @@ App
     │   └── Knob (Mix)
     ├── OutputStage
     │   ├── DeviceSelector (output)
-    │   ├── Knob (Gain)
-    │   └── VUMeter (analog needle)
+    │   ├── MasterSlider "Gain" (pre-clipper: -36 to +36 dB, 0.1 dB steps)
+    │   ├── LEDMeter "Clipper" (pre-clipper peak meter, 18 LEDs, horizontal)
+    │   ├── MasterSlider "Master" (post-clipper: -96 to +6 dB, 0 dB centered, non-linear)
+    │   └── LEDMeter "DAC out (Don't clip this!)" (post-gain peak meter, 18 LEDs, horizontal)
     └── Credits
 ```
 
@@ -395,14 +443,36 @@ Rotary control with:
 - Value display with fixed width (prevents layout shifts)
 - Skeuomorphic styling with glow effects
 
+### MasterSlider Component
+
+Horizontal slider control optimized for master volume:
+- Non-linear mapping: -96 dB to 0 dB (first half), 0 dB to +6 dB (second half)
+- 0 dB visually centered on slider track
+- Double-click to reset to 0 dB (center)
+- Configurable step size (e.g., 0.1 dB for preGain, 0.5 dB for Master)
+- Visual fill from left to thumb position
+- Used for pre-clipper "Gain" control and post-clipper "Master" volume
+
 ### VUMeter Component
 
 Analog needle-style VU meter with:
-- Semi-circular arc scale (±60 to +6 dB)
+- Semi-circular arc scale (-60 to +6 dB)
 - Smooth needle animation (analog ballistics: 10ms attack, 300ms release)
 - Color-coded zones (green → yellow → red)
 - Peak hold indicator (small dot, click to reset)
 - High-DPI canvas rendering
+
+### LEDMeter Component
+
+Compact horizontal LED-bar style meter with:
+- 18 circular LED segments representing thresholds: -60, -54, -48, -42, -36, -30, -24, -18, -12, -9, -6, -4, -2, 0, 2, 4, 6, 8 dB
+- Color-coded segments (10 green → 4 yellow → 4 red, left to right)
+- Peak hold indicator with decay
+- Horizontal layout (330px width, 20px height)
+- Mode selection: `'rms'` (default) for average level, `'peak'` for transient detection
+- Used in OutputStage:
+  - "Clipper" meter: Pre-clipper peak meter (mode="peak") to show when signal clips
+  - "DAC out" meter: Post-gain peak meter (mode="peak") with warning label "DAC out (Don't clip this!)"
 
 ### EmberSparks Component
 
@@ -469,8 +539,10 @@ MediaStreamAudioSourceNode → GainNode → AnalyserNode
                                     [REST OF SIGNAL CHAIN]
                                               │
                                               ▼
-                   GainNode → WaveShaperNode → AnalyserNode → AudioContext.destination
-                              (hard clipper)
+                                         OutputNode:
+     GainNode → AnalyserNode → WaveShaperNode → GainNode → AnalyserNode → AudioContext.destination
+     (preGain) (preClipper)   (hard clipper)   (Master)   (postGain)
+```
 ```
 
 ---

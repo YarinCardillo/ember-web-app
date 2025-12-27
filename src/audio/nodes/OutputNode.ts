@@ -1,56 +1,69 @@
 /**
- * OutputNode - Final gain stage with hard clipper and analyser for metering
+ * OutputNode - Final gain stage with hard clipper and analysers for metering
  * 
+ * Signal chain: preGain -> preClipperAnalyser -> clipper (0dB hard limit) -> gain (master volume) -> postGainAnalyser -> destination
+ * 
+ * The preGain control affects levels entering the clipper (can cause clipping).
+ * The preClipperAnalyser meters levels entering the clipper (shows when signal clips).
  * The clipper hard-clips at 0dB (±1.0), completely transparent below.
+ * The gain control (master) is post-clipper, so it only affects volume to speakers (cannot cause clipping).
+ * The postGainAnalyser meters the final output level (post-clipper, post-gain).
  * Uses 4x oversampling for analog-like anti-aliasing to reduce harsh artifacts.
  */
 
 import { dbToLinear } from '../../utils/dsp-math';
 
 export class OutputNode {
+  private preGainNode: GainNode;
   private gainNode: GainNode;
   private clipperNode: WaveShaperNode;
-  private analyserNode: AnalyserNode;
+  private preClipperAnalyser: AnalyserNode;
+  private postGainAnalyser: AnalyserNode;
 
   constructor(ctx: AudioContext) {
+    this.preGainNode = ctx.createGain();
     this.gainNode = ctx.createGain();
     this.clipperNode = ctx.createWaveShaper();
-    this.analyserNode = ctx.createAnalyser();
-    this.analyserNode.fftSize = 2048;
-    this.analyserNode.smoothingTimeConstant = 0.8;
+    this.preClipperAnalyser = ctx.createAnalyser();
+    this.preClipperAnalyser.fftSize = 256; // Smaller for LED meter
+    this.preClipperAnalyser.smoothingTimeConstant = 0.8;
+
+    this.postGainAnalyser = ctx.createAnalyser();
+    this.postGainAnalyser.fftSize = 256; // Smaller for LED meter
+    this.postGainAnalyser.smoothingTimeConstant = 0.8;
 
     // Create hard clipping curve at 0dB
     this.clipperNode.curve = this.createHardClipCurve() as Float32Array<ArrayBuffer>;
     this.clipperNode.oversample = '4x'; // Reduce aliasing artifacts
 
-    // Signal chain: gain -> clipper -> analyser -> destination
-    this.gainNode.connect(this.clipperNode);
-    this.clipperNode.connect(this.analyserNode);
-    this.analyserNode.connect(ctx.destination);
+    // Signal chain: preGain -> preClipperAnalyser -> clipper -> gain -> postGainAnalyser -> destination
+    this.preGainNode.connect(this.preClipperAnalyser);
+    this.preClipperAnalyser.connect(this.clipperNode);
+    this.clipperNode.connect(this.gainNode);
+    this.gainNode.connect(this.postGainAnalyser);
+    this.postGainAnalyser.connect(ctx.destination);
   }
 
   /**
    * Create a hard clipping curve at 0dB (±1.0)
    * Completely transparent below 0dB, hard clips above
    * Uses 4x oversampling (set on WaveShaperNode) for analog-like anti-aliasing
+   * 
+   * IMPORTANT: Web Audio WaveShaperNode expects curve indexed for input range [-1, +1]
+   * curve[0] = output for input -1, curve[length-1] = output for input +1
    */
   private createHardClipCurve(): Float32Array {
-    const samples = 8192;
+    const samples = 65537; // Odd number for symmetry, high resolution
     const curve = new Float32Array(samples);
     
     for (let i = 0; i < samples; i++) {
-      // Map index to -2.0 to +2.0 range (allow headroom for hot signals)
-      const x = (i / (samples - 1)) * 4 - 2;
+      // Map index to -1.0 to +1.0 range (standard Web Audio input range)
+      const x = (i / (samples - 1)) * 2 - 1;
       
-      // Hard clip at ±1.0 (0dB)
-      // Linear below threshold, clamped above
-      if (x > 1.0) {
-        curve[i] = 1.0;
-      } else if (x < -1.0) {
-        curve[i] = -1.0;
-      } else {
-        curve[i] = x;
-      }
+      // Hard clip at ±1.0 (0dB) - linear passthrough for everything in range
+      // Since input is already normalized to [-1, 1], we just pass it through
+      // The clipping happens naturally at the boundaries
+      curve[i] = x;
     }
     
     return curve;
@@ -58,30 +71,46 @@ export class OutputNode {
 
   /**
    * Get input node for connection
+   * Returns preGain node (entry point)
    */
   getInput(): AudioNode {
-    return this.gainNode;
+    return this.preGainNode;
   }
 
   /**
-   * Set output gain in dB
+   * Set pre-clipper gain in dB
+   */
+  setPreGain(db: number): void {
+    const linearGain = dbToLinear(db);
+    this.preGainNode.gain.setTargetAtTime(linearGain, this.preGainNode.context.currentTime, 0.01);
+  }
+
+  /**
+   * Set output gain (master volume) in dB
    */
   setGain(db: number): void {
-    this.gainNode.gain.value = dbToLinear(db);
+    this.gainNode.gain.setTargetAtTime(dbToLinear(db), this.gainNode.context.currentTime, 0.01);
   }
 
   /**
-   * Get analyser node for metering
+   * Get analyser node for metering (pre-clipper, shows level entering clipper)
    */
-  getAnalyser(): AnalyserNode {
-    return this.analyserNode;
+  getPreClipperAnalyser(): AnalyserNode {
+    return this.preClipperAnalyser;
+  }
+
+  /**
+   * Get analyser node for post-gain metering (final output level)
+   */
+  getPostGainAnalyser(): AnalyserNode {
+    return this.postGainAnalyser;
   }
 
   /**
    * Connect source to this node (for legacy compatibility)
    */
   connect(source: AudioNode): void {
-    source.connect(this.gainNode);
+    source.connect(this.preGainNode);
   }
 
   /**

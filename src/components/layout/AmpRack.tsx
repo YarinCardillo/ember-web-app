@@ -211,6 +211,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const harmonics = useAudioStore((state) => state.harmonics);
   const saturationMix = useAudioStore((state) => state.saturationMix);
   const bypassSaturation = useAudioStore((state) => state.bypassSaturation);
+  const preGain = useAudioStore((state) => state.preGain);
   const outputGain = useAudioStore((state) => state.outputGain);
 
   // Update audio nodes when parameters change
@@ -234,6 +235,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.saturation.setBypass(bypassSaturation);
     }
     if (nodes.output) {
+      nodes.output.setPreGain(preGain);
       nodes.output.setGain(outputGain);
     }
   }, [
@@ -247,6 +249,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     harmonics,
     saturationMix,
     bypassSaturation,
+    preGain,
     outputGain,
   ]);
 
@@ -418,7 +421,8 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           {/* Bottom Row: Output (1 column width) + Credits (2 columns width) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <OutputStage
-              outputAnalyser={audioNodes.output?.getAnalyser() || null}
+              preClipperAnalyser={audioNodes.output?.getPreClipperAnalyser() || null}
+              postGainAnalyser={audioNodes.output?.getPostGainAnalyser() || null}
               outputDevices={outputDevices}
               onOutputDeviceChange={handleOutputDeviceChange}
               isOutputDeviceSupported={isOutputDeviceSupported}

@@ -1,44 +1,81 @@
 /**
- * Slider - Linear fader control
+ * MasterSlider - Non-linear fader control with center at 0 dB
+ * Left half: -96 dB to 0 dB
+ * Right half: 0 dB to +6 dB
  */
 
 import { useCallback } from 'react';
 
-interface SliderProps {
+interface MasterSliderProps {
   label: string;
   value: number;
-  min: number;
-  max: number;
+  minDb: number;     // -96 dB
+  maxDb: number;     // +6 dB
+  centerDb: number;  // 0 dB
   step?: number;
-  unit?: string;
   formatValue?: (value: number) => string;
   onChange: (value: number) => void;
   defaultValue?: number;
 }
 
-export function Slider({
+export function MasterSlider({
   label,
   value,
-  min,
-  max,
-  step = 0.1,
-  unit = '',
+  minDb,
+  maxDb,
+  centerDb,
+  step = 0.5,
   formatValue,
   onChange,
   defaultValue,
-}: SliderProps): JSX.Element {
+}: MasterSliderProps): JSX.Element {
+  // Map dB value to slider position (0-100)
+  const dbToPosition = useCallback(
+    (db: number): number => {
+      if (db <= centerDb) {
+        // Left half: minDb to centerDb -> 0 to 50
+        return ((db - minDb) / (centerDb - minDb)) * 50;
+      } else {
+        // Right half: centerDb to maxDb -> 50 to 100
+        return 50 + ((db - centerDb) / (maxDb - centerDb)) * 50;
+      }
+    },
+    [minDb, maxDb, centerDb]
+  );
+
+  // Map slider position (0-100) to dB value
+  const positionToDb = useCallback(
+    (position: number): number => {
+      if (position <= 50) {
+        // Left half: 0 to 50 -> minDb to centerDb
+        return minDb + (position / 50) * (centerDb - minDb);
+      } else {
+        // Right half: 50 to 100 -> centerDb to maxDb
+        return centerDb + ((position - 50) / 50) * (maxDb - centerDb);
+      }
+    },
+    [minDb, maxDb, centerDb]
+  );
+
   const formatDisplayValue = useCallback(
     (val: number): string => {
       if (formatValue) {
         return formatValue(val);
       }
-      return `${val.toFixed(1)}${unit}`;
+      return `${val.toFixed(1)} dB`;
     },
-    [formatValue, unit]
+    [formatValue]
   );
 
+  const currentPosition = dbToPosition(value);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    onChange(parseFloat(e.target.value));
+    const position = parseFloat(e.target.value);
+    const dbValue = positionToDb(position);
+    
+    // Apply step rounding uniformly
+    const rounded = Math.round(dbValue / step) * step;
+    onChange(rounded);
   };
 
   const handleDoubleClick = useCallback((): void => {
@@ -46,9 +83,6 @@ export function Slider({
       onChange(defaultValue);
     }
   }, [defaultValue, onChange]);
-
-  // Calculate fill percentage for styling
-  const fillPercent = ((value - min) / (max - min)) * 100;
 
   return (
     <div className="flex flex-col gap-1 w-full">
@@ -61,10 +95,10 @@ export function Slider({
       <div className="relative">
         <input
           type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
+          min={0}
+          max={100}
+          step={0.1}
+          value={currentPosition}
           onChange={handleChange}
           onDoubleClick={handleDoubleClick}
           className="
@@ -88,7 +122,7 @@ export function Slider({
             [&::-moz-range-thumb]:cursor-pointer
           "
           style={{
-            background: `linear-gradient(to right, #ff6b35 0%, #ff6b35 ${fillPercent}%, #374151 ${fillPercent}%, #374151 100%)`,
+            background: `linear-gradient(to right, #ff6b35 0%, #ff6b35 ${currentPosition}%, #374151 ${currentPosition}%, #374151 100%)`,
           }}
         />
       </div>

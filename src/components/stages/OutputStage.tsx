@@ -1,28 +1,39 @@
 /**
- * OutputStage - Output device selector, gain knob, and VU meter
+ * OutputStage - Output device selector, master gain slider, and LED meter
  */
 
-import { Knob } from '../ui/Knob';
-import { VUMeter } from '../ui/VUMeter';
+import { MasterSlider } from '../ui/MasterSlider';
+import { LEDMeter } from '../ui/LEDMeter';
 import { useAudioStore } from '../../store/useAudioStore';
 import type { AudioDeviceInfo } from '../../types/audio.types';
 
 interface OutputStageProps {
-  outputAnalyser: AnalyserNode | null;
+  preClipperAnalyser: AnalyserNode | null;   // Pre-clipper (Clipper meter, shows clipping)
+  postGainAnalyser: AnalyserNode | null;     // Post-gain (DAC out meter)
   outputDevices: AudioDeviceInfo[];
   onOutputDeviceChange: (deviceId: string) => void;
   isOutputDeviceSupported: boolean;
 }
 
 export function OutputStage({
-  outputAnalyser,
+  preClipperAnalyser,
+  postGainAnalyser,
   outputDevices,
   onOutputDeviceChange,
   isOutputDeviceSupported,
 }: OutputStageProps): JSX.Element {
+  const preGain = useAudioStore((state) => state.preGain);
   const outputGain = useAudioStore((state) => state.outputGain);
   const outputDeviceId = useAudioStore((state) => state.outputDeviceId);
   const setParameter = useAudioStore((state) => state.setParameter);
+
+  // Format value to show -∞ for very low values
+  const formatGainValue = (value: number): string => {
+    if (value <= -90) {
+      return '-∞ dB';
+    }
+    return `${value.toFixed(1)} dB`;
+  };
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full">
@@ -62,18 +73,38 @@ export function OutputStage({
         )}
       </div>
 
-      <div className="flex items-center gap-8">
-        <Knob
-          label="Gain"
-          value={outputGain}
-          min={-12}
-          max={12}
-          step={0.5}
-          unit=" dB"
-          onChange={(value) => setParameter('outputGain', value)}
-          defaultValue={0}
-        />
-        <VUMeter analyser={outputAnalyser} label="Output" />
+      <div className="flex flex-col items-center justify-center gap-2 flex-1 my-auto pb-4 px-4">
+        {/* Pre-clipper gain control, post-clipper metering */}
+        <div className="w-full max-w-xs">
+          <MasterSlider
+            label="Gain"
+            value={preGain}
+            minDb={-36}
+            maxDb={36}
+            centerDb={0}
+            step={0.1}
+            formatValue={formatGainValue}
+            onChange={(value) => setParameter('preGain', value)}
+            defaultValue={0}
+          />
+        </div>
+        <LEDMeter analyser={preClipperAnalyser} label="Clipper" mode="peak" />
+        
+        {/* Post-clipper section */}
+        <div className="w-full max-w-xs mt-4">
+          <MasterSlider
+            label="Master"
+            value={outputGain}
+            minDb={-96}
+            maxDb={6}
+            centerDb={0}
+            step={0.5}
+            formatValue={formatGainValue}
+            onChange={(value) => setParameter('outputGain', value)}
+            defaultValue={0}
+          />
+        </div>
+        <LEDMeter analyser={postGainAnalyser} label="DAC out (Don't clip this!)" mode="peak" />
       </div>
     </div>
   );

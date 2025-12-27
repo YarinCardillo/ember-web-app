@@ -23,7 +23,8 @@ interface AudioState {
   drive: number;        // 0-1
   harmonics: number;    // 0-1
   saturationMix: number; // 0-1
-  outputGain: number;
+  preGain: number;      // Pre-clipper gain in dB
+  outputGain: number;   // Master volume in dB
 
   // Bypass states
   bypassAll: boolean;          // Master bypass - routes input directly to output
@@ -62,6 +63,7 @@ export const useAudioStore = create<AudioState>()(
       drive: 0.3,
       harmonics: 0.5,
       saturationMix: 0.6,
+      preGain: 0,
       outputGain: 0,
       bypassAll: false,
       bypassTapeSim: false, // Active by default
@@ -85,6 +87,7 @@ export const useAudioStore = create<AudioState>()(
           harmonics: preset.harmonics ?? 0.5,
           saturationMix: preset.saturationMix ?? 1.0,
           inputGain: preset.inputGain ?? -6,
+          preGain: preset.preGain ?? 0,
           outputGain: preset.outputGain ?? 0,
           // Module activation (default to active if not specified)
           bypassTapeSim: preset.bypassTapeSim ?? true, // Default to inactive in presets
