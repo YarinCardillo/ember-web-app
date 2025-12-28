@@ -39,9 +39,10 @@ Ember Amp Web is a client-side audio processing application built entirely with 
 │  │                                                  │            │  │
 │  │  ┌───────────────────────────────────────────────▼──────────┐ │  │
 │  │  │                      Web Audio API                       │ │  │
-│  │  │       ┌─────┐ ┌────┐ ┌─────┐ ┌────┐ ┌─────┐ ┌─────┐      │ │  │
-│  │  │       │Input│→│Tape│→│ EQ  │→│Tube│→│Trans│→│Clip │→ Out │ │  │
-│  │  │       └─────┘ └────┘ └─────┘ └────┘ └─────┘ └─────┘      │ │  │
+│  │  │ ┌──────┐ ┌─────┐ ┌────┐ ┌─────┐ ┌────┐ ┌─────┐ ┌─────┐   │ │  │
+│  │  │ │ 33   │→│Input│→│Tape│→│ EQ  │→│Tube│→│Trans│→│Clip │→Out │  │
+│  │  │ │Vinyl │ └─────┘ └────┘ └─────┘ └────┘ └─────┘ └─────┘   │ │  │
+│  │  │ └──────┘                                                 │ │  │
 │  │  └──────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
@@ -128,14 +129,49 @@ interface AudioNodeWrapper {
 }
 ```
 
-### InputNode
+### VinylModeNode
 
-Captures audio from the user's selected input device.
+Vinyl record simulation processor that runs FIRST in the signal chain, before input gain.
+
+**Signal Chain Inside VinylModeNode:**
+```
+Input → Buffer (0.733x speed) → [Dry] ─────────────→ Mixer → Boost (+8dB) → Output
+                               → [Convolver] → Wet ──↗
+Bypass path: Input → Bypass → Output
+```
 
 **Web Audio Nodes Used:**
-- `MediaStreamAudioSourceNode` - Captures getUserMedia stream
-- `GainNode` - Input level control
+- `AudioWorkletNode` - Variable playback rate buffer (vinyl-buffer-processor)
+- `ConvolverNode` - Synthetic short reverb (0.8s decay)
+- `GainNode` - Wet/dry mix, bypass, boost (+8dB)
+
+**Features:**
+- Variable playback rate (0.733x for 33/45 ratio)
+- Synthetic reverb (75% wet when active)
+- +8dB gain compensation (ramps with reverb)
+- Smooth crossfade between bypass and active paths
+- 4-minute timed mode with countdown timer
+
+**Design Rationale:**
+- Processes audio FIRST before input gain for cleanest signal
+- Synthetic reverb avoids loading external IR files
+- Gain boost compensates for reverb volume loss
+
+### InputNode
+
+Captures audio from the user's selected input device. Receives processed audio from VinylModeNode.
+
+**Web Audio Nodes Used:**
+- `MediaStreamAudioSourceNode` - Captures getUserMedia stream (raw source)
+- `GainNode` - Input mute control (for preview mode)
+- `GainNode` - Input level control (receives from VinylModeNode)
 - `AnalyserNode` - Level metering
+
+**Key Methods:**
+- `connectRawSource(destination)` - Connects raw MediaStream to VinylModeNode
+- `getGainInput()` - Returns gain node input for VinylModeNode connection
+- `getOutput()` - Returns analyser node output for signal chain
+- `muteInput()` / `unmuteInput()` - Mutes mic input when preview is playing
 
 ```typescript
 class InputNode {
@@ -144,12 +180,23 @@ class InputNode {
   private mediaStream: MediaStreamAudioSourceNode | null;
   
   async setInput(deviceId?: string): Promise<void> {
-    // Uses native device settings (no processing constraints)
+    // Creates MediaStream but doesn't auto-connect
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: deviceId ? { deviceId: { exact: deviceId } } : true
     });
     this.mediaStream = ctx.createMediaStreamSource(stream);
-    this.mediaStream.connect(this.gainNode);
+    // Connection handled separately: MediaStream → VinylMode → Input Gain
+  }
+  
+  connectRawSource(destination: AudioNode): void {
+    // Connect raw MediaStream to VinylModeNode (first in chain)
+    if (this.mediaStream) {
+      this.mediaStream.connect(destination);
+    }
+  }
+  
+  getGainInput(): AudioNode {
+    return this.gainNode; // VinylModeNode connects here
   }
   
   setGain(db: number): void {
@@ -441,8 +488,10 @@ App
     │   ├── BypassButton
     │   └── PowerButton
     ├── InputStage
+    │   ├── VinylModeButton (33 Mode - slowed playback, reverb, +8dB boost)
     │   ├── TapeButton (tape sim toggle)
-    │   ├── DeviceSelector
+    │   ├── PreviewButton (demo audio through signal chain)
+    │   ├── DeviceSelector (disabled on mobile)
     │   ├── Knob (Gain)
     │   └── VUMeter (analog needle)
     ├── ToneStage
@@ -555,7 +604,7 @@ When bypassAll = true:
   (all processing nodes disconnected)
 
 When bypassAll = false:
-  InputNode → TapeSim → ToneStack → Saturation → Transient → SpeakerSim → OutputNode → destination
+  MediaStream → VinylModeNode → InputNode → TapeSim → ToneStack → Saturation → Transient → SpeakerSim → OutputNode → destination
   (Note: SpeakerSimNode exists but is bypassed/not used)
 ```
 
@@ -565,16 +614,17 @@ When bypassAll = false:
 getUserMedia Stream
        │
        ▼
-MediaStreamAudioSourceNode → GainNode → AnalyserNode
-                                              │
-                                              ▼
-                                    [REST OF SIGNAL CHAIN]
-                                              │
-                                              ▼
-                                         OutputNode:
-     GainNode → AnalyserNode → WaveShaperNode → GainNode → AnalyserNode → AudioContext.destination
-     (preGain) (preClipper)   (hard clipper)   (Master)   (postGain)
-```
+MediaStreamAudioSourceNode → VinylModeNode → GainNode → AnalyserNode
+                                      │         │
+                                      │         ▼
+                                      │    [REST OF SIGNAL CHAIN]
+                                      │         │
+                                      │         ▼
+                                      │    OutputNode:
+                                      │    GainNode → AnalyserNode → WaveShaperNode → GainNode → AnalyserNode → AudioContext.destination
+                                      │    (preGain) (preClipper)   (hard clipper)   (Master)   (postGain)
+                                      │
+                                      └── (Vinyl Mode processes FIRST, before input gain)
 ```
 
 ---
@@ -715,6 +765,25 @@ VitePWA({
 - [ ] Run `npm run build`
 - [ ] Deploy to production
 - [ ] Users will auto-clear cache on next app open
+
+---
+
+## Preview Feature
+
+The Preview button allows users to hear how the app sounds without setting up virtual audio cables.
+
+**How It Works:**
+1. A demo MP3 file (`public/audio/assumptions.mp3`) is loaded and decoded
+2. Audio is routed through the full signal chain (VinylMode → Input → ... → Output)
+3. While preview plays, the live mic input is muted to avoid overlap
+4. Preview loops until stopped
+
+**Mobile Mode:**
+On mobile devices:
+- Mic input is disabled (no `getUserMedia` call)
+- Device selectors are replaced with info messages
+- Users can power on the amp and play the preview only
+- This allows trying the app without virtual audio cables (which are desktop-only)
 
 ---
 

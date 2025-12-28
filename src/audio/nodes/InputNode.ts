@@ -10,14 +10,17 @@ import { dbToLinear } from '../../utils/dsp-math';
 export class InputNode {
   private gainNode: GainNode;
   private analyserNode: AnalyserNode;
+  private inputMuteGain: GainNode; // For muting input when preview is playing
   private mediaStream: MediaStreamAudioSourceNode | null = null;
   private stream: MediaStream | null = null;
   private ctx: AudioContext;
+  private isMuted: boolean = false;
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
     this.gainNode = ctx.createGain();
     this.analyserNode = ctx.createAnalyser();
+    this.inputMuteGain = ctx.createGain();
     this.analyserNode.fftSize = 2048;
     this.analyserNode.smoothingTimeConstant = 0.8;
 
@@ -79,13 +82,58 @@ export class InputNode {
       }
 
       this.mediaStream = this.ctx.createMediaStreamSource(this.stream);
-      this.mediaStream.connect(this.gainNode);
+      // Don't connect here - let the signal chain handle connections
       
-      console.log('Input stream connected successfully');
+      console.log('Input stream created successfully');
     } catch (error) {
       console.error('Failed to get user media:', error);
       throw error;
     }
+  }
+
+  /**
+   * Connect the raw media stream to a destination (e.g., vinyl mode)
+   * This should be called FIRST in the signal chain
+   * Uses inputMuteGain to allow muting input when preview is playing
+   */
+  connectRawSource(destination: AudioNode): void {
+    if (this.mediaStream) {
+      // mediaStream → inputMuteGain → destination
+      this.mediaStream.connect(this.inputMuteGain);
+      this.inputMuteGain.connect(destination);
+    }
+  }
+
+  /**
+   * Mute the input signal (for preview mode)
+   */
+  muteInput(): void {
+    if (this.isMuted) return;
+    this.isMuted = true;
+    const now = this.ctx.currentTime;
+    this.inputMuteGain.gain.cancelScheduledValues(now);
+    this.inputMuteGain.gain.setValueAtTime(this.inputMuteGain.gain.value, now);
+    this.inputMuteGain.gain.linearRampToValueAtTime(0, now + 0.05);
+  }
+
+  /**
+   * Unmute the input signal (after preview stops)
+   */
+  unmuteInput(): void {
+    if (!this.isMuted) return;
+    this.isMuted = false;
+    const now = this.ctx.currentTime;
+    this.inputMuteGain.gain.cancelScheduledValues(now);
+    this.inputMuteGain.gain.setValueAtTime(this.inputMuteGain.gain.value, now);
+    this.inputMuteGain.gain.linearRampToValueAtTime(1, now + 0.05);
+  }
+
+  /**
+   * Connect input to the gain stage from an upstream node
+   * This allows vinyl mode to feed into the gain stage
+   */
+  connectToGainStage(source: AudioNode): void {
+    source.connect(this.gainNode);
   }
 
   /**
@@ -103,6 +151,14 @@ export class InputNode {
   }
 
   /**
+   * Get the gain input node for connections
+   * This is where processed audio enters the gain stage
+   */
+  getGainInput(): AudioNode {
+    return this.gainNode;
+  }
+
+  /**
    * Get output node for connection
    */
   getOutput(): AudioNode {
@@ -117,7 +173,18 @@ export class InputNode {
   }
 
   /**
-   * Disconnect from destination
+   * Disconnect output from downstream nodes ONLY.
+   * Use this for temporary signal chain rerouting.
+   * Does NOT stop the MediaStream or disconnect the raw source.
+   */
+  disconnectOutput(): void {
+    this.analyserNode.disconnect();
+  }
+
+  /**
+   * Disconnect from destination - FULL CLEANUP
+   * Use this only when shutting down the audio engine.
+   * This stops the MediaStream tracks permanently.
    */
   disconnect(): void {
     this.analyserNode.disconnect();

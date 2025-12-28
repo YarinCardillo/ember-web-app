@@ -41,6 +41,13 @@ interface AudioState {
   bypassSaturation: boolean;
   bypassSpeakerSim: boolean;
 
+  // Vinyl mode state
+  vinylMode: {
+    isActive: boolean;
+    remainingTime: number;  // seconds
+    state: 'idle' | 'entering' | 'active' | 'exiting';
+  };
+
   // Presets
   currentPreset: string | null;
 
@@ -52,6 +59,9 @@ interface AudioState {
   setInputDevice: (deviceId: string | null) => void;
   setOutputDevice: (deviceId: string | null) => void;
   setAvailableDevices: (devices: AudioDeviceInfo[]) => void;
+  setVinylModeState: (state: 'idle' | 'entering' | 'active' | 'exiting') => void;
+  setVinylModeRemainingTime: (time: number) => void;
+  setVinylModeActive: (active: boolean) => void;
 }
 
 export const useAudioStore = create<AudioState>()(
@@ -81,6 +91,11 @@ export const useAudioStore = create<AudioState>()(
       bypassToneStack: STARTER_PRESET.bypassToneStack ?? false,
       bypassSaturation: STARTER_PRESET.bypassSaturation ?? false,
       bypassSpeakerSim: true,  // Speaker sim always bypassed by default (no IR)
+      vinylMode: {
+        isActive: false,
+        remainingTime: 240,  // 4 minutes in seconds
+        state: 'idle',
+      },
       currentPreset: STARTER_PRESET.name,
 
       // Actions
@@ -126,6 +141,24 @@ export const useAudioStore = create<AudioState>()(
 
       setAvailableDevices: (devices) => {
         set({ availableDevices: devices });
+      },
+
+      setVinylModeState: (state) => {
+        set((prev) => ({
+          vinylMode: { ...prev.vinylMode, state },
+        }));
+      },
+
+      setVinylModeRemainingTime: (time) => {
+        set((prev) => ({
+          vinylMode: { ...prev.vinylMode, remainingTime: time },
+        }));
+      },
+
+      setVinylModeActive: (active) => {
+        set((prev) => ({
+          vinylMode: { ...prev.vinylMode, isActive: active },
+        }));
       },
     }),
     {

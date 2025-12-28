@@ -48,3 +48,14 @@ export function smoothParam(
   param.setTargetAtTime(value, audioContext.currentTime, timeConstant);
 }
 
+/**
+ * Easing function for smooth transitions
+ * @param t - Time value from 0 to 1
+ * @returns Eased value from 0 to 1
+ */
+export function easeInOutCubic(t: number): number {
+  return t < 0.5 
+    ? 4 * t * t * t 
+    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+

@@ -12,12 +12,14 @@ import { OutputStage } from '../stages/OutputStage';
 import { useAudioStore } from '../../store/useAudioStore';
 import AudioEngine from '../../audio/AudioEngine';
 import { InputNode } from '../../audio/nodes/InputNode';
+import { VinylModeNode } from '../../audio/nodes/VinylModeNode';
 import { TapeSimNode } from '../../audio/nodes/TapeSimNode';
 import { ToneStackNode } from '../../audio/nodes/ToneStackNode';
 import { TubeSaturationNode } from '../../audio/nodes/TubeSaturationNode';
 import { TransientNode } from '../../audio/nodes/TransientNode';
 import { SpeakerSimNode } from '../../audio/nodes/SpeakerSimNode';
 import { OutputNode } from '../../audio/nodes/OutputNode';
+import { useVinylMode } from '../../hooks/useVinylMode';
 // import { TransientDebug } from '../ui/TransientDebug'; // Debug panel - uncomment if needed
 import { isMobileDevice } from '../../utils/device-detection';
 import presetsData from '../../audio/presets/amp-presets.json';
@@ -25,6 +27,7 @@ import type { PresetCollection } from '../../types/audio.types';
 
 interface AudioNodes {
   input: InputNode | null;
+  vinylMode: VinylModeNode | null;
   tapeSim: TapeSimNode | null;
   toneStack: ToneStackNode | null;
   saturation: TubeSaturationNode | null;
@@ -45,9 +48,17 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const [outputDevices, setOutputDevices] = useState<Array<{ deviceId: string; label: string; kind: MediaDeviceKind }>>([]);
   const [isOutputDeviceSupported, setIsOutputDeviceSupported] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Preview audio state
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const previewBufferRef = useRef<AudioBuffer | null>(null);
+  const previewSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const previewGainRef = useRef<GainNode | null>(null);
 
   const audioNodesRef = useRef<AudioNodes>({
     input: null,
+    vinylMode: null,
     tapeSim: null,
     toneStack: null,
     saturation: null,
@@ -82,6 +93,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
 
       const nodes: AudioNodes = {
         input: new InputNode(ctx),
+        vinylMode: new VinylModeNode(ctx),
         tapeSim: new TapeSimNode(ctx),
         toneStack: new ToneStackNode(ctx),
         saturation: new TubeSaturationNode(ctx),
@@ -91,6 +103,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       };
 
       // Initialize worklets
+      console.log('Initializing vinyl mode...');
+      await nodes.vinylMode!.initialize();
+      
       console.log('Initializing saturation worklet...');
       await nodes.saturation!.initialize();
       
@@ -103,9 +118,19 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       // Sync bypass state from store
       const bypassTapeSim = useAudioStore.getState().bypassTapeSim;
       nodes.tapeSim!.setBypass(bypassTapeSim);
+      
+      // Vinyl mode starts bypassed (inactive)
+      nodes.vinylMode!.setBypass(true);
 
-      // Connect signal chain using getInput() for proper node connections
-      // Input -> TapeSim
+      // Connect signal chain with vinyl mode FIRST, before input gain
+      // Raw MediaStream -> VinylMode -> InputGain -> Analyser -> TapeSim -> ...
+      // This ensures vinyl processing happens on the cleanest possible signal
+      
+      // Note: We'll connect the raw media stream when audio starts
+      // For now, just set up the vinyl mode -> input gain connection
+      nodes.vinylMode!.connect(nodes.input!.getGainInput());
+      
+      // Input (after gain) -> TapeSim
       nodes.input!.connect(nodes.tapeSim!.getInput());
       
       // TapeSim -> ToneStack (no preamp - it was just a passthrough)
@@ -123,7 +148,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       // SpeakerSim -> Output (includes analog soft clipper)
       nodes.speakerSim!.connect(nodes.output!.getInput());
 
-      console.log('Signal chain connected');
+      console.log('Signal chain connected (Vinyl Mode -> Input Gain -> Processing)');
 
       audioNodesRef.current = nodes;
       setAudioNodes(nodes);
@@ -138,18 +163,38 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   }, [setInitialized]);
 
   // Start audio processing
-  const startAudio = useCallback(async (nodes: AudioNodes) => {
-    if (!nodes.input) {
-      console.error('No input node available');
+  const startAudio = useCallback(async (nodes: AudioNodes, mobileMode: boolean = false) => {
+    if (!nodes.vinylMode) {
+      console.error('No vinyl mode node available');
       return;
     }
 
     try {
+      // On mobile, skip mic permissions - only preview mode is available
+      if (mobileMode) {
+        console.log('Starting in mobile preview-only mode (no mic)');
+        // Start keep-alive to prevent background throttling
+        const engine = AudioEngine.getInstance();
+        engine.startKeepAlive();
+        setRunning(true);
+        setError(null);
+        return;
+      }
+
+      if (!nodes.input) {
+        console.error('No input node available');
+        return;
+      }
+
       console.log('Requesting audio input...');
       const deviceId = useAudioStore.getState().inputDeviceId || undefined;
       
       await nodes.input.setInput(deviceId);
-      console.log('Audio input started');
+      
+      // Connect raw media stream to vinyl mode (first in chain)
+      nodes.input.connectRawSource(nodes.vinylMode!.getInput());
+      
+      console.log('Audio input started with vinyl mode as first processor');
       
       // Start keep-alive to prevent background throttling
       const engine = AudioEngine.getInstance();
@@ -199,16 +244,16 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     if (!isInitialized) {
       try {
         const nodes = await initializeAudio();
-        await startAudio(nodes);
+        await startAudio(nodes, isMobile);
       } catch (err) {
         console.error('Power toggle failed:', err);
       }
     } else if (isRunning) {
       stopAudio();
     } else {
-      await startAudio(audioNodesRef.current);
+      await startAudio(audioNodesRef.current, isMobile);
     }
-  }, [isInitialized, isRunning, initializeAudio, startAudio, stopAudio]);
+  }, [isInitialized, isRunning, isMobile, initializeAudio, startAudio, stopAudio]);
 
   // Subscribe to all audio parameters
   const inputGain = useAudioStore((state) => state.inputGain);
@@ -276,10 +321,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   // Handle master bypass - reroute signal chain
   useEffect(() => {
     const nodes = audioNodesRef.current;
-    if (!isInitialized || !nodes.input || !nodes.output) return;
+    if (!isInitialized || !nodes.input || !nodes.output || !nodes.vinylMode) return;
 
     if (bypassAll) {
       // Disconnect ALL nodes to prevent any signal bleeding
+      nodes.vinylMode.disconnect();
       nodes.input.getOutput().disconnect();
       nodes.tapeSim?.disconnect();
       nodes.toneStack?.disconnect();
@@ -288,19 +334,24 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.speakerSim?.disconnect();
       
       // BYPASS: Connect input directly to master gain (skip all processing but keep volume control)
-      // This skips clipper and all DSP, but master volume still works
+      // Signal path in bypass: MediaStream -> VinylMode (bypassed) -> Input Gain -> Master Gain
+      // We keep vinyl mode in the chain but bypassed so we don't break connections
+      nodes.vinylMode.connect(nodes.input.getGainInput());
       nodes.input.getOutput().connect(nodes.output.getMasterGainNode());
       
       console.log('Master bypass ENABLED - dry signal through master gain');
     } else {
       // Disconnect bypass route
       nodes.input.getOutput().disconnect();
+      nodes.vinylMode.disconnect();
       
       // Restore internal routing for saturation and transient (may have been broken by disconnect)
       nodes.saturation?.restoreRouting();
       nodes.transient?.restoreRouting();
+      nodes.vinylMode?.restoreRouting();
       
-      // Reconnect normal signal chain
+      // Reconnect normal signal chain (vinyl mode first, then input gain, then rest)
+      nodes.vinylMode.connect(nodes.input.getGainInput());
       nodes.input.connect(nodes.tapeSim!.getInput());
       nodes.tapeSim!.connect(nodes.toneStack!.getInput());
       nodes.toneStack!.connect(nodes.saturation!.inputGain);
@@ -324,8 +375,8 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     // The TapeSimNode handles internal routing via getInput(),
     // so we need to reconnect the signal chain when bypass state changes
     if (!bypassAll) {
-      // Disconnect current connections
-      nodes.input.getOutput().disconnect();
+      // Disconnect output only (does NOT stop MediaStream - that would kill audio!)
+      nodes.input.disconnectOutput();
       nodes.tapeSim.disconnect();
       
       // Reconnect with updated routing (getInput() will return correct node based on bypass state)
@@ -336,12 +387,72 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     }
   }, [isInitialized, bypassTapeSim, bypassAll]);
 
+  // Vinyl mode state and callbacks
+  const vinylMode = useAudioStore((state) => state.vinylMode);
+  
+  // Wire up vinyl mode hook with audio callbacks
+  const vinylModeHook = useVinylMode(
+    {},
+    {
+      onRampPitch: (semitones) => {
+        const nodes = audioNodesRef.current;
+        if (nodes.vinylMode) {
+          nodes.vinylMode.rampPitchShift(semitones, 2500);
+        }
+      },
+      onRampReverb: (wet) => {
+        const nodes = audioNodesRef.current;
+        if (nodes.vinylMode) {
+          nodes.vinylMode.rampReverbMix(wet, 1500);
+        }
+      },
+      onRampPlaybackRate: (rate) => {
+        const nodes = audioNodesRef.current;
+        if (nodes.vinylMode) {
+          nodes.vinylMode.rampPlaybackRate(rate, 2500);
+        }
+      },
+      onFlushBuffer: () => {
+        const nodes = audioNodesRef.current;
+        if (nodes.vinylMode) {
+          nodes.vinylMode.flushBuffer();
+        }
+      },
+    }
+  );
+
+  // Handle vinyl mode state changes
+  useEffect(() => {
+    const nodes = audioNodesRef.current;
+    if (!isInitialized || !nodes.vinylMode) return;
+
+    // Update bypass state based on vinyl mode state
+    const shouldBypass = vinylMode.state === 'idle';
+    nodes.vinylMode.setBypass(shouldBypass);
+    
+    // Reconnect signal chain if needed (when not in master bypass)
+    if (!bypassAll) {
+      nodes.vinylMode.restoreRouting();
+    }
+  }, [isInitialized, vinylMode.state, bypassAll]);
+
+  // Handle vinyl mode activation/deactivation
+  const handleVinylModeActivate = useCallback(() => {
+    vinylModeHook.activate();
+  }, [vinylModeHook]);
+
+  const handleVinylModeDeactivate = useCallback(() => {
+    vinylModeHook.deactivate();
+  }, [vinylModeHook]);
+
   // Handle input device change
   const handleInputDeviceChange = useCallback(
     async (deviceId: string) => {
-      if (audioNodesRef.current.input) {
+      if (audioNodesRef.current.input && audioNodesRef.current.vinylMode) {
         try {
           await audioNodesRef.current.input.setInput(deviceId);
+          // Reconnect raw source to vinyl mode after device change
+          audioNodesRef.current.input.connectRawSource(audioNodesRef.current.vinylMode.getInput());
         } catch (err) {
           console.error('Failed to change input device:', err);
           setError('Failed to change audio input device');
@@ -375,6 +486,108 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     },
     []
   );
+
+  // Preview audio: load and play demo file through signal chain
+  const loadPreviewBuffer = useCallback(async (): Promise<AudioBuffer | null> => {
+    if (previewBufferRef.current) return previewBufferRef.current;
+    
+    try {
+      const engine = AudioEngine.getInstance();
+      const ctx = engine.getContext();
+      const response = await fetch('/audio/assumptions.mp3');
+      if (!response.ok) throw new Error('Failed to fetch preview audio');
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      previewBufferRef.current = audioBuffer;
+      return audioBuffer;
+    } catch (err) {
+      console.error('Failed to load preview audio:', err);
+      return null;
+    }
+  }, []);
+
+  const stopPreview = useCallback(() => {
+    if (previewSourceRef.current) {
+      try {
+        previewSourceRef.current.stop();
+        previewSourceRef.current.disconnect();
+      } catch {}
+      previewSourceRef.current = null;
+    }
+    if (previewGainRef.current) {
+      previewGainRef.current.disconnect();
+      previewGainRef.current = null;
+    }
+    // Unmute input signal when preview stops
+    if (audioNodesRef.current.input) {
+      audioNodesRef.current.input.unmuteInput();
+    }
+    setIsPreviewPlaying(false);
+  }, []);
+
+  const togglePreview = useCallback(async () => {
+    if (isPreviewPlaying) {
+      stopPreview();
+      return;
+    }
+
+    if (!audioNodesRef.current.vinylMode) {
+      setError('Audio engine not initialized');
+      return;
+    }
+
+    setIsPreviewLoading(true);
+    try {
+      const buffer = await loadPreviewBuffer();
+      if (!buffer) {
+        setError('Failed to load preview audio');
+        setIsPreviewLoading(false);
+        return;
+      }
+
+      const engine = AudioEngine.getInstance();
+      const ctx = engine.getContext();
+      
+      // Create source and gain nodes
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true; // Loop the preview
+      
+      const gain = ctx.createGain();
+      gain.gain.value = 1.0;
+      
+      // Connect: source → gain → vinylMode input
+      source.connect(gain);
+      gain.connect(audioNodesRef.current.vinylMode!.getInput());
+      
+      // Store refs for cleanup
+      previewSourceRef.current = source;
+      previewGainRef.current = gain;
+      
+      // Mute input signal while preview is playing
+      if (audioNodesRef.current.input) {
+        audioNodesRef.current.input.muteInput();
+      }
+      
+      // Start playback
+      source.start();
+      setIsPreviewPlaying(true);
+      setIsPreviewLoading(false);
+      
+      console.log('[Preview] Started playing through signal chain (input muted)');
+    } catch (err) {
+      console.error('Failed to start preview:', err);
+      setError('Failed to start preview');
+      setIsPreviewLoading(false);
+    }
+  }, [isPreviewPlaying, loadPreviewBuffer, stopPreview]);
+
+  // Stop preview when audio stops
+  useEffect(() => {
+    if (!isRunning && isPreviewPlaying) {
+      stopPreview();
+    }
+  }, [isRunning, isPreviewPlaying, stopPreview]);
 
   // Enumerate devices (refreshes after initialization when we have permission)
   useEffect(() => {
@@ -420,11 +633,18 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
             <p className="text-sm text-ember-orange">
               Ember Amp is designed for desktop browsers with virtual audio cables.
             </p>
+            <p className="text-xs text-amber-400/80 mt-1">
+              Power on and tap <strong>Preview</strong> to hear how the amp sounds!
+            </p>
           </div>
         )}
 
         {/* Header */}
-        <Header presets={presets} onPowerToggle={handlePowerToggle} onHelpClick={onHelpClick} />
+        <Header
+          presets={presets}
+          onPowerToggle={handlePowerToggle}
+          onHelpClick={onHelpClick}
+        />
 
         {/* Error Message */}
         {error && (
@@ -441,6 +661,12 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
               devices={inputDevices}
               inputAnalyser={audioNodes.input?.getAnalyser() || null}
               onDeviceChange={handleInputDeviceChange}
+              onVinylModeActivate={handleVinylModeActivate}
+              onVinylModeDeactivate={handleVinylModeDeactivate}
+              isPreviewPlaying={isPreviewPlaying}
+              isPreviewLoading={isPreviewLoading}
+              onPreviewToggle={togglePreview}
+              isMobileMode={isMobile}
             />
             <ToneStage />
             <SaturationStage />
@@ -454,6 +680,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
               outputDevices={outputDevices}
               onOutputDeviceChange={handleOutputDeviceChange}
               isOutputDeviceSupported={isOutputDeviceSupported}
+              isMobileMode={isMobile}
             />
             <div className="md:col-span-2">
               <Credits />

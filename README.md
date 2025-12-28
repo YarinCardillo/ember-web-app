@@ -9,6 +9,8 @@
 
 Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube amplifiers directly in your web browser. Route your system audio (Spotify, YouTube, games, etc.) through a virtual audio cable, and the app applies real-time DSP processing including:
 
+- **33 Mode (Vinyl Mode)** - Slowed playback with reverb and +8dB boost for vinyl record simulation (processes audio FIRST, before input gain)
+- **Preview Mode** - Play demo audio through the signal chain to hear how the app sounds before setting up virtual cables
 - **Tape Simulation** - Wow/flutter, head bump, HF rolloff, stereo widening, odd harmonic saturation (3rd, 5th, 7th harmonics with 1/n³ decay)
 - **Tube Saturation** - Analog-modeled soft clipping with even harmonic generation (2nd, 4th, 6th harmonics with 1/n² decay)
 - **Transient Shaper** - SPL Transient Designer-style processor using sidechain filtering (bass-focused detection, fullband processing) - tightens low-end transients
@@ -21,6 +23,10 @@ Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube ampl
 - Audiophiles who want analog warmth without dedicated hardware
 - Music listeners looking to enhance PC/laptop audio
 - Audio enthusiasts interested in DSP and Web Audio API
+
+### Mobile Support
+
+Mobile users can power on the app and use the **Preview** feature to hear how it sounds. Mic input and device selection are disabled on mobile (virtual audio cables are desktop-only).
 
 ---
 
@@ -151,7 +157,10 @@ ember-web-app/
 │   ├── worklets/                 # AudioWorklet processors
 │   │   ├── tube-saturation.worklet.js
 │   │   ├── tape-wobble.worklet.js
-│   │   └── transient.worklet.js
+│   │   ├── transient.worklet.js
+│   │   └── vinyl-buffer.worklet.js
+│   ├── audio/                    # Audio assets
+│   │   └── assumptions.mp3       # Preview demo audio
 │   ├── assets/                   # UI assets
 │   │   └── Ampex_orange_transparent.gif
 │   ├── ir/                       # Impulse response files
@@ -162,6 +171,7 @@ ember-web-app/
 │   │   ├── AudioEngine.ts        # Singleton managing AudioContext
 │   │   ├── nodes/                # DSP node wrappers
 │   │   │   ├── InputNode.ts
+│   │   │   ├── VinylModeNode.ts  # 33 Mode - slowed playback, reverb, +8dB boost
 │   │   │   ├── TapeSimNode.ts    # Wow/flutter, head bump, HF rolloff
 │   │   │   ├── ToneStackNode.ts
 │   │   │   ├── TubeSaturationNode.ts
@@ -178,12 +188,14 @@ ember-web-app/
 │   │   │   ├── LEDMeter.tsx      # Horizontal LED-bar meter (peak/RMS modes)
 │   │   │   ├── MasterSlider.tsx  # Non-linear master volume slider
 │   │   │   ├── Toggle.tsx
+│   │   │   ├── VinylModeButton.tsx # 33 Mode button with countdown timer
 │   │   │   ├── TapeButton.tsx    # Animated tape sim toggle
+│   │   │   ├── PreviewButton.tsx # Demo audio preview
 │   │   │   ├── Slider.tsx
 │   │   │   ├── PresetSelector.tsx
 │   │   │   └── EmberSparks.tsx   # Ambient animation
 │   │   ├── stages/               # Signal chain UI sections
-│   │   │   ├── InputStage.tsx
+│   │   │   ├── InputStage.tsx    # Contains VinylModeButton (33) and TapeButton
 │   │   │   ├── ToneStage.tsx
 │   │   │   ├── SaturationStage.tsx
 │   │   │   └── OutputStage.tsx
@@ -198,7 +210,8 @@ ember-web-app/
 │   │
 │   ├── hooks/
 │   │   ├── useAudioInput.ts
-│   │   └── useAudioAnalyser.ts
+│   │   ├── useAudioAnalyser.ts
+│   │   └── useVinylMode.ts      # State machine for 33 Mode
 │   │
 │   ├── types/
 │   │   └── audio.types.ts
@@ -225,20 +238,21 @@ ember-web-app/
 ## Signal Flow
 
 ```
-┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌──────────────────────────────────────────────┐
-│ Virtual │──▶│  Input  │──▶│  Tape   │──▶│  EQ     │──▶│  Tubes  │──▶│Transient│──▶│                  Output                      │
-│  Cable  │   │ (Gain)  │   │         │   │         │   │         │   │ (<150Hz)│   │   PreGain→ClipperMeter→Clip→Master→DACMeter  │  
-└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └──────────────────────────────────────────────┘ 
+┌─────────┐   ┌──────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌──────────────────────────────────────────────┐
+│ Virtual │──▶│  33 Mode │──▶│  Input  │──▶│  Tape   │──▶│  EQ     │──▶│  Tubes  │──▶│Transient│──▶│                  Output                      │
+│  Cable  │   │  (Vinyl) │   │ (Gain)  │   │         │   │         │   │         │   │ (<150Hz)│   │   PreGain→ClipperMeter→Clip→Master→DACMeter  │  
+└─────────┘   └──────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └──────────────────────────────────────────────┘ 
 ```
 
 ### Processing Stages
 
-1. **InputNode** - Captures audio via `getUserMedia()`, gain control (-36 to +36 dB), level metering (RMS VU meter + peak bar)
-2. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening, odd harmonic saturation (3rd, 5th, 7th with 1/n³ decay)
-3. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
-4. **TubeSaturationNode** - AudioWorklet with tanh clipping, even harmonic generation (2nd, 4th, 6th with 1/n² decay), controllable via Drive and Harmonics knobs
-5. **TransientNode** - SPL Transient Designer-style processor using sidechain filtering (150Hz lowpass for detection, fullband gain modulation). Fixed parameters: Attack 75%, Sustain 0%, Mix 55%. Always active, no user controls.
-6. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
+1. **VinylModeNode** - Slowed playback (0.733x), synthetic reverb, and +8dB boost for vinyl record simulation. Processes audio FIRST, before input gain. Activated via the "33" button in the Input stage.
+2. **InputNode** - Captures audio via `getUserMedia()`, gain control (-36 to +36 dB), level metering (RMS VU meter + peak bar)
+3. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening, odd harmonic saturation (3rd, 5th, 7th with 1/n³ decay)
+4. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
+5. **TubeSaturationNode** - AudioWorklet with tanh clipping, even harmonic generation (2nd, 4th, 6th with 1/n² decay), controllable via Drive and Harmonics knobs
+6. **TransientNode** - SPL Transient Designer-style processor using sidechain filtering (150Hz lowpass for detection, fullband gain modulation). Fixed parameters: Attack 75%, Sustain 0%, Mix 55%. Always active, no user controls.
+7. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
 
 **Note:** `SpeakerSimNode` exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions for cabinet simulation via impulse response convolution.
 

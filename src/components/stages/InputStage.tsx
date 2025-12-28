@@ -5,6 +5,8 @@
 import { Knob } from '../ui/Knob';
 import { VUMeter } from '../ui/VUMeter';
 import { TapeButton } from '../ui/TapeButton';
+import { VinylModeButton } from '../ui/VinylModeButton';
+import { PreviewButton } from '../ui/PreviewButton';
 import { useAudioStore } from '../../store/useAudioStore';
 import type { AudioDeviceInfo } from '../../types/audio.types';
 
@@ -12,55 +14,97 @@ interface InputStageProps {
   devices: AudioDeviceInfo[];
   inputAnalyser: AnalyserNode | null;
   onDeviceChange: (deviceId: string) => void;
+  onVinylModeActivate?: () => void;
+  onVinylModeDeactivate?: () => void;
+  isPreviewPlaying?: boolean;
+  isPreviewLoading?: boolean;
+  onPreviewToggle?: () => void;
+  isMobileMode?: boolean;
 }
 
 export function InputStage({
   devices,
   inputAnalyser,
   onDeviceChange,
+  onVinylModeActivate,
+  onVinylModeDeactivate,
+  isPreviewPlaying = false,
+  isPreviewLoading = false,
+  onPreviewToggle,
+  isMobileMode = false,
 }: InputStageProps): JSX.Element {
   const inputGain = useAudioStore((state) => state.inputGain);
   const setParameter = useAudioStore((state) => state.setParameter);
   const inputDeviceId = useAudioStore((state) => state.inputDeviceId);
   const bypassTapeSim = useAudioStore((state) => state.bypassTapeSim);
+  const isRunning = useAudioStore((state) => state.isRunning);
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full min-w-0 overflow-hidden">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-ember-orange leading-none -mt-2" style={{ lineHeight: '1.2' }}>INPUT</h3>
-        <div className="flex flex-col items-center gap-2" style={{ marginTop: '-12px' }}>
-          <TapeButton
-            checked={!bypassTapeSim}
-            onChange={(checked) => setParameter('bypassTapeSim', !checked)}
-          />
+        <div className="flex items-center gap-2 justify-end" style={{ marginTop: '-12px', minWidth: '140px' }}>
+          <div className="translate-x-1.5">
+            <VinylModeButton
+              onActivate={onVinylModeActivate}
+              onDeactivate={onVinylModeDeactivate}
+              disabled={!isRunning}
+            />
+          </div>
+          <div className="translate-x-1.5">
+            <TapeButton
+              checked={!bypassTapeSim}
+              onChange={(checked) => setParameter('bypassTapeSim', !checked)}
+            />
+          </div>
         </div>
       </div>
       
       <div className="flex flex-col gap-2 min-h-[60px]">
-        <label className="text-xs text-text-light opacity-80">Device</label>
-        <select
-          value={inputDeviceId || ''}
-          onChange={(e) => {
-            const deviceId = e.target.value;
-            useAudioStore.getState().setInputDevice(deviceId || null);
-            if (deviceId) {
-              onDeviceChange(deviceId);
-            }
-          }}
-          className="
-            bg-gray-800 border border-gray-700 rounded
-            px-3 py-2 text-text-light text-sm
-            focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
-            cursor-pointer w-full
-          "
-        >
-          <option value="">Default Input</option>
-          {devices.map((device) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              {device.label || `Device ${device.deviceId.slice(0, 8)}`}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center justify-between">
+          <label className="text-xs text-text-light opacity-80">
+            {isMobileMode ? 'Preview Only' : 'Device'}
+          </label>
+          <div style={{ minWidth: '140px' }} className="flex justify-end">
+            {onPreviewToggle && (
+              <PreviewButton
+                isPlaying={isPreviewPlaying}
+                isLoading={isPreviewLoading}
+                disabled={!isRunning}
+                onToggle={onPreviewToggle}
+              />
+            )}
+          </div>
+        </div>
+        {isMobileMode ? (
+          <div className="bg-gray-800/50 border border-gray-700/50 rounded px-3 py-2 text-gray-500 text-sm">
+            Mic input disabled on mobile
+          </div>
+        ) : (
+          <select
+            value={inputDeviceId || ''}
+            onChange={(e) => {
+              const deviceId = e.target.value;
+              useAudioStore.getState().setInputDevice(deviceId || null);
+              if (deviceId) {
+                onDeviceChange(deviceId);
+              }
+            }}
+            className="
+              bg-gray-800 border border-gray-700 rounded
+              px-3 py-2 text-text-light text-sm
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
+              cursor-pointer w-full
+            "
+          >
+            <option value="">Default Input</option>
+            {devices.map((device) => (
+              <option key={device.deviceId} value={device.deviceId}>
+                {device.label || `Device ${device.deviceId.slice(0, 8)}`}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="flex items-start min-w-0">

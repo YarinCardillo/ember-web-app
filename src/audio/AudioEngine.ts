@@ -51,7 +51,9 @@ class AudioEngine {
         await Promise.all([
           this.ctx.audioWorklet.addModule('/worklets/tube-saturation.worklet.js'),
           this.ctx.audioWorklet.addModule('/worklets/tape-wobble.worklet.js'),
-          this.ctx.audioWorklet.addModule('/worklets/transient.worklet.js')
+          this.ctx.audioWorklet.addModule('/worklets/transient.worklet.js'),
+          this.ctx.audioWorklet.addModule('/worklets/pitch-shifter.worklet.js'),
+          this.ctx.audioWorklet.addModule('/worklets/vinyl-buffer.worklet.js')
         ]);
         this.workletsLoaded = true;
       } catch (error) {

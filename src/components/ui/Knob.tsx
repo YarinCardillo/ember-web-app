@@ -52,6 +52,16 @@ export function Knob({
     [value]
   );
 
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault();
+      setIsDragging(true);
+      startYRef.current = e.touches[0].clientY;
+      startValueRef.current = value;
+    },
+    [value]
+  );
+
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return;
@@ -73,7 +83,32 @@ export function Knob({
     [isDragging, min, max, step, onChange]
   );
 
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isDragging) return;
+
+      const deltaY = startYRef.current - e.touches[0].clientY;
+      const range = max - min;
+      const sensitivity = range / 200; // Pixels to value ratio
+      const deltaValue = deltaY * sensitivity;
+      let newValue = startValueRef.current + deltaValue;
+
+      // Apply step
+      newValue = Math.round(newValue / step) * step;
+
+      // Clamp
+      newValue = Math.max(min, Math.min(max, newValue));
+
+      onChange(newValue);
+    },
+    [isDragging, min, max, step, onChange]
+  );
+
   const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
     setIsDragging(false);
   }, []);
 
@@ -100,14 +135,22 @@ export function Knob({
 
   useEffect(() => {
     if (isDragging) {
+      // Mouse events
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      // Touch events
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleTouchEnd);
+      window.addEventListener('touchcancel', handleTouchEnd);
       return () => {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
+        window.removeEventListener('touchcancel', handleTouchEnd);
       };
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
   // Calculate rotation angle (-150deg to +150deg for visual range)
   const normalizedValue = (value - min) / (max - min);
@@ -128,6 +171,7 @@ export function Knob({
         `}
         style={{ transform: `rotate(${rotation}deg)` }}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         onDoubleClick={handleDoubleClick}
         onKeyDown={handleKeyDown}
         tabIndex={0}

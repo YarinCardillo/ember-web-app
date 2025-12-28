@@ -13,6 +13,7 @@ interface OutputStageProps {
   outputDevices: AudioDeviceInfo[];
   onOutputDeviceChange: (deviceId: string) => void;
   isOutputDeviceSupported: boolean;
+  isMobileMode?: boolean;
 }
 
 export function OutputStage({
@@ -21,6 +22,7 @@ export function OutputStage({
   outputDevices,
   onOutputDeviceChange,
   isOutputDeviceSupported,
+  isMobileMode = false,
 }: OutputStageProps): JSX.Element {
   const preGain = useAudioStore((state) => state.preGain);
   const outputGain = useAudioStore((state) => state.outputGain);
@@ -42,7 +44,11 @@ export function OutputStage({
       {/* Output Device Selector */}
       <div className="flex flex-col gap-2 min-h-[60px]">
         <label className="text-xs text-text-light opacity-80">Device</label>
-        {isOutputDeviceSupported ? (
+        {isMobileMode ? (
+          <div className="bg-gray-800/50 border border-gray-700/50 rounded px-3 py-2 text-gray-500 text-sm">
+            Default output (mobile)
+          </div>
+        ) : isOutputDeviceSupported ? (
           <select
             value={outputDeviceId || ''}
             onChange={(e) => {
