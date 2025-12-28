@@ -248,43 +248,45 @@ Creates asymmetric "warm" distortion typical of tube amplifiers.
 
 ### TransientNode
 
-SPL Transient Designer-style transient shaper that processes only frequencies below 150Hz, leaving high frequencies unchanged.
+SPL Transient Designer-style transient shaper using **sidechain filtering** for bass-focused transient detection while processing the fullband signal.
 
 **Signal Chain Inside TransientNode:**
 ```
-Input → [Crossover Split]
-         ├─► Lowpass 150Hz → Transient Worklet ─┐
-         │                                      ├─► Sum → Output
-         └─► Highpass 150Hz ────────────────────┘
+Audio Path (fullband, untouched):
+  inputGain → workletNode → bypassGain
+
+Sidechain Path (inside worklet, for detection only):
+  drySample → LP 150Hz (copy) → Envelope Detection → Gain Modulation → Applied to original fullband signal
 ```
 
 **Web Audio Nodes Used:**
-- `BiquadFilterNode` (lowpass) - 150Hz crossover, Butterworth 12dB/octave (Q = 0.707)
-- `BiquadFilterNode` (highpass) - 150Hz crossover, Butterworth 12dB/octave (Q = 0.707)
-- `AudioWorkletNode` - transient processor (dual envelope followers)
-- `GainNode` - Summing node for crossover recombination
+- `AudioWorkletNode` - transient processor with internal sidechain filtering
+- `GainNode` - Bypass routing
 
 **AudioWorklet Features (transient.worklet.js):**
+- **Sidechain Lowpass**: One-pole filter at 150Hz (default, adjustable 100-300Hz) applied to COPY of input for detection
 - **Fast Envelope**: Attack ~0.1ms, release ~5ms (catches transients)
 - **Slow Envelope**: Attack ~10ms, release ~100ms (follows body/sustain)
-- **Transient Detection**: Ratio = fastEnvelope / slowEnvelope
+- **Transient Detection**: Ratio = fastEnvelope / slowEnvelope (computed from filtered sidechain signal)
   - When ratio > 1: attack phase (transient)
   - When ratio ≈ 1: sustain phase (body)
 - **Gain Modulation**: Separate gain adjustment for attack and sustain portions
 - **Gain Smoothing**: ~5ms smoothing to avoid clicks
+- **Fullband Processing**: Gain modulation applied to ORIGINAL unfiltered signal
 
 **Fixed Parameters (no user controls):**
-- Attack: 60% (boost transients in bass frequencies)
-- Sustain: -50% (reduce body/sustain in bass frequencies)
-- Mix: 50% (dry/wet blend)
-- Crossover frequency: 150Hz (fixed)
+- Attack: 75% (boost transients, optimized)
+- Sustain: 0% (neutral, optimized)
+- Mix: 55% (dry/wet blend, optimized)
+- Sidechain frequency: 150Hz (default, adjustable 100-300Hz)
 - Always active (no bypass control)
 
 **Design Rationale:**
-- Processes only bass frequencies (< 150Hz) to tighten low-end transients without affecting mid/high frequencies
-- Uses crossover filters to split signal, process low band, then recombine
-- Fixed parameters optimized for bass transient control
-- Invisible to user (no UI controls) - always active in signal chain
+- **Zero phase issues**: No crossover filters in audio path - signal passes through unchanged except for gain modulation
+- **Bass-focused detection**: Sidechain filtering focuses envelope detection on low frequencies (< 150Hz) where transients matter most
+- **Fullband preservation**: Gain modulation applied to fullband signal preserves all frequencies
+- **CPU efficient**: Single one-pole filter in worklet (no 4x BiquadFilter crossover)
+- **Invisible to user**: No UI controls - always active in signal chain with optimized parameters
 
 ### SpeakerSimNode
 

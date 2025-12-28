@@ -11,7 +11,7 @@ Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube ampl
 
 - **Tape Simulation** - Wow/flutter, head bump, HF rolloff, stereo widening, odd harmonic saturation (3rd, 5th, 7th harmonics with 1/n³ decay)
 - **Tube Saturation** - Analog-modeled soft clipping with even harmonic generation (2nd, 4th, 6th harmonics with 1/n² decay)
-- **Transient Shaper** - SPL Transient Designer-style processing for bass frequencies (< 150Hz) - tightens low-end transients
+- **Transient Shaper** - SPL Transient Designer-style processor using sidechain filtering (bass-focused detection, fullband processing) - tightens low-end transients
 - **4-Band EQ** - Bass, Mid, Treble, Presence (fixed frequency parametric)
 - **Hard Clipper** - 0dB output protection circuit
 - **Master Bypass** - True bypass for instant A/B comparison
@@ -237,7 +237,7 @@ ember-web-app/
 2. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening, odd harmonic saturation (3rd, 5th, 7th with 1/n³ decay)
 3. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
 4. **TubeSaturationNode** - AudioWorklet with tanh clipping, even harmonic generation (2nd, 4th, 6th with 1/n² decay), controllable via Drive and Harmonics knobs
-5. **TransientNode** - SPL Transient Designer-style processor for bass frequencies (< 150Hz). Fixed parameters: Attack 60%, Sustain -50%, Mix 50%. Always active, no user controls.
+5. **TransientNode** - SPL Transient Designer-style processor using sidechain filtering (150Hz lowpass for detection, fullband gain modulation). Fixed parameters: Attack 75%, Sustain 0%, Mix 55%. Always active, no user controls.
 6. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
 
 **Note:** `SpeakerSimNode` exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions for cabinet simulation via impulse response convolution.

@@ -1,6 +1,6 @@
 /**
  * TransientNode - AudioWorklet-based transient shaper (SPL Transient Designer style)
- * Processes only frequencies below 150Hz, leaving high frequencies unchanged
+ * Uses sidechain filtering: envelope detection on filtered bass, gain applied to fullband signal
  */
 
 export class TransientNode {
@@ -10,27 +10,10 @@ export class TransientNode {
   private ctx: AudioContext;
   private isBypassed: boolean = false;
 
-  // Crossover filters (150Hz split)
-  private lowpassFilter: BiquadFilterNode;
-  private highpassFilter: BiquadFilterNode;
-  private sumGain: GainNode;
-
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
     this.inputGain = ctx.createGain();
     this.bypassGain = ctx.createGain();
-    this.sumGain = ctx.createGain();
-    
-    // Crossover at 150Hz (12dB/octave Linkwitz-Riley using Butterworth)
-    this.lowpassFilter = ctx.createBiquadFilter();
-    this.lowpassFilter.type = 'lowpass';
-    this.lowpassFilter.frequency.value = 150;
-    this.lowpassFilter.Q.value = 0.707; // Butterworth Q
-    
-    this.highpassFilter = ctx.createBiquadFilter();
-    this.highpassFilter.type = 'highpass';
-    this.highpassFilter.frequency.value = 150;
-    this.highpassFilter.Q.value = 0.707; // Butterworth Q
     
     // Initially connect input to bypass (passthrough)
     this.inputGain.connect(this.bypassGain);
@@ -48,19 +31,9 @@ export class TransientNode {
         }
       });
       
-      // Setup crossover routing:
-      // inputGain -> [lowpass, highpass]
-      // lowpass -> worklet -> sumGain
-      // highpass -> sumGain
-      // sumGain -> bypassGain
-      this.inputGain.connect(this.lowpassFilter);
-      this.inputGain.connect(this.highpassFilter);
-      
-      this.lowpassFilter.connect(this.workletNode);
-      this.workletNode.connect(this.sumGain);
-      
-      this.highpassFilter.connect(this.sumGain);
-      this.sumGain.connect(this.bypassGain);
+      // Simple fullband routing: inputGain → workletNode → bypassGain
+      // Sidechain filtering happens inside the worklet
+      this.workletNode.connect(this.bypassGain);
       
       this.updateRouting();
     } catch (error) {
@@ -80,9 +53,8 @@ export class TransientNode {
       // Bypass: connect directly to output gain
       this.inputGain.connect(this.bypassGain);
     } else {
-      // Process: connect to crossover filters
-      this.inputGain.connect(this.lowpassFilter);
-      this.inputGain.connect(this.highpassFilter);
+      // Process: connect to worklet (fullband, no crossover)
+      this.inputGain.connect(this.workletNode);
     }
   }
 
@@ -125,6 +97,19 @@ export class TransientNode {
   }
 
   /**
+   * Set sidechain filter frequency (100-300 Hz)
+   * Lower frequencies are used for envelope detection
+   */
+  setSidechainFreq(freq: number): void {
+    if (this.workletNode) {
+      const freqParam = this.workletNode.parameters.get('sidechainFreq');
+      if (freqParam) {
+        freqParam.value = Math.max(100, Math.min(300, freq));
+      }
+    }
+  }
+
+  /**
    * Set bypass state
    */
   setBypass(bypassed: boolean): void {
@@ -152,7 +137,7 @@ export class TransientNode {
    */
   disconnect(): void {
     this.bypassGain.disconnect();
-    // Don't disconnect internal nodes - they're part of internal routing
+    // Don't disconnect workletNode - it's internal routing
   }
 
   /**
@@ -160,24 +145,14 @@ export class TransientNode {
    */
   restoreRouting(): void {
     if (this.workletNode) {
-      // Ensure internal crossover routing is intact
+      // Ensure worklet is connected to bypass gain
       try {
-        // Disconnect and reconnect crossover paths
-        this.lowpassFilter.disconnect();
-        this.highpassFilter.disconnect();
         this.workletNode.disconnect();
-        this.sumGain.disconnect();
-        
-        // Rebuild crossover routing
-        this.lowpassFilter.connect(this.workletNode);
-        this.workletNode.connect(this.sumGain);
-        this.highpassFilter.connect(this.sumGain);
-        this.sumGain.connect(this.bypassGain);
       } catch {
-        // Already disconnected or error - ignore
+        // Already disconnected
       }
+      this.workletNode.connect(this.bypassGain);
     }
     this.updateRouting();
   }
 }
-

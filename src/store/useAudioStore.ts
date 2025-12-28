@@ -29,6 +29,11 @@ interface AudioState {
   preGain: number;      // Pre-clipper gain in dB
   outputGain: number;   // Master volume in dB
 
+  // Transient shaper parameters (for debug)
+  transientAttack: number;  // -1.0 to +1.0
+  transientSustain: number;  // -1.0 to +1.0
+  transientMix: number;      // 0.0 to 1.0
+
   // Bypass states
   bypassAll: boolean;          // Master bypass - routes input directly to output
   bypassTapeSim: boolean;
@@ -68,6 +73,9 @@ export const useAudioStore = create<AudioState>()(
       saturationMix: STARTER_PRESET.saturationMix ?? 0.6,
       preGain: STARTER_PRESET.preGain ?? 0,
       outputGain: 0,  // Master volume starts at 0, not controlled by presets
+      transientAttack: 0.75,  // Default: 75% (optimal)
+      transientSustain: 0.0,  // Default: 0% (optimal)
+      transientMix: 0.55,      // Default: 55% (optimal)
       bypassAll: false,
       bypassTapeSim: STARTER_PRESET.bypassTapeSim ?? false,
       bypassToneStack: STARTER_PRESET.bypassToneStack ?? false,

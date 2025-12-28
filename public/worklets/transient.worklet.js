@@ -1,7 +1,12 @@
 /**
  * TransientProcessor - AudioWorklet for SPL Transient Designer-style processing
  * 
- * Dual envelope follower approach:
+ * Sidechain filtering approach:
+ * - Lowpass filter (150Hz default) applied to COPY of input for envelope detection
+ * - Envelope detection runs on filtered signal (focuses on bass transients)
+ * - Gain modulation applied to ORIGINAL fullband signal
+ * 
+ * Dual envelope follower:
  * - Fast envelope: catches transients (attack ~0.1ms, release ~5ms)
  * - Slow envelope: follows body/sustain (attack ~10ms, release ~100ms)
  * 
@@ -9,6 +14,7 @@
  * - attack: -1.0 to +1.0, gain adjustment during transient phase
  * - sustain: -1.0 to +1.0, gain adjustment during sustain phase
  * - mix: 0.0 to 1.0, dry/wet blend
+ * - sidechainFreq: 100-300 Hz, lowpass cutoff for detector (default 150Hz)
  */
 
 class TransientProcessor extends AudioWorkletProcessor {
@@ -34,6 +40,13 @@ class TransientProcessor extends AudioWorkletProcessor {
         minValue: 0.0,
         maxValue: 1.0,
         automationRate: 'a-rate'
+      },
+      {
+        name: 'sidechainFreq',
+        defaultValue: 150.0,
+        minValue: 100.0,
+        maxValue: 300.0,
+        automationRate: 'k-rate' // Constant rate (rarely changes)
       }
     ];
   }
@@ -42,8 +55,10 @@ class TransientProcessor extends AudioWorkletProcessor {
     super(options);
     
     // Get sample rate from processor options or use default
-    // sampleRate is a global in AudioWorkletProcessor context
     this.sampleRate = options.processorOptions?.sampleRate || (typeof sampleRate !== 'undefined' ? sampleRate : 48000);
+    
+    // Sidechain lowpass filter state (per channel)
+    this.sidechainFiltered = [0.0, 0.0]; // Stereo
     
     // Envelope follower state (per channel)
     this.fastEnv = [0.0, 0.0]; // Stereo
@@ -51,6 +66,9 @@ class TransientProcessor extends AudioWorkletProcessor {
     
     // Smoothed gain (per channel) to avoid clicks
     this.smoothedGain = [1.0, 1.0];
+    
+    // Sidechain filter coefficient (will be updated from sidechainFreq parameter)
+    this.sidechainAlpha = 0.0;
     
     // Envelope coefficients (computed from time constants)
     // Fast: attack 0.1ms, release 5ms
@@ -79,6 +97,15 @@ class TransientProcessor extends AudioWorkletProcessor {
   }
 
   /**
+   * Update sidechain lowpass filter coefficient
+   * One-pole lowpass: filtered = filtered + alpha * (input - filtered)
+   * where alpha = 1 - exp(-2π * freq / sampleRate)
+   */
+  updateSidechainCoeff(freq) {
+    this.sidechainAlpha = 1.0 - Math.exp(-2.0 * Math.PI * freq / this.sampleRate);
+  }
+
+  /**
    * Update envelope follower (one-pole filter)
    * @param {number} input - Absolute value of input sample
    * @param {number} currentEnv - Current envelope value
@@ -104,68 +131,70 @@ class TransientProcessor extends AudioWorkletProcessor {
       return true;
     }
 
-    // Sample rate is fixed per AudioContext, no need to check
-
     const attack = parameters.attack;
     const sustain = parameters.sustain;
     const mix = parameters.mix;
+    const sidechainFreq = parameters.sidechainFreq;
+
+    // Update sidechain filter coefficient if frequency changed
+    const freqValue = sidechainFreq.length > 0 ? sidechainFreq[0] : sidechainFreq;
+    this.updateSidechainCoeff(freqValue);
 
     // Process each channel
     for (let channel = 0; channel < input.length; channel++) {
       const inputChannel = input[channel];
       const outputChannel = output[channel];
       
-      // Get current envelope state for this channel
+      // Get current state for this channel
+      let sidechainFiltered = this.sidechainFiltered[channel];
       let fastEnv = this.fastEnv[channel];
       let slowEnv = this.slowEnv[channel];
       let smoothedGain = this.smoothedGain[channel];
 
       for (let i = 0; i < inputChannel.length; i++) {
-        const drySample = inputChannel[i];
+        const drySample = inputChannel[i]; // Original fullband signal
         
         // Get parameter values (handle both constant and variable rate)
         const attackValue = attack.length > 1 ? attack[i] : attack[0];
         const sustainValue = sustain.length > 1 ? sustain[i] : sustain[0];
         const mixValue = mix.length > 1 ? mix[i] : mix[0];
 
-        // Update envelopes using absolute value of input
-        const absInput = Math.abs(drySample);
-        fastEnv = this.updateEnvelope(absInput, fastEnv, this.fastAttackCoeff, this.fastReleaseCoeff);
-        slowEnv = this.updateEnvelope(absInput, slowEnv, this.slowAttackCoeff, this.slowReleaseCoeff);
+        // SIDECHAIN PATH: Apply lowpass filter to COPY of input for detection
+        sidechainFiltered = sidechainFiltered + this.sidechainAlpha * (drySample - sidechainFiltered);
+        
+        // Update envelopes using ABSOLUTE VALUE of FILTERED signal
+        const absFiltered = Math.abs(sidechainFiltered);
+        fastEnv = this.updateEnvelope(absFiltered, fastEnv, this.fastAttackCoeff, this.fastReleaseCoeff);
+        slowEnv = this.updateEnvelope(absFiltered, slowEnv, this.slowAttackCoeff, this.slowReleaseCoeff);
 
         // Compute ratio for transient detection
-        // Add small epsilon to avoid division by zero
         const epsilon = 1e-10;
         const ratio = fastEnv / (slowEnv + epsilon);
 
         // Determine target gain based on phase
-        // When ratio > 1: transient/attack phase
-        // When ratio ≈ 1: sustain phase
         let targetGain;
         if (ratio > 1.0) {
           // Attack phase: apply attack parameter
-          // Map attack (-1 to +1) to gain reduction/boost
-          // Positive attack = boost transients, negative = reduce transients
-          const transientAmount = ratio - 1.0; // How much above baseline
+          const transientAmount = ratio - 1.0;
           targetGain = 1.0 + attackValue * transientAmount;
         } else {
           // Sustain phase: apply sustain parameter
-          // Positive sustain = boost body, negative = reduce body
-          const sustainAmount = 1.0 - ratio; // How much below baseline
+          const sustainAmount = 1.0 - ratio;
           targetGain = 1.0 + sustainValue * sustainAmount;
         }
 
         // Smooth gain changes to avoid clicks
         smoothedGain = smoothedGain + this.gainSmoothCoeff * (targetGain - smoothedGain);
 
-        // Apply gain to create wet signal
+        // AUDIO PATH: Apply gain to ORIGINAL fullband signal
         const wetSample = drySample * smoothedGain;
 
         // Dry/wet mix
         outputChannel[i] = drySample * (1.0 - mixValue) + wetSample * mixValue;
       }
 
-      // Store envelope state for next block
+      // Store state for next block
+      this.sidechainFiltered[channel] = sidechainFiltered;
       this.fastEnv[channel] = fastEnv;
       this.slowEnv[channel] = slowEnv;
       this.smoothedGain[channel] = smoothedGain;
@@ -176,4 +205,3 @@ class TransientProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('transient', TransientProcessor);
-

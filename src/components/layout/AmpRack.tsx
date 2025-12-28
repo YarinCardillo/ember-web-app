@@ -18,6 +18,7 @@ import { TubeSaturationNode } from '../../audio/nodes/TubeSaturationNode';
 import { TransientNode } from '../../audio/nodes/TransientNode';
 import { SpeakerSimNode } from '../../audio/nodes/SpeakerSimNode';
 import { OutputNode } from '../../audio/nodes/OutputNode';
+// import { TransientDebug } from '../ui/TransientDebug'; // Debug panel - uncomment if needed
 import { isMobileDevice } from '../../utils/device-detection';
 import presetsData from '../../audio/presets/amp-presets.json';
 import type { PresetCollection } from '../../types/audio.types';
@@ -98,12 +99,6 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       
       console.log('Initializing transient shaper...');
       await nodes.transient!.initialize();
-      
-      // Set fixed transient shaper parameters (bass frequencies only, < 150Hz)
-      // Attack 60%, Sustain -50%, Mix 50%
-      nodes.transient!.setAttack(0.6);
-      nodes.transient!.setSustain(-0.5);
-      nodes.transient!.setMix(0.5);
       
       // Sync bypass state from store
       const bypassTapeSim = useAudioStore.getState().bypassTapeSim;
@@ -225,6 +220,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const harmonics = useAudioStore((state) => state.harmonics);
   const saturationMix = useAudioStore((state) => state.saturationMix);
   const bypassSaturation = useAudioStore((state) => state.bypassSaturation);
+  const transientAttack = useAudioStore((state) => state.transientAttack);
+  const transientSustain = useAudioStore((state) => state.transientSustain);
+  const transientMix = useAudioStore((state) => state.transientMix);
   const preGain = useAudioStore((state) => state.preGain);
   const outputGain = useAudioStore((state) => state.outputGain);
 
@@ -248,7 +246,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.saturation.setMix(saturationMix);
       nodes.saturation.setBypass(bypassSaturation);
     }
-    // Transient shaper has fixed parameters set at initialization
+    if (nodes.transient) {
+      nodes.transient.setAttack(transientAttack);
+      nodes.transient.setSustain(transientSustain);
+      nodes.transient.setMix(transientMix);
+    }
     if (nodes.output) {
       nodes.output.setPreGain(preGain);
       nodes.output.setGain(outputGain);
@@ -264,6 +266,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     harmonics,
     saturationMix,
     bypassSaturation,
+    transientAttack,
+    transientSustain,
+    transientMix,
     preGain,
     outputGain,
   ]);
@@ -456,6 +461,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           </div>
         </div>
       </div>
+      
+      {/* Debug UI - Temporary for parameter tuning */}
+      {/* <TransientDebug /> */}
     </div>
   );
 }
