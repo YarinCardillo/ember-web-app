@@ -86,6 +86,9 @@ export function Knob({
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
       if (!isDragging) return;
+      
+      // Prevent page scrolling while dragging
+      e.preventDefault();
 
       const deltaY = startYRef.current - e.touches[0].clientY;
       const range = max - min;

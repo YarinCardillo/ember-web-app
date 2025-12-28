@@ -592,6 +592,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   // Enumerate devices (refreshes after initialization when we have permission)
   useEffect(() => {
     const refreshDevices = async (): Promise<void> => {
+      // Skip device enumeration on mobile - they can't select devices anyway
+      if (isMobile) {
+        return;
+      }
+      
       try {
         const engine = AudioEngine.getInstance();
         
@@ -620,7 +625,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     return () => {
       navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
     };
-  }, [isInitialized]);
+  }, [isInitialized, isMobile]);
 
   const presets = presetsData as PresetCollection;
 
