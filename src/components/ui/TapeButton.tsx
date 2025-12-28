@@ -1,122 +1,80 @@
 /**
  * TapeButton - Button with animated Ampex GIF
  * GIF plays when active, shows static first frame when inactive
+ * 
+ * IMPORTANT: The img element is always mounted to prevent animation resets
+ * from React re-renders. We use CSS visibility to show/hide.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 
 interface TapeButtonProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
 }
 
-export function TapeButton({ checked, onChange }: TapeButtonProps): JSX.Element {
-  const imgRef = useRef<HTMLImageElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [staticFrameLoaded, setStaticFrameLoaded] = useState(false);
+const GIF_SRC = '/assets/Ampex_orange_transparent.gif';
 
-  // Capture first frame of GIF - run when canvas is available
+function TapeButtonComponent({ checked, onChange }: TapeButtonProps): JSX.Element {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [staticFrameReady, setStaticFrameReady] = useState(false);
+
+  // Capture first frame of GIF once on mount
   useEffect(() => {
-    // Only capture if we haven't already loaded
-    if (staticFrameLoaded) return;
+    if (staticFrameReady) return;
     
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Create a fresh Image object to capture the first frame
-    // This ensures we get frame 0 before animation starts
-    const captureImg = new Image();
+    const img = new Image();
     
-    const captureFrame = () => {
-      try {
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        // Use actual image dimensions
-        const width = captureImg.naturalWidth || 48;
-        const height = captureImg.naturalHeight || 48;
-        
-        // Set canvas size to match image
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Draw the first frame immediately (before animation loop starts)
-        ctx.drawImage(captureImg, 0, 0);
-        setStaticFrameLoaded(true);
-      } catch (error) {
-        console.error('Failed to capture GIF frame:', error);
-        setStaticFrameLoaded(false);
-      }
-    };
-
-    // Capture immediately on load, synchronously before animation starts
-    captureImg.onload = () => {
-      // Small delay to ensure canvas is ready
-      setTimeout(() => {
-        captureFrame();
-      }, 0);
+    img.onload = () => {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0);
+      setStaticFrameReady(true);
     };
     
-    // Handle error case
-    captureImg.onerror = () => {
-      console.error('Failed to load GIF for capture');
-      setStaticFrameLoaded(false);
-    };
-    
-    // Load without cache buster - rely on browser cache for performance
-    captureImg.src = `/assets/Ampex_orange_transparent.gif`;
-  }, [staticFrameLoaded]);
+    img.src = GIF_SRC;
+  }, [staticFrameReady]);
 
   return (
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="
-        relative flex items-center justify-center
-        focus:outline-none
-        transition-opacity duration-300
-      "
+      className="relative flex items-center justify-center focus:outline-none w-12 h-12"
       role="switch"
       aria-checked={checked}
       aria-label="Tape Sim"
       title="Tape Sim"
     >
-      {/* Hidden image used to load GIF and capture first frame */}
-      <img
-        ref={imgRef}
-        src="/assets/Ampex_orange_transparent.gif"
-        alt=""
-        className="hidden"
-        loading="eager"
-        fetchPriority="high"
-      />
-      
-      {/* Always render canvas (hidden when active) so we can draw to it */}
+      {/* Canvas for static first frame when inactive */}
       <canvas
         ref={canvasRef}
-        className="w-12 h-12 object-contain opacity-50"
-        style={{ display: !checked && staticFrameLoaded ? 'block' : 'none' }}
+        className="absolute inset-0 w-full h-full object-contain opacity-50"
+        style={{ 
+          visibility: !checked && staticFrameReady ? 'visible' : 'hidden',
+          pointerEvents: 'none'
+        }}
       />
       
-      {/* Show animated GIF when active */}
-      {checked && (
-        <img
-          src="/assets/Ampex_orange_transparent.gif"
-          alt="Tape simulation"
-          className="w-12 h-12 object-contain"
-          loading="eager"
-          fetchPriority="high"
-        />
-      )}
-      
-      {/* Placeholder while canvas loads when inactive - match exact dimensions */}
-      {!checked && !staticFrameLoaded && (
-        <div className="w-12 h-12 flex items-center justify-center opacity-50">
-          {/* Empty placeholder with correct size to prevent layout shift */}
-          <div className="w-full h-full bg-transparent" />
-        </div>
-      )}
+      {/* Animated GIF - ALWAYS MOUNTED, visibility controlled by CSS */}
+      <img
+        src={GIF_SRC}
+        alt="Tape simulation"
+        className="absolute inset-0 w-full h-full object-contain"
+        style={{ 
+          visibility: checked ? 'visible' : 'hidden',
+          pointerEvents: 'none'
+        }}
+      />
     </button>
   );
 }
+
+// Memoize to prevent unnecessary re-renders from parent
+export const TapeButton = memo(TapeButtonComponent);
 
