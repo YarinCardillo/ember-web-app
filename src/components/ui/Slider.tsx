@@ -2,7 +2,7 @@
  * Slider - Linear fader control
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 interface SliderProps {
   label: string;
@@ -50,6 +50,14 @@ export function Slider({
   // Calculate fill percentage for styling
   const fillPercent = ((value - min) / (max - min)) * 100;
 
+  // Get CSS variable for ember-orange color
+  const emberOrange = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return getComputedStyle(document.documentElement).getPropertyValue('--ember-orange').trim() || '#ff6b35';
+    }
+    return '#ff6b35';
+  }, []);
+
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex justify-between items-center">
@@ -88,7 +96,7 @@ export function Slider({
             [&::-moz-range-thumb]:cursor-pointer
           "
           style={{
-            background: `linear-gradient(to right, #ff6b35 0%, #ff6b35 ${fillPercent}%, #374151 ${fillPercent}%, #374151 100%)`,
+            background: `linear-gradient(to right, ${emberOrange} 0%, ${emberOrange} ${fillPercent}%, #374151 ${fillPercent}%, #374151 100%)`,
           }}
         />
       </div>

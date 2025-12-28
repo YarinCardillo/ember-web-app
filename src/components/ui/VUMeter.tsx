@@ -2,8 +2,16 @@
  * VUMeter - Analog needle-style VU meter with arc scale
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { linearToDb } from '../../utils/dsp-math';
+
+// Helper to get CSS variable value
+const getCSSVariable = (varName: string, fallback: string): string => {
+  if (typeof window !== 'undefined') {
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
+  }
+  return fallback;
+};
 
 interface VUMeterProps {
   analyser: AnalyserNode | null;
@@ -26,6 +34,10 @@ export function VUMeter({
 }: VUMeterProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
+  
+  // Get CSS variables for colors
+  const emberOrange = useMemo(() => getCSSVariable('--ember-orange', '#ff6b35'), []);
+  const amberGlow = useMemo(() => getCSSVariable('--amber-glow', '#ffaa00'), []);
   
   // Smooth needle position for analog feel
   const currentNeedleAngleRef = useRef<number>(-135 * (Math.PI / 180));
@@ -166,7 +178,7 @@ export function VUMeter({
       ctx.stroke();
 
       // Draw needle
-      ctx.strokeStyle = '#ff6b35';
+      ctx.strokeStyle = emberOrange;
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       ctx.beginPath();
@@ -251,14 +263,14 @@ export function VUMeter({
         centerX + Math.cos(needleAngle) * radius,
         centerY + Math.sin(needleAngle) * radius
       );
-      needleGradient.addColorStop(0, '#ff6b35');
-      needleGradient.addColorStop(0.7, '#ffaa00');
-      needleGradient.addColorStop(1, '#ffaa00');
+      needleGradient.addColorStop(0, emberOrange);
+      needleGradient.addColorStop(0.7, amberGlow);
+      needleGradient.addColorStop(1, amberGlow);
 
       ctx.strokeStyle = needleGradient;
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
-      ctx.shadowColor = '#ffaa00';
+      ctx.shadowColor = amberGlow;
       ctx.shadowBlur = 6;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);

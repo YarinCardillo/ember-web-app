@@ -45,8 +45,11 @@ export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JS
         />
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-5xl font-bold text-ember-orange tracking-tight">
-              EMBER AMP
+            <h1 className="text-2xl md:text-5xl font-bold tracking-tight">
+              <span className="bg-gradient-to-br from-ember-orange to-amber-glow bg-clip-text text-transparent">
+                EMBER
+              </span>
+              <span className="text-white ml-2 md:ml-3">AMP</span>
             </h1>
             <span className="ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 text-[10px] md:text-xs font-semibold bg-ember-orange/20 text-ember-orange border border-ember-orange/40 rounded-full uppercase tracking-wider">
               Beta

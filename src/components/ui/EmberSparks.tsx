@@ -2,7 +2,7 @@
  * EmberSparks - Ambient fire spark animation overlay
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 interface Spark {
   id: number;
@@ -15,6 +15,21 @@ interface Spark {
 
 export function EmberSparks(): JSX.Element {
   const [sparks, setSparks] = useState<Spark[]>([]);
+
+  // Get CSS variables for colors
+  const emberOrange = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return getComputedStyle(document.documentElement).getPropertyValue('--ember-orange').trim() || '#ff6b35';
+    }
+    return '#ff6b35';
+  }, []);
+
+  const amberGlow = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return getComputedStyle(document.documentElement).getPropertyValue('--amber-glow').trim() || '#ffaa00';
+    }
+    return '#ffaa00';
+  }, []);
 
   useEffect(() => {
     // Generate random sparks
@@ -46,8 +61,8 @@ export function EmberSparks(): JSX.Element {
             bottom: '-10px',
             width: `${spark.size}px`,
             height: `${spark.size}px`,
-            background: `radial-gradient(circle, #ffaa00 0%, #ff6b35 50%, transparent 100%)`,
-            boxShadow: `0 0 ${spark.size * 2}px #ff6b35, 0 0 ${spark.size * 4}px #ffaa0066`,
+            background: `radial-gradient(circle, ${amberGlow} 0%, ${emberOrange} 50%, transparent 100%)`,
+            boxShadow: `0 0 ${spark.size * 2}px ${emberOrange}, 0 0 ${spark.size * 4}px ${amberGlow}66`,
             opacity: spark.opacity,
             animationDelay: `${spark.delay}s`,
             animationDuration: `${spark.duration}s`,

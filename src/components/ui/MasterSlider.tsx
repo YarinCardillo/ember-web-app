@@ -4,7 +4,7 @@
  * Right half: 0 dB to +6 dB
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 interface MasterSliderProps {
   label: string;
@@ -69,6 +69,14 @@ export function MasterSlider({
 
   const currentPosition = dbToPosition(value);
 
+  // Get CSS variable for ember-orange color
+  const emberOrange = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return getComputedStyle(document.documentElement).getPropertyValue('--ember-orange').trim() || '#ff6b35';
+    }
+    return '#ff6b35';
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const position = parseFloat(e.target.value);
     const dbValue = positionToDb(position);
@@ -122,7 +130,7 @@ export function MasterSlider({
             [&::-moz-range-thumb]:cursor-pointer
           "
           style={{
-            background: `linear-gradient(to right, #ff6b35 0%, #ff6b35 ${currentPosition}%, #374151 ${currentPosition}%, #374151 100%)`,
+            background: `linear-gradient(to right, ${emberOrange} 0%, ${emberOrange} ${currentPosition}%, #374151 ${currentPosition}%, #374151 100%)`,
           }}
         />
       </div>

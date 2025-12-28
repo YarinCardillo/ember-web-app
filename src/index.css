@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --ember-orange: #ff6b35;
+    --amber-glow: #ffaa00;
+  }
+
   body {
     @apply bg-dark-bg text-text-light;
     background-image: 
@@ -58,15 +63,15 @@
 
   .knob-glow {
     box-shadow: 
-      0 0 10px rgba(255, 107, 53, 0.3),
-      0 0 20px rgba(255, 107, 53, 0.2),
+      0 0 10px color-mix(in srgb, var(--ember-orange) 30%, transparent),
+      0 0 20px color-mix(in srgb, var(--ember-orange) 20%, transparent),
       inset 0 0 20px rgba(0, 0, 0, 0.5);
   }
 
   .knob-glow-active {
     box-shadow: 
-      0 0 15px rgba(255, 170, 0, 0.5),
-      0 0 30px rgba(255, 170, 0, 0.3),
+      0 0 15px color-mix(in srgb, var(--amber-glow) 50%, transparent),
+      0 0 30px color-mix(in srgb, var(--amber-glow) 30%, transparent),
       inset 0 0 20px rgba(0, 0, 0, 0.5);
   }
 
