@@ -11,7 +11,6 @@ interface VinylModeButtonProps {
   disabled?: boolean;
 }
 
-const SPIN_TRANSITION_MS = 2500; // 2.5 sec spin up/down
 const DURATION_SECONDS = 240; // 4 minutes
 
 export function VinylModeButton({
