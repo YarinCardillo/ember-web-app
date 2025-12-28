@@ -11,6 +11,7 @@ Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube ampl
 
 - **Tape Simulation** - Wow/flutter, head bump, HF rolloff, stereo widening, odd harmonic saturation (3rd, 5th, 7th harmonics with 1/n³ decay)
 - **Tube Saturation** - Analog-modeled soft clipping with even harmonic generation (2nd, 4th, 6th harmonics with 1/n² decay)
+- **Transient Shaper** - SPL Transient Designer-style processing for bass frequencies (< 150Hz) - tightens low-end transients
 - **4-Band EQ** - Bass, Mid, Treble, Presence (fixed frequency parametric)
 - **Hard Clipper** - 0dB output protection circuit
 - **Master Bypass** - True bypass for instant A/B comparison
@@ -25,15 +26,15 @@ Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube ampl
 
 ## Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| Framework | React 18 + TypeScript | Type-safe UI components |
-| Build Tool | Vite | Fast development, ESM native |
-| Styling | Tailwind CSS | Utility-first styling |
-| Audio Engine | Web Audio API | Native browser audio processing |
-| Custom DSP | AudioWorklet | Low-latency, separate-thread processing |
-| State | Zustand | Lightweight state management |
-| Persistence | localStorage | Settings and presets storage |
+| Layer        | Technology            | Purpose                                 |
+|--------------|-----------------------|-----------------------------------------|
+| Framework    | React 18 + TypeScript | Type-safe UI components                 |
+| Build Tool   | Vite                  | Fast development, ESM native            |
+| Styling      | Tailwind CSS          | Utility-first styling                   |
+| Audio Engine | Web Audio API         | Native browser audio processing         |
+| Custom DSP   | AudioWorklet          | Low-latency, separate-thread processing |
+| State        | Zustand               | Lightweight state management            |
+| Persistence  | localStorage          | Settings and presets storage            |
 
 **No external audio libraries** - Pure Web Audio API implementation for full control and smaller bundle size.
 
@@ -149,7 +150,8 @@ ember-web-app/
 ├── public/
 │   ├── worklets/                 # AudioWorklet processors
 │   │   ├── tube-saturation.worklet.js
-│   │   └── tape-wobble.worklet.js
+│   │   ├── tape-wobble.worklet.js
+│   │   └── transient.worklet.js
 │   ├── assets/                   # UI assets
 │   │   └── Ampex_orange_transparent.gif
 │   ├── ir/                       # Impulse response files
@@ -163,6 +165,7 @@ ember-web-app/
 │   │   │   ├── TapeSimNode.ts    # Wow/flutter, head bump, HF rolloff
 │   │   │   ├── ToneStackNode.ts
 │   │   │   ├── TubeSaturationNode.ts
+│   │   │   ├── TransientNode.ts  # Bass transient shaper (< 150Hz)
 │   │   │   ├── SpeakerSimNode.ts
 │   │   │   └── OutputNode.ts     # Includes hard clipper
 │   │   └── presets/
@@ -222,10 +225,10 @@ ember-web-app/
 ## Signal Flow
 
 ```
-┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌──────────────────────────────────────────────┐   ┌─────────┐
-│ Virtual │──▶│  Input  │──▶│  Tape   │──▶│  Tone   │──▶│  Tube   │──▶│        Output                                │──▶│Speakers │
-│  Cable  │   │ (Gain)  │   │  Sim    │   │  Stack  │   │Saturation│   │ PreGain→ClipperMeter→Clip→Master→DACMeter  │   │         │
-└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └──────────────────────────────────────────────┘   └─────────┘
+┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌──────────────────────────────────────────────┐
+│ Virtual │──▶│  Input  │──▶│  Tape   │──▶│  EQ     │──▶│  Tubes  │──▶│Transient│──▶│                  Output                      │
+│  Cable  │   │ (Gain)  │   │         │   │         │   │         │   │ (<150Hz)│   │   PreGain→ClipperMeter→Clip→Master→DACMeter  │  
+└─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   └──────────────────────────────────────────────┘ 
 ```
 
 ### Processing Stages
@@ -234,7 +237,8 @@ ember-web-app/
 2. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening, odd harmonic saturation (3rd, 5th, 7th with 1/n³ decay)
 3. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
 4. **TubeSaturationNode** - AudioWorklet with tanh clipping, even harmonic generation (2nd, 4th, 6th with 1/n² decay), controllable via Drive and Harmonics knobs
-5. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
+5. **TransientNode** - SPL Transient Designer-style processor for bass frequencies (< 150Hz). Fixed parameters: Attack 60%, Sustain -50%, Mix 50%. Always active, no user controls.
+6. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
 
 **Note:** `SpeakerSimNode` exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions for cabinet simulation via impulse response convolution.
 
@@ -242,14 +246,14 @@ ember-web-app/
 
 ## Available Presets
 
-| Preset | Description |
-|--------|-------------|
-| **Starter Preset** | Neutral settings, all modules on (default state) |
-| **Vintage Marantz** | Warm 70s receiver sound |
-| **Tube Warm** | Rich tube amplifier character |
-| **Modern Clean** | Transparent with subtle enhancement |
-| **Lo-Fi** | Vintage radio vibes |
-| **Flat** | EQ only, saturation bypassed |
+| Preset              | Description                                      |
+|---------------------|--------------------------------------------------|
+| **Starter Preset**  | Neutral settings, all modules on (default state) |
+| **Vintage Marantz** | Warm 70s receiver sound                          |
+| **Tube Warm**       | Rich tube amplifier character                    |
+| **Modern Clean**    | Transparent with subtle enhancement              |
+| **Lo-Fi**           | Vintage radio vibes                              |
+| **Flat**            | EQ only, saturation bypassed                     |
 
 ---
 
@@ -282,13 +286,13 @@ npm run lint     # Run ESLint
 
 ## Browser Support
 
-| Browser | Support | Notes |
-|---------|---------|-------|
-| Chrome 110+ | ✅ Full support | Output device selection available |
-| Edge 110+ | ✅ Full support | Output device selection available |
+| Browser      | Support         | Notes                                             |
+|--------------|-----------------|---------------------------------------------------|
+| Chrome 110+  | ✅ Full support | Output device selection available                 |
+| Edge 110+    | ✅ Full support | Output device selection available                 |
 | Brave, Opera | ✅ Full support | Chromium-based, output device selection available |
-| Firefox 76+ | ⚠️ Partial | No output device selection (uses system default) |
-| Safari 14.1+ | ⚠️ Partial | No output device selection (uses system default) |
+| Firefox 76+  | ⚠️ Partial      | No output device selection (uses system default)  |
+| Safari 14.1+ | ⚠️ Partial      | No output device selection (uses system default)  |
 
 **Recommended:** Use Chromium-based browsers (Chrome, Edge, Brave, Opera) for full functionality.
 

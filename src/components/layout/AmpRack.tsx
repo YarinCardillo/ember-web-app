@@ -15,6 +15,7 @@ import { InputNode } from '../../audio/nodes/InputNode';
 import { TapeSimNode } from '../../audio/nodes/TapeSimNode';
 import { ToneStackNode } from '../../audio/nodes/ToneStackNode';
 import { TubeSaturationNode } from '../../audio/nodes/TubeSaturationNode';
+import { TransientNode } from '../../audio/nodes/TransientNode';
 import { SpeakerSimNode } from '../../audio/nodes/SpeakerSimNode';
 import { OutputNode } from '../../audio/nodes/OutputNode';
 import { isMobileDevice } from '../../utils/device-detection';
@@ -26,6 +27,7 @@ interface AudioNodes {
   tapeSim: TapeSimNode | null;
   toneStack: ToneStackNode | null;
   saturation: TubeSaturationNode | null;
+  transient: TransientNode | null;
   speakerSim: SpeakerSimNode | null;
   output: OutputNode | null;
 }
@@ -48,6 +50,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     tapeSim: null,
     toneStack: null,
     saturation: null,
+    transient: null,
     speakerSim: null,
     output: null,
   });
@@ -81,6 +84,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
         tapeSim: new TapeSimNode(ctx),
         toneStack: new ToneStackNode(ctx),
         saturation: new TubeSaturationNode(ctx),
+        transient: new TransientNode(ctx),
         speakerSim: new SpeakerSimNode(ctx),
         output: new OutputNode(ctx),
       };
@@ -91,6 +95,15 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       
       console.log('Initializing tape simulation...');
       await nodes.tapeSim!.initialize();
+      
+      console.log('Initializing transient shaper...');
+      await nodes.transient!.initialize();
+      
+      // Set fixed transient shaper parameters (bass frequencies only, < 150Hz)
+      // Attack 60%, Sustain -50%, Mix 50%
+      nodes.transient!.setAttack(0.6);
+      nodes.transient!.setSustain(-0.5);
+      nodes.transient!.setMix(0.5);
       
       // Sync bypass state from store
       const bypassTapeSim = useAudioStore.getState().bypassTapeSim;
@@ -106,8 +119,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       // ToneStack -> Saturation
       nodes.toneStack!.connect(nodes.saturation!.inputGain);
       
-      // Saturation -> SpeakerSim
-      nodes.saturation!.connect(nodes.speakerSim!.getInput());
+      // Saturation -> Transient
+      nodes.saturation!.connect(nodes.transient!.inputGain);
+      
+      // Transient -> SpeakerSim
+      nodes.transient!.connect(nodes.speakerSim!.getInput());
       
       // SpeakerSim -> Output (includes analog soft clipper)
       nodes.speakerSim!.connect(nodes.output!.getInput());
@@ -232,6 +248,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.saturation.setMix(saturationMix);
       nodes.saturation.setBypass(bypassSaturation);
     }
+    // Transient shaper has fixed parameters set at initialization
     if (nodes.output) {
       nodes.output.setPreGain(preGain);
       nodes.output.setGain(outputGain);
@@ -262,6 +279,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.tapeSim?.disconnect();
       nodes.toneStack?.disconnect();
       nodes.saturation?.disconnect();
+      nodes.transient?.disconnect();
       nodes.speakerSim?.disconnect();
       
       // BYPASS: Connect input directly to master gain (skip all processing but keep volume control)
@@ -273,14 +291,16 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       // Disconnect bypass route
       nodes.input.getOutput().disconnect();
       
-      // Restore internal routing for saturation (may have been broken by disconnect)
+      // Restore internal routing for saturation and transient (may have been broken by disconnect)
       nodes.saturation?.restoreRouting();
+      nodes.transient?.restoreRouting();
       
       // Reconnect normal signal chain
       nodes.input.connect(nodes.tapeSim!.getInput());
       nodes.tapeSim!.connect(nodes.toneStack!.getInput());
       nodes.toneStack!.connect(nodes.saturation!.inputGain);
-      nodes.saturation!.connect(nodes.speakerSim!.getInput());
+      nodes.saturation!.connect(nodes.transient!.inputGain);
+      nodes.transient!.connect(nodes.speakerSim!.getInput());
       nodes.speakerSim!.connect(nodes.output.getInput());
       
       console.log('Master bypass DISABLED - processing active');

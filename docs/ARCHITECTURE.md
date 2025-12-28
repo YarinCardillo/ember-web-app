@@ -40,7 +40,7 @@ Ember Amp Web is a client-side audio processing application built entirely with 
 │  │  ┌───────────────────────────────────────────────▼──────────┐ │  │
 │  │  │                      Web Audio API                       │ │  │
 │  │  │       ┌─────┐ ┌────┐ ┌─────┐ ┌────┐ ┌─────┐ ┌─────┐      │ │  │
-│  │  │       │Input│→│Tape│→│ EQ  │→│Tube│→│Clip │→│ Out │      │ │  │
+│  │  │       │Input│→│Tape│→│ EQ  │→│Tube│→│Trans│→│Clip │→ Out │ │  │
 │  │  │       └─────┘ └────┘ └─────┘ └────┘ └─────┘ └─────┘      │ │  │
 │  │  └──────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────┘  │
@@ -87,7 +87,8 @@ class AudioEngine {
     // Load AudioWorklet modules
     await Promise.all([
       this.ctx.audioWorklet.addModule('/worklets/tube-saturation.worklet.js'),
-      this.ctx.audioWorklet.addModule('/worklets/tape-wobble.worklet.js')
+      this.ctx.audioWorklet.addModule('/worklets/tape-wobble.worklet.js'),
+      this.ctx.audioWorklet.addModule('/worklets/transient.worklet.js')
     ]);
   }
   
@@ -245,6 +246,46 @@ const addEvenHarmonics = (x, amount) => {
 
 Creates asymmetric "warm" distortion typical of tube amplifiers.
 
+### TransientNode
+
+SPL Transient Designer-style transient shaper that processes only frequencies below 150Hz, leaving high frequencies unchanged.
+
+**Signal Chain Inside TransientNode:**
+```
+Input → [Crossover Split]
+         ├─► Lowpass 150Hz → Transient Worklet ─┐
+         │                                      ├─► Sum → Output
+         └─► Highpass 150Hz ────────────────────┘
+```
+
+**Web Audio Nodes Used:**
+- `BiquadFilterNode` (lowpass) - 150Hz crossover, Butterworth 12dB/octave (Q = 0.707)
+- `BiquadFilterNode` (highpass) - 150Hz crossover, Butterworth 12dB/octave (Q = 0.707)
+- `AudioWorkletNode` - transient processor (dual envelope followers)
+- `GainNode` - Summing node for crossover recombination
+
+**AudioWorklet Features (transient.worklet.js):**
+- **Fast Envelope**: Attack ~0.1ms, release ~5ms (catches transients)
+- **Slow Envelope**: Attack ~10ms, release ~100ms (follows body/sustain)
+- **Transient Detection**: Ratio = fastEnvelope / slowEnvelope
+  - When ratio > 1: attack phase (transient)
+  - When ratio ≈ 1: sustain phase (body)
+- **Gain Modulation**: Separate gain adjustment for attack and sustain portions
+- **Gain Smoothing**: ~5ms smoothing to avoid clicks
+
+**Fixed Parameters (no user controls):**
+- Attack: 60% (boost transients in bass frequencies)
+- Sustain: -50% (reduce body/sustain in bass frequencies)
+- Mix: 50% (dry/wet blend)
+- Crossover frequency: 150Hz (fixed)
+- Always active (no bypass control)
+
+**Design Rationale:**
+- Processes only bass frequencies (< 150Hz) to tighten low-end transients without affecting mid/high frequencies
+- Uses crossover filters to split signal, process low band, then recombine
+- Fixed parameters optimized for bass transient control
+- Invisible to user (no UI controls) - always active in signal chain
+
 ### SpeakerSimNode
 
 Cabinet simulation using convolution. **Note: This node exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions.**
@@ -366,6 +407,7 @@ interface AudioState {
   bypassToneStack: boolean;
   bypassSaturation: boolean;
   bypassSpeakerSim: boolean;
+  // Note: TransientNode has no bypass control - always active
   
   // Presets
   currentPreset: string | null;
@@ -412,6 +454,7 @@ App
     │   ├── Knob (Drive)
     │   ├── Knob (Harmonics)
     │   └── Knob (Mix)
+    ├── [TransientNode - No UI, always active]
     ├── OutputStage
     │   ├── DeviceSelector (output)
     │   ├── MasterSlider "Gain" (pre-clipper: -36 to +36 dB, 0.1 dB steps)
@@ -510,7 +553,7 @@ When bypassAll = true:
   (all processing nodes disconnected)
 
 When bypassAll = false:
-  InputNode → TapeSim → ToneStack → Saturation → OutputNode → destination
+  InputNode → TapeSim → ToneStack → Saturation → Transient → SpeakerSim → OutputNode → destination
   (Note: SpeakerSimNode exists but is bypassed/not used)
 ```
 

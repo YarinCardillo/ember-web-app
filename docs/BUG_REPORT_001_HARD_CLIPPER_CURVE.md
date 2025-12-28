@@ -117,9 +117,9 @@ private createHardClipCurve(): Float32Array {
 
 ## Files Modified
 
-| File | Change |
-|------|--------|
-| `src/audio/nodes/OutputNode.ts` | Fixed `createHardClipCurve()` mapping formula |
+| File                             | Change                                                 |
+|----------------------------------|--------------------------------------------------------|
+| `src/audio/nodes/OutputNode.ts`  | Fixed `createHardClipCurve()` mapping formula          |
 | `src/components/ui/LEDMeter.tsx` | Added `mode` prop for RMS/Peak selection (improvement) |
 
 ---
