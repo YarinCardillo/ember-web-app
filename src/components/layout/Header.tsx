@@ -87,64 +87,64 @@ export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JS
           onSelect={handlePresetSelect}
         />
 
-        {/* Master Bypass Button */}
-        <button
-          onClick={handleBypassToggle}
-          disabled={!isRunning || isMobile}
-          className={`
-            px-3 py-2 md:px-4 md:py-3 rounded-lg font-semibold transition-all duration-300
-            flex items-center gap-2 border-2 text-sm md:text-base
-            ${!isRunning || isMobile
-              ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
-              : bypassAll
-                ? 'bg-yellow-600 hover:bg-yellow-500 border-yellow-400 text-white shadow-lg shadow-yellow-600/30'
-                : 'bg-gray-800 hover:bg-gray-700 border-gray-600 text-gray-300'
-            }
-            ${isMobile ? 'opacity-50' : ''}
-          `}
-          title={isMobile ? 'Desktop only' : 'Bypass all processing to hear dry signal'}
-        >
-          {/* Bypass LED indicator */}
-          <div
+        {/* Bypass + Power group - stays together on wrap */}
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Master Bypass Button */}
+          <button
+            onClick={handleBypassToggle}
+            disabled={!isRunning || isMobile}
             className={`
-              w-2 h-2 rounded-full transition-all duration-300
-              ${bypassAll && isRunning
-                ? 'bg-yellow-300 shadow-lg shadow-yellow-300/50 animate-pulse'
-                : 'bg-gray-500'
+              px-3 py-2 md:px-4 md:py-3 rounded-lg font-semibold transition-all duration-300
+              flex items-center gap-2 border-2 text-sm md:text-base
+              ${!isRunning || isMobile
+                ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+                : bypassAll
+                  ? 'bg-yellow-600 hover:bg-yellow-500 border-yellow-400 text-white shadow-lg shadow-yellow-600/30'
+                  : 'bg-gray-800 hover:bg-gray-700 border-gray-600 text-gray-300'
               }
+              ${isMobile ? 'opacity-50' : ''}
             `}
-          />
-          Bypass
-        </button>
+            title={isMobile ? 'Desktop only' : 'Bypass all processing to hear dry signal'}
+          >
+            {/* Bypass LED indicator */}
+            <div
+              className={`
+                w-2 h-2 rounded-full transition-all duration-300
+                ${bypassAll && isRunning
+                  ? 'bg-yellow-300 shadow-lg shadow-yellow-300/50 animate-pulse'
+                  : 'bg-gray-500'
+                }
+              `}
+            />
+            Bypass
+          </button>
 
-        {/* Power Button */}
-        <button
-          onClick={isMobile ? undefined : onPowerToggle}
-          disabled={isMobile}
-          className={`
-            px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-all duration-300
-            flex items-center gap-2 text-sm md:text-base
-            ${isMobile
-              ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
-              : isRunning
+          {/* Power Button - enabled on mobile for preview */}
+          <button
+            onClick={onPowerToggle}
+            className={`
+              px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-all duration-300
+              flex items-center gap-2 text-sm md:text-base
+              ${isRunning
                 ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30'
                 : 'bg-ember-orange hover:bg-amber-glow text-white shadow-lg shadow-ember-orange/30'
-            }
-          `}
-          title={isMobile ? 'Desktop only - requires virtual audio cable' : undefined}
-        >
-          {/* Power LED indicator */}
-          <div
-            className={`
-              w-2 h-2 rounded-full transition-all duration-300
-              ${isRunning && !isMobile
-                ? 'bg-green-400 shadow-lg shadow-green-400/50'
-                : 'bg-gray-500'
               }
             `}
-          />
-          {isRunning ? 'Power Off' : 'Power On'}
-        </button>
+            title={isMobile ? 'Power on to use Preview' : undefined}
+          >
+            {/* Power LED indicator */}
+            <div
+              className={`
+                w-2 h-2 rounded-full transition-all duration-300
+                ${isRunning
+                  ? 'bg-green-400 shadow-lg shadow-green-400/50'
+                  : 'bg-gray-500'
+                }
+              `}
+            />
+            {isRunning ? 'Power Off' : 'Power On'}
+          </button>
+        </div>
       </div>
     </header>
   );
