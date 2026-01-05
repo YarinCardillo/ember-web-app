@@ -36,9 +36,9 @@ export function Credits(): JSX.Element {
         </div>
 
         <div className="pt-2 border-t border-gray-800 mt-auto">
-          <div className="flex items-center justify-between text-xs mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs mb-2">
             <span className="opacity-50">Made with 🧡 by Yarin Cardillo</span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <a
                 href="https://yarincardillo.com"
                 target="_blank"
