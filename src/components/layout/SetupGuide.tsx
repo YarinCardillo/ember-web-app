@@ -35,8 +35,11 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
               Virtual Audio Cable Setup
             </h3>
             <p className="mb-4">
-              To route your system audio through Ember Amp Web, you need to install a virtual audio cable.
+              To route your system audio through Ember, you need to install a virtual audio cable.
               This allows your computer's audio output to be captured as an input device.
+            </p>
+            <p className="mt-2 text-sm text-text-secondary">
+              Signal flow: System Audio → Virtual Cable Input → Virtual Cable Output → Ember Input → Ember Processing → Ember Output → Speakers
             </p>
           </div>
 
@@ -55,6 +58,7 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
               </li>
               <li>Set your system's default playback device to "CABLE Input"</li>
               <li>In this app, select "CABLE Output" as your input device</li>
+              <li>In this app, select your speakers/headphones as your <strong>output</strong> device</li>
             </ol>
           </div>
 
@@ -75,9 +79,6 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
               <li>In this app, select <strong>BlackHole 2ch</strong> as your <strong>input</strong> device</li>
               <li>In this app, select your speakers/headphones as your <strong>output</strong> device</li>
             </ol>
-            <p className="mt-2 text-sm text-text-secondary">
-              Signal flow: System Audio → BlackHole → Ember Amp (processing) → Speakers
-            </p>
           </div>
 
           <div>
@@ -92,7 +93,7 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
           <div className="bg-gray-800/50 p-4 rounded border border-gray-700">
             <p className="text-sm">
               <strong>Note:</strong> After setting up your virtual audio cable, refresh this page
-              and grant microphone permissions when prompted. The app will then be able to capture
+              and <strong>grant microphone permissions</strong> when prompted. The app will then be able to capture
               your system audio.
             </p>
           </div>
