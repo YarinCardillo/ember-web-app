@@ -56,8 +56,8 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
                   vb-audio.com
                 </a>
               </li>
-              <li>Set your system's default playback device to "CABLE Input"</li>
-              <li>In this app, select "CABLE Output" as your input device</li>
+              <li>Set <strong>CABLE Input</strong> as your system output device</li>
+              <li>In this app, select <strong>CABLE Output</strong> as your input device</li>
               <li>In this app, select your speakers/headphones as your <strong>output</strong> device</li>
             </ol>
           </div>
@@ -75,7 +75,7 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
                   existential.audio
                 </a>
               </li>
-              <li>Set <strong>BlackHole 2ch</strong> as your system output (System Preferences → Sound → Output)</li>
+              <li>Set <strong>BlackHole 2ch</strong> as your system output device</li>
               <li>In this app, select <strong>BlackHole 2ch</strong> as your <strong>input</strong> device</li>
               <li>In this app, select your speakers/headphones as your <strong>output</strong> device</li>
             </ol>
