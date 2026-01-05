@@ -6,7 +6,7 @@ export function Credits(): JSX.Element {
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full">
       <h3 className="text-lg font-semibold text-ember-orange">ABOUT</h3>
-      
+
       <div className="flex flex-col gap-3 text-sm text-text-light">
         <div>
           <p className="opacity-80 leading-relaxed">
@@ -37,19 +37,19 @@ export function Credits(): JSX.Element {
 
         <div className="pt-2 border-t border-gray-800 mt-auto">
           <div className="flex items-center justify-between text-xs mb-2">
-            <span className="opacity-50">Vibecoded with 🧡 by Yarin Cardillo</span>
+            <span className="opacity-50">Made with 🧡 by Yarin Cardillo</span>
             <div className="flex items-center gap-3">
-              <a 
-                href="https://yarincardillo.com" 
-                target="_blank" 
+              <a
+                href="https://yarincardillo.com"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-ember-orange hover:text-amber-glow transition-colors"
               >
                 Portfolio →
               </a>
-              <a 
-                href="https://github.com/YarinCardillo/ember-web-app" 
-                target="_blank" 
+              <a
+                href="https://github.com/YarinCardillo/ember-web-app"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-ember-orange hover:text-amber-glow transition-colors"
               >
