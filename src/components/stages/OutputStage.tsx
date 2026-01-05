@@ -40,7 +40,7 @@ export function OutputStage({
   return (
     <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full min-w-0 overflow-hidden">
       <h3 className="text-lg font-semibold text-ember-orange">OUTPUT</h3>
-      
+
       {/* Output Device Selector */}
       <div className="flex flex-col gap-2 min-h-[60px]">
         <label className="text-xs text-text-light opacity-80">Device</label>
@@ -50,11 +50,11 @@ export function OutputStage({
           </div>
         ) : isOutputDeviceSupported ? (
           <select
-            value={outputDeviceId || ''}
+            value={outputDeviceId || 'default'}
             onChange={(e) => {
               const deviceId = e.target.value;
-              useAudioStore.getState().setOutputDevice(deviceId || null);
-              if (deviceId) {
+              useAudioStore.getState().setOutputDevice(deviceId === 'default' ? null : deviceId);
+              if (deviceId !== 'default') {
                 onOutputDeviceChange(deviceId);
               }
             }}
@@ -65,7 +65,6 @@ export function OutputStage({
               cursor-pointer w-full
             "
           >
-            <option value="">Default Output</option>
             {outputDevices.map((device) => (
               <option key={device.deviceId} value={device.deviceId}>
                 {device.label || `Device ${device.deviceId.slice(0, 8)}`}
@@ -95,7 +94,7 @@ export function OutputStage({
           />
         </div>
         <LEDMeter analyser={preClipperAnalyser} label="Clipper" mode="peak" />
-        
+
         {/* Post-clipper section */}
         <div className="w-full max-w-xs mt-4">
           <MasterSlider

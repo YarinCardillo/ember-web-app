@@ -20,7 +20,9 @@ interface InputStageProps {
   isPreviewLoading?: boolean;
   onPreviewToggle?: () => void;
   isMobileMode?: boolean;
+  isDangerous?: boolean;
 }
+
 
 export function InputStage({
   devices,
@@ -32,6 +34,7 @@ export function InputStage({
   isPreviewLoading = false,
   onPreviewToggle,
   isMobileMode = false,
+  isDangerous = false,
 }: InputStageProps): JSX.Element {
   const inputGain = useAudioStore((state) => state.inputGain);
   const setParameter = useAudioStore((state) => state.setParameter);
@@ -59,7 +62,7 @@ export function InputStage({
           </div>
         </div>
       </div>
-      
+
       <div className="flex flex-col gap-2 min-h-[60px]">
         <div className="flex items-center justify-between">
           <label className="text-xs text-text-light opacity-80">
@@ -81,29 +84,38 @@ export function InputStage({
             Mic input disabled on mobile
           </div>
         ) : (
-          <select
-            value={inputDeviceId || ''}
-            onChange={(e) => {
-              const deviceId = e.target.value;
-              useAudioStore.getState().setInputDevice(deviceId || null);
-              if (deviceId) {
-                onDeviceChange(deviceId);
-              }
-            }}
-            className="
-              bg-gray-800 border border-gray-700 rounded
-              px-3 py-2 text-text-light text-sm
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
-              cursor-pointer w-full
-            "
-          >
-            <option value="">Default Input</option>
-            {devices.map((device) => (
-              <option key={device.deviceId} value={device.deviceId}>
-                {device.label || `Device ${device.deviceId.slice(0, 8)}`}
+          <div className="relative">
+            <select
+              value={inputDeviceId || ''}
+              onChange={(e) => {
+                const deviceId = e.target.value;
+                if (deviceId) {
+                  onDeviceChange(deviceId);
+                }
+              }}
+              className={`
+                bg-gray-800 border ${isDangerous ? 'border-red-500/50' : 'border-gray-700'} rounded
+                px-3 py-2 text-text-light text-sm
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
+                cursor-pointer w-full
+              `}
+            >
+              <option value="" disabled>
+                Select Input Device...
               </option>
-            ))}
-          </select>
+              {devices.map((device) => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label || `Device ${device.deviceId.slice(0, 8)}`}
+                </option>
+              ))}
+            </select>
+            {isDangerous && (
+              <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none flex items-center gap-1.5 bg-red-900/80 px-2 py-0.5 rounded textxs text-red-100 border border-red-500/30 backdrop-blur-sm">
+                <span>⚠️</span>
+                {/*<span className="text-[10px] uppercase font-bold tracking-wider">Mic Risk</span>*/}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -127,4 +139,3 @@ export function InputStage({
     </div>
   );
 }
-
