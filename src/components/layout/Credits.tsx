@@ -55,6 +55,14 @@ export function Credits(): JSX.Element {
               >
                 GitHub →
               </a>
+              <a
+                href="https://buymeacoffee.com/yarincardillo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-ember-orange hover:text-amber-glow transition-colors"
+              >
+                Buy me a coffee →
+              </a>
             </div>
           </div>
         </div>
