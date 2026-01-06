@@ -151,7 +151,7 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
               <h5 className="font-semibold text-amber-glow mb-3">Make it persistent (optional)</h5>
 
               <p className="text-sm mb-2">
-                Create <code className="bg-gray-800 px-1 rounded">~/.config/pipewire/pipewire.conf.d/ember-virtual.conf</code>:
+                Create <code className="bg-gray-800 px-1 rounded break-all">~/.config/pipewire/pipewire.conf.d/ember-virtual.conf</code>:
               </p>
               <CodeBlock
                 code={`context.exec = [
