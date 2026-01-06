@@ -707,7 +707,18 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     refreshDevices();
 
     // Also listen for device changes
-    const handleDeviceChange = (): void => {
+    const handleDeviceChange = async (): Promise<void> => {
+      // On mobile, device changes (e.g., plugging headphones) can suspend AudioContext
+      // Resume it to keep preview working
+      if (isMobile && isRunning) {
+        try {
+          const engine = AudioEngine.getInstance();
+          await engine.resume();
+          console.log('Resumed AudioContext after device change (mobile)');
+        } catch (err) {
+          console.error('Failed to resume AudioContext:', err);
+        }
+      }
       refreshDevices();
     };
     navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
@@ -715,7 +726,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     return () => {
       navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
     };
-  }, [isInitialized, isMobile]);
+  }, [isInitialized, isMobile, isRunning]);
 
   const presets = presetsData as PresetCollection;
 
