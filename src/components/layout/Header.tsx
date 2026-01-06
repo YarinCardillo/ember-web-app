@@ -92,19 +92,18 @@ export function Header({ presets, onPowerToggle, onHelpClick }: HeaderProps): JS
           {/* Master Bypass Button */}
           <button
             onClick={handleBypassToggle}
-            disabled={!isRunning || isMobile}
+            disabled={!isRunning}
             className={`
               px-3 py-2 md:px-4 md:py-3 rounded-lg font-semibold transition-all duration-300
               flex items-center gap-2 border-2 text-sm md:text-base
-              ${!isRunning || isMobile
+              ${!isRunning
                 ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
                 : bypassAll
                   ? 'bg-yellow-600 hover:bg-yellow-500 border-yellow-400 text-white shadow-lg shadow-yellow-600/30'
                   : 'bg-gray-800 hover:bg-gray-700 border-gray-600 text-gray-300'
               }
-              ${isMobile ? 'opacity-50' : ''}
             `}
-            title={isMobile ? 'Desktop only' : 'Bypass all processing to hear dry signal'}
+            title="Bypass all processing to hear dry signal"
           >
             {/* Bypass LED indicator */}
             <div
