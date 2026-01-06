@@ -9,14 +9,14 @@
 
 Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube amplifiers directly in your web browser. Route your system audio (Spotify, YouTube, games, etc.) through a virtual audio cable, and the app applies real-time DSP processing including:
 
-- **33 Mode (Vinyl Mode)** - Slowed playback with reverb and +8dB boost for vinyl record simulation (processes audio FIRST, before input gain)
+- **33 Mode (Vinyl Mode)** - Slowed playback with reverb and +8dB boost (to recover lost volume from reverb) for vinyl record simulation (processes audio FIRST, before input gain)
 - **Preview Mode** - Play demo audio through the signal chain to hear how the app sounds before setting up virtual cables
 - **Tape Simulation** - Wow/flutter, head bump, HF rolloff, stereo widening, odd harmonic saturation (3rd, 5th, 7th harmonics with 1/n³ decay)
 - **Tube Saturation** - Analog-modeled soft clipping with even harmonic generation (2nd, 4th, 6th harmonics with 1/n² decay)
-- **Transient Shaper** - SPL Transient Designer-style processor using sidechain filtering (bass-focused detection, fullband processing) - tightens low-end transients
+- **Transient Shaper** - SPL Transient Designer-style processor using sidechain filtering (bass-focused detection, fullband processing), tightens low-end transients and recovers dynamic range
 - **4-Band EQ** - Bass, Mid, Treble, Presence (fixed frequency parametric)
 - **Hard Clipper** - 0dB output protection circuit
-- **Master Bypass** - True bypass for instant A/B comparison
+- **Bypass** - True bypass for instant A/B comparison
 
 ### Target Users
 
@@ -86,7 +86,9 @@ npm run preview
 
 ## Audio Setup
 
-To route system audio through Ember Amp Web, you need a virtual audio cable.
+To route system audio through Ember Amp, you need a virtual audio cable.
+
+Signal flow: System Audio → Virtual Cable Input → Virtual Cable Output → Ember Input → Ember Processing → Ember Output → Speakers
 
 ### macOS: BlackHole
 
@@ -96,23 +98,33 @@ To route system audio through Ember Amp Web, you need a virtual audio cable.
 4. In Ember Amp Web, select **BlackHole 2ch** as **input**
 5. In Ember Amp Web, select your speakers/headphones as **output**
 
-**Signal flow:** System Audio → BlackHole → Ember Amp (processing) → Speakers
-
 ### Windows: VB-Cable
 
 1. Download [VB-Cable](https://vb-audio.com/Cable/)
 2. Install and restart
 3. Set **CABLE Input** as default playback device (Sound Settings)
-4. In Ember Amp Web, select **CABLE Output** as input
+4. In Ember Amp, select **CABLE Output** as input
 
-### Linux: PulseAudio
+### Linux: PipeWire (Arch, Fedora, Ubuntu 22.10+)
 
-```bash
+```bash 
 # Create a null sink
-pactl load-module module-null-sink sink_name=virtual_cable
+pactl load-module module-null-sink sink_name=ember_virtual sink_properties=device.description="Ember_Virtual"
+```
 
-# Create loopback
-pactl load-module module-loopback source=virtual_cable.monitor
+And then make it persistent with config:
+Create ~/.config/pipewire/pipewire.conf.d/ember-virtual.conf
+
+```bash 
+context.exec = [
+    { path = "pactl" args = "load-module module-null-sink sink_name=ember_virtual sink_properties=device.description=Ember_Virtual" }
+]
+```
+
+Then restart PipeWire
+
+```bash 
+systemctl --user restart pipewire
 ```
 
 ---
@@ -320,4 +332,4 @@ MIT
 
 ---
 
-*Vibecoded with 🧡 by [Yarin Cardillo](https://yarincardillo.com)*
+*Made with 🧡 by [Yarin Cardillo](https://yarincardillo.com)*
