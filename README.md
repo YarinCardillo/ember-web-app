@@ -7,7 +7,7 @@
 
 ## Overview
 
-Ember Amp Web simulates the warm, rich characteristics of vintage HiFi tube amplifiers directly in your web browser. Route your system audio (Spotify, YouTube, games, etc.) through a virtual audio cable, and the app applies real-time DSP processing including:
+Ember Amp simulates the warm, rich characteristics of vintage HiFi tube amplifiers directly in your web browser. Route your system audio (Spotify, YouTube, games, etc.) through a virtual audio cable, and the app applies real-time DSP processing including:
 
 - **33 Mode (Vinyl Mode)** - Slowed playback with reverb and +8dB boost (to recover lost volume from reverb) for vinyl record simulation (processes audio FIRST, before input gain)
 - **Preview Mode** - Play demo audio through the signal chain to hear how the app sounds before setting up virtual cables
