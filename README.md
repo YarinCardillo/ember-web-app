@@ -1,4 +1,4 @@
-# Ember Amp Web
+# Ember Amp
 
 > Browser-based HiFi amplifier simulator with real-time DSP processing.  
 > **All audio processing happens 100% locally in your browser.**
