@@ -111,6 +111,49 @@ class AudioEngine {
 3. **Worklet Preloading** - All worklets loaded during initialization
 4. **Output Device Support** - Uses `setSinkId` for output routing (with fallback)
 
+### Keep-Alive Oscillator
+
+Browsers aggressively throttle or suspend `AudioContext` when tabs are in the background to save battery. This can cause audio dropouts or complete silence when users switch to other apps while listening.
+
+**Solution:** A silent oscillator runs continuously while the audio engine is active, keeping the `AudioContext` alive.
+
+```typescript
+// src/audio/AudioEngine.ts
+
+startKeepAlive(): void {
+  if (!this.ctx || this.keepAliveOscillator) return;
+  
+  // Create silent oscillator (inaudible, keeps audio context active)
+  this.keepAliveOscillator = this.ctx.createOscillator();
+  this.keepAliveGain = this.ctx.createGain();
+  this.keepAliveGain.gain.value = 0; // Silent - no audible output
+  
+  this.keepAliveOscillator.connect(this.keepAliveGain);
+  this.keepAliveGain.connect(this.ctx.destination);
+  this.keepAliveOscillator.start();
+}
+
+stopKeepAlive(): void {
+  if (this.keepAliveOscillator) {
+    this.keepAliveOscillator.stop();
+    this.keepAliveOscillator.disconnect();
+    this.keepAliveOscillator = null;
+  }
+  // ... cleanup gain node
+}
+```
+
+**How It Works:**
+- Oscillator output is routed through a `GainNode` with `gain.value = 0` (completely silent)
+- The oscillator maintains continuous audio processing, preventing browser throttling
+- Started when the amp is powered on, stopped when powered off
+- Runs continuously regardless of tab visibility to ensure uninterrupted background playback
+
+**Why Not Stop in Background:**
+- Users may want to listen to music while using other apps
+- Stopping the keep-alive when the tab is hidden would defeat its purpose
+- Audio processing must continue uninterrupted for background playback
+
 ---
 
 ## DSP Modules
