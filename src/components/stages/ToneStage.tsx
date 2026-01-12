@@ -1,10 +1,10 @@
 /**
- * ToneStage - Bass/Mid/Treble/Presence knobs
+ * ToneStage - Premium Bass/Mid/Treble/Presence knobs
  */
 
-import { Knob } from '../ui/Knob';
-import { Toggle } from '../ui/Toggle';
-import { useAudioStore } from '../../store/useAudioStore';
+import { Knob } from "../ui/Knob";
+import { Toggle } from "../ui/Toggle";
+import { useAudioStore } from "../../store/useAudioStore";
 
 export function ToneStage(): JSX.Element {
   const bass = useAudioStore((state) => state.bass);
@@ -15,12 +15,14 @@ export function ToneStage(): JSX.Element {
   const bypassToneStack = useAudioStore((state) => state.bypassToneStack);
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full min-w-0 overflow-hidden">
+    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden backdrop-blur-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-ember-orange">EQUALIZER</h3>
+        <h3 className="text-lg font-semibold" style={{ color: "#e8dccc" }}>
+          EQUALIZER
+        </h3>
         <Toggle
           checked={!bypassToneStack}
-          onChange={(checked) => setParameter('bypassToneStack', !checked)}
+          onChange={(checked) => setParameter("bypassToneStack", !checked)}
         />
       </div>
 
@@ -32,7 +34,7 @@ export function ToneStage(): JSX.Element {
           max={12}
           step={0.5}
           unit=" dB"
-          onChange={(value) => setParameter('bass', value)}
+          onChange={(value) => setParameter("bass", value)}
           defaultValue={0}
         />
         <Knob
@@ -42,7 +44,7 @@ export function ToneStage(): JSX.Element {
           max={12}
           step={0.5}
           unit=" dB"
-          onChange={(value) => setParameter('mid', value)}
+          onChange={(value) => setParameter("mid", value)}
           defaultValue={0}
         />
         <Knob
@@ -52,7 +54,7 @@ export function ToneStage(): JSX.Element {
           max={12}
           step={0.5}
           unit=" dB"
-          onChange={(value) => setParameter('treble', value)}
+          onChange={(value) => setParameter("treble", value)}
           defaultValue={0}
         />
         <Knob
@@ -62,11 +64,10 @@ export function ToneStage(): JSX.Element {
           max={12}
           step={0.5}
           unit=" dB"
-          onChange={(value) => setParameter('presence', value)}
+          onChange={(value) => setParameter("presence", value)}
           defaultValue={0}
         />
       </div>
     </div>
   );
 }
-

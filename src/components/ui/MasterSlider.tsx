@@ -4,19 +4,22 @@
  * Right half: 0 dB to +6 dB
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from "react";
 
 interface MasterSliderProps {
   label: string;
   value: number;
-  minDb: number;     // -96 dB
-  maxDb: number;     // +6 dB
-  centerDb: number;  // 0 dB
+  minDb: number;
+  maxDb: number;
+  centerDb: number;
   step?: number;
   formatValue?: (value: number) => string;
   onChange: (value: number) => void;
   defaultValue?: number;
 }
+
+const ACCENT_COLOR = "#F59E0B";
+const TRACK_COLOR = "#18181B";
 
 export function MasterSlider({
   label,
@@ -29,32 +32,26 @@ export function MasterSlider({
   onChange,
   defaultValue,
 }: MasterSliderProps): JSX.Element {
-  // Map dB value to slider position (0-100)
   const dbToPosition = useCallback(
     (db: number): number => {
       if (db <= centerDb) {
-        // Left half: minDb to centerDb -> 0 to 50
         return ((db - minDb) / (centerDb - minDb)) * 50;
       } else {
-        // Right half: centerDb to maxDb -> 50 to 100
         return 50 + ((db - centerDb) / (maxDb - centerDb)) * 50;
       }
     },
-    [minDb, maxDb, centerDb]
+    [minDb, maxDb, centerDb],
   );
 
-  // Map slider position (0-100) to dB value
   const positionToDb = useCallback(
     (position: number): number => {
       if (position <= 50) {
-        // Left half: 0 to 50 -> minDb to centerDb
         return minDb + (position / 50) * (centerDb - minDb);
       } else {
-        // Right half: 50 to 100 -> centerDb to maxDb
         return centerDb + ((position - 50) / 50) * (maxDb - centerDb);
       }
     },
-    [minDb, maxDb, centerDb]
+    [minDb, maxDb, centerDb],
   );
 
   const formatDisplayValue = useCallback(
@@ -64,24 +61,14 @@ export function MasterSlider({
       }
       return `${val.toFixed(1)} dB`;
     },
-    [formatValue]
+    [formatValue],
   );
 
   const currentPosition = dbToPosition(value);
 
-  // Get CSS variable for ember-orange color
-  const emberOrange = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return getComputedStyle(document.documentElement).getPropertyValue('--ember-orange').trim() || '#ff6b35';
-    }
-    return '#ff6b35';
-  }, []);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const position = parseFloat(e.target.value);
     const dbValue = positionToDb(position);
-    
-    // Apply step rounding uniformly
     const rounded = Math.round(dbValue / step) * step;
     onChange(rounded);
   };
@@ -93,10 +80,10 @@ export function MasterSlider({
   }, [defaultValue, onChange]);
 
   return (
-    <div className="flex flex-col gap-1 w-full">
+    <div className="flex flex-col gap-1.5 w-full">
       <div className="flex justify-between items-center">
-        <label className="text-xs text-text-light opacity-80">{label}</label>
-        <span className="text-xs font-mono text-ember-orange">
+        <label className="text-xs text-text-secondary">{label}</label>
+        <span className="text-xs font-mono text-accent-primary">
           {formatDisplayValue(value)}
         </span>
       </div>
@@ -110,31 +97,44 @@ export function MasterSlider({
           onChange={handleChange}
           onDoubleClick={handleDoubleClick}
           className="
-            w-full h-2 appearance-none cursor-pointer
-            bg-gray-700 rounded-full
-            focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
+            w-full h-2 appearance-none cursor-pointer rounded-full
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary
             [&::-webkit-slider-thumb]:appearance-none
-            [&::-webkit-slider-thumb]:w-4
-            [&::-webkit-slider-thumb]:h-4
+            [&::-webkit-slider-thumb]:w-5
+            [&::-webkit-slider-thumb]:h-5
             [&::-webkit-slider-thumb]:rounded-full
-            [&::-webkit-slider-thumb]:bg-ember-orange
-            [&::-webkit-slider-thumb]:shadow-lg
             [&::-webkit-slider-thumb]:cursor-pointer
-            [&::-webkit-slider-thumb]:transition-all
-            [&::-webkit-slider-thumb]:hover:bg-amber-glow
-            [&::-moz-range-thumb]:w-4
-            [&::-moz-range-thumb]:h-4
+            [&::-webkit-slider-thumb]:transition-transform
+            [&::-webkit-slider-thumb]:duration-150
+            [&::-webkit-slider-thumb]:hover:scale-110
+            [&::-moz-range-thumb]:w-5
+            [&::-moz-range-thumb]:h-5
             [&::-moz-range-thumb]:rounded-full
-            [&::-moz-range-thumb]:bg-ember-orange
             [&::-moz-range-thumb]:border-none
             [&::-moz-range-thumb]:cursor-pointer
           "
           style={{
-            background: `linear-gradient(to right, ${emberOrange} 0%, ${emberOrange} ${currentPosition}%, #374151 ${currentPosition}%, #374151 100%)`,
+            background: `linear-gradient(to right, ${ACCENT_COLOR} 0%, ${ACCENT_COLOR} ${currentPosition}%, ${TRACK_COLOR} ${currentPosition}%, ${TRACK_COLOR} 100%)`,
+            boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.4)",
           }}
         />
+        <style>{`
+          input[type="range"]::-webkit-slider-thumb {
+            background: radial-gradient(circle at 30% 30%, #FAFAFA, #D4D4D8);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(245, 158, 11, 0.3);
+          }
+          input[type="range"]::-webkit-slider-thumb:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 8px rgba(245, 158, 11, 0.5);
+          }
+          input[type="range"]::-moz-range-thumb {
+            background: radial-gradient(circle at 30% 30%, #FAFAFA, #D4D4D8);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(245, 158, 11, 0.3);
+          }
+          input[type="range"]::-moz-range-thumb:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 8px rgba(245, 158, 11, 0.5);
+          }
+        `}</style>
       </div>
     </div>
   );
 }
-

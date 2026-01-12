@@ -1,0 +1,108 @@
+# Core Principles
+  - SOLID principles are mandatory:
+    - Single Responsibility: Each class/function does ONE thing well
+    - Open/Closed: Extendable without modification
+    - Liskov Substitution: Subtypes must be substitutable
+    - Interface Segregation: No fat interfaces
+    - Dependency Inversion: Depend on abstractions, not concretions
+  - DRY (Don't Repeat Yourself): Extract reusable logic immediately
+  - KISS (Keep It Simple, Stupid): Simplicity > cleverness
+  - YAGNI (You Aren't Gonna Need It): Don't code for hypothetical futures
+
+  # Enterprise Level Code
+  Write code like you're submitting it for review at Google, Meta, or Valve.
+  Every line should pass the "would a principal engineer approve this?" test.
+
+  # Code Structure
+  - Max function length: ~20-30 lines. If longer, refactor.
+  - Max class length: ~300 lines. If longer, split responsibilities.
+  - Cyclomatic complexity: Keep below 10 per function
+  - File organization:
+    - One class per file (unless tightly coupled helpers)
+    - Separate interface/implementation when appropriate
+    - Group related classes in modules/folders
+
+  # Naming Conventions
+  - Classes: PascalCase (e.g., AudioProcessor)
+  - Methods/Functions: camelCase (e.g., processBuffer())
+  - Private fields: _camelCase or m_camelCase (consistent within project)
+  - Constants: UPPER_SNAKE_CASE or kPascalCase (C++ style)
+  - Booleans: Prefix with is, has, can (e.g., isActive, hasChildren)
+  - Avoid abbreviations unless industry-standard (e.g., DSP, FFT ok; procBuf bad)
+  - Classes and their file must have same name (example: audio_processor.py (file) → AudioProcessor (class))
+
+  # Encapsulation and Visibility
+  - Default to private. Only expose what's absolutely necessary.
+  - Use public sparingly - ask "does the outside world need this?"
+  - Prefer protected over public if only subclasses need access
+  - No public fields unless const/readonly primitives
+  - Getters/setters only when logic or validation is needed
+  - Always fix file references in the code when renaming them
+
+  # Method and Property Organization
+  Order members by visibility, then by logical grouping:
+  1. Public interface first (what consumers see)
+    - Constructors
+    - Public methods (grouped by feature/responsibility)
+    - Public properties (if unavoidable)
+  2. Protected members (inheritance hooks)
+    - Virtual/override methods
+    - Protected helpers
+  3. Private implementation (internal details)
+    - Private methods (grouped by feature/responsibility)
+    - Private fields
+    - Helper/utility functions
+  Within each visibility block, group by functional scope:
+  - All rendering methods together
+  - All validation methods together
+  - NOT random interleaving of concerns
+
+  # Error Handling
+  - Fail fast: Validate inputs early, throw/return errors immediately
+  - No silent failures: Log or propagate errors, never swallow them
+  - Use exceptions for exceptional cases, not control flow
+  - Return Result<T, E> or std::expected when errors are part of the contract
+
+  # Documentation
+  - Public API: Always document with clear docstrings/comments
+  - Private methods: Only if the logic is non-obvious
+  - Use TODO/FIXME/HACK tags with your initials and date:
+    // TODO(Yarin, 2025-10-29): Refactor this to use async pipeline
+  - Professional tone in all documentation
+  - No use of emojis
+  - Clear, structured content with proper headings
+  - Technical accuracy over visual appeal
+  - English only in the code and the docs
+
+  # Testing Mindset
+  Write code that's testable by design:
+  - Inject dependencies (DI pattern)
+  - Avoid global state
+  - Pure functions where possible
+  - Think: "How would I unit test this?" If it's hard, refactor.
+
+  # Performance and Optimization
+  - Measure before optimizing
+  - Avoid premature optimization, but write with performance awareness:
+    - Prefer stack over heap when possible
+    - Minimize allocations in hot paths
+    - Use const references for non-primitive parameters
+    - Reserve capacity for containers when size is known
+
+  # Mindset and Approach
+  - Code for the next engineer, not just yourself
+  - Optimize for readability and maintainability first
+  - Think in systems: How does this fit into the larger architecture?
+  - Question your assumptions: Is this the simplest solution?
+  - Ruthlessly refactor: Don't let tech debt accumulate
+
+  # Branching Strategy
+  - Always create a new branch when starting to work on a new feature
+  - Always create a new branch when working on collaborative projects
+  - Do not merge on main until requested
+
+  # Tone and Style
+  - Maintain a professional, technical tone
+  - No emojis
+  - Keep explanations concise and to the point
+  - Focus on technical accuracy over friendliness
