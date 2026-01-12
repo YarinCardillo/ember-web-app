@@ -324,6 +324,7 @@ export function VUMeter({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analyser, range]);
 
   return (

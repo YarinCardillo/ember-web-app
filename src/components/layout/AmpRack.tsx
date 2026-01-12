@@ -648,7 +648,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       try {
         previewSourceRef.current.stop();
         previewSourceRef.current.disconnect();
-      } catch {}
+      } catch {
+        // Ignore errors when stopping preview
+      }
       previewSourceRef.current = null;
     }
     if (previewGainRef.current) {
@@ -763,9 +765,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
         try {
           const engine = AudioEngine.getInstance();
           await engine.resume();
-          console.log('Resumed AudioContext after device change (mobile)');
+          console.log("Resumed AudioContext after device change (mobile)");
         } catch (err) {
-          console.error('Failed to resume AudioContext:', err);
+          console.error("Failed to resume AudioContext:", err);
         }
       }
       refreshDevices();
