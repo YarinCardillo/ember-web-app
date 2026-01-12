@@ -2,29 +2,30 @@
  * AmpRack - Main container with stage components, preset selector, power button
  */
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Header } from './Header';
-import { Credits } from './Credits';
-import { InputStage } from '../stages/InputStage';
-import { ToneStage } from '../stages/ToneStage';
-import { SaturationStage } from '../stages/SaturationStage';
-import { OutputStage } from '../stages/OutputStage';
-import { useAudioStore } from '../../store/useAudioStore';
-import AudioEngine from '../../audio/AudioEngine';
-import { InputNode } from '../../audio/nodes/InputNode';
-import { VinylModeNode } from '../../audio/nodes/VinylModeNode';
-import { TapeSimNode } from '../../audio/nodes/TapeSimNode';
-import { ToneStackNode } from '../../audio/nodes/ToneStackNode';
-import { TubeSaturationNode } from '../../audio/nodes/TubeSaturationNode';
-import { TransientNode } from '../../audio/nodes/TransientNode';
-import { SpeakerSimNode } from '../../audio/nodes/SpeakerSimNode';
-import { OutputNode } from '../../audio/nodes/OutputNode';
-import { useVinylMode } from '../../hooks/useVinylMode';
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { Header } from "./Header";
+import { Footer } from "./Footer";
+import { Credits } from "./Credits";
+import { InputStage } from "../stages/InputStage";
+import { ToneStage } from "../stages/ToneStage";
+import { SaturationStage } from "../stages/SaturationStage";
+import { OutputStage } from "../stages/OutputStage";
+import { useAudioStore } from "../../store/useAudioStore";
+import AudioEngine from "../../audio/AudioEngine";
+import { InputNode } from "../../audio/nodes/InputNode";
+import { VinylModeNode } from "../../audio/nodes/VinylModeNode";
+import { TapeSimNode } from "../../audio/nodes/TapeSimNode";
+import { ToneStackNode } from "../../audio/nodes/ToneStackNode";
+import { TubeSaturationNode } from "../../audio/nodes/TubeSaturationNode";
+import { TransientNode } from "../../audio/nodes/TransientNode";
+import { SpeakerSimNode } from "../../audio/nodes/SpeakerSimNode";
+import { OutputNode } from "../../audio/nodes/OutputNode";
+import { useVinylMode } from "../../hooks/useVinylMode";
 // import { TransientDebug } from '../ui/TransientDebug'; // Debug panel - uncomment if needed
-import { isMobileDevice } from '../../utils/device-detection';
-import presetsData from '../../audio/presets/amp-presets.json';
-import type { PresetCollection } from '../../types/audio.types';
-import { SafetyWarningModal } from './SafetyWarningModal';
+import { isMobileDevice } from "../../utils/device-detection";
+import presetsData from "../../audio/presets/amp-presets.json";
+import type { PresetCollection } from "../../types/audio.types";
+import { SafetyWarningModal } from "./SafetyWarningModal";
 
 interface AudioNodes {
   input: InputNode | null;
@@ -46,14 +47,29 @@ const isMicrophoneDevice = (label: string): boolean => {
   const lowerLabel = label.toLowerCase();
 
   // Whitelist - definitely safe (virtual cables)
-  const safeKeywords = ['virtual', 'cable', 'blackhole', 'vb-', 'monitor', 'loopback', 'audio_proxy'];
-  if (safeKeywords.some(keyword => lowerLabel.includes(keyword))) {
+  const safeKeywords = [
+    "virtual",
+    "cable",
+    "blackhole",
+    "vb-",
+    "monitor",
+    "loopback",
+    "audio_proxy",
+  ];
+  if (safeKeywords.some((keyword) => lowerLabel.includes(keyword))) {
     return false;
   }
 
   // Blacklist - suspicious (likely microphones)
-  const suspiciousKeywords = ['microphone', 'mic', 'built-in input', 'internal', 'webcam', 'capture'];
-  if (suspiciousKeywords.some(keyword => lowerLabel.includes(keyword))) {
+  const suspiciousKeywords = [
+    "microphone",
+    "mic",
+    "built-in input",
+    "internal",
+    "webcam",
+    "capture",
+  ];
+  if (suspiciousKeywords.some((keyword) => lowerLabel.includes(keyword))) {
     return true;
   }
 
@@ -64,15 +80,19 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   // Detect mobile once on mount (user agent doesn't change during session)
   const isMobile = useMemo(() => isMobileDevice(), []);
 
-  const [inputDevices, setInputDevices] = useState<Array<{ deviceId: string; label: string; kind: MediaDeviceKind }>>([]);
-  const [outputDevices, setOutputDevices] = useState<Array<{ deviceId: string; label: string; kind: MediaDeviceKind }>>([]);
+  const [inputDevices, setInputDevices] = useState<
+    Array<{ deviceId: string; label: string; kind: MediaDeviceKind }>
+  >([]);
+  const [outputDevices, setOutputDevices] = useState<
+    Array<{ deviceId: string; label: string; kind: MediaDeviceKind }>
+  >([]);
   const [isOutputDeviceSupported, setIsOutputDeviceSupported] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Safety Warning Modal State
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
-  const [pendingDeviceLabel, setPendingDeviceLabel] = useState<string>('');
+  const [pendingDeviceLabel, setPendingDeviceLabel] = useState<string>("");
 
   // Preview audio state
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
@@ -92,7 +112,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     output: null,
   });
 
-  const [audioNodes, setAudioNodes] = useState<AudioNodes>(audioNodesRef.current);
+  const [audioNodes, setAudioNodes] = useState<AudioNodes>(
+    audioNodesRef.current,
+  );
 
   const isRunning = useAudioStore((state) => state.isRunning);
   const isInitialized = useAudioStore((state) => state.isInitialized);
@@ -103,16 +125,16 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   // Initialize audio engine and create nodes
   const initializeAudio = useCallback(async (): Promise<AudioNodes> => {
     try {
-      console.log('Initializing audio engine...');
+      console.log("Initializing audio engine...");
       const engine = AudioEngine.getInstance();
       await engine.initialize();
       const ctx = engine.getContext();
-      console.log('AudioContext created, state:', ctx.state);
+      console.log("AudioContext created, state:", ctx.state);
 
       // Apply stored output device if one was selected before initialization
       const storedOutputDeviceId = useAudioStore.getState().outputDeviceId;
       if (storedOutputDeviceId) {
-        console.log('Applying stored output device:', storedOutputDeviceId);
+        console.log("Applying stored output device:", storedOutputDeviceId);
         await engine.setOutputDevice(storedOutputDeviceId);
       }
 
@@ -128,16 +150,16 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       };
 
       // Initialize worklets
-      console.log('Initializing vinyl mode...');
+      console.log("Initializing vinyl mode...");
       await nodes.vinylMode!.initialize();
 
-      console.log('Initializing saturation worklet...');
+      console.log("Initializing saturation worklet...");
       await nodes.saturation!.initialize();
 
-      console.log('Initializing tape simulation...');
+      console.log("Initializing tape simulation...");
       await nodes.tapeSim!.initialize();
 
-      console.log('Initializing transient shaper...');
+      console.log("Initializing transient shaper...");
       await nodes.transient!.initialize();
 
       // Sync bypass state from store
@@ -173,7 +195,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       // SpeakerSim -> Output (includes analog soft clipper)
       nodes.speakerSim!.connect(nodes.output!.getInput());
 
-      console.log('Signal chain connected (Vinyl Mode -> Input Gain -> Processing)');
+      console.log(
+        "Signal chain connected (Vinyl Mode -> Input Gain -> Processing)",
+      );
 
       audioNodesRef.current = nodes;
       setAudioNodes(nodes);
@@ -181,84 +205,93 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
 
       return nodes;
     } catch (err) {
-      console.error('Failed to initialize audio:', err);
-      setError('Failed to initialize audio engine');
+      console.error("Failed to initialize audio:", err);
+      setError("Failed to initialize audio engine");
       throw err;
     }
   }, [setInitialized]);
 
   // Start audio processing
-  const startAudio = useCallback(async (nodes: AudioNodes, mobileMode: boolean = false) => {
-    if (!nodes.vinylMode) {
-      console.error('No vinyl mode node available');
-      return;
-    }
+  const startAudio = useCallback(
+    async (nodes: AudioNodes, mobileMode: boolean = false) => {
+      if (!nodes.vinylMode) {
+        console.error("No vinyl mode node available");
+        return;
+      }
 
-    try {
-      // On mobile, skip mic permissions - only preview mode is available
-      if (mobileMode) {
-        console.log('Starting in mobile preview-only mode (no mic)');
+      try {
+        // On mobile, skip mic permissions - only preview mode is available
+        if (mobileMode) {
+          console.log("Starting in mobile preview-only mode (no mic)");
+          // Start keep-alive to prevent background throttling
+          const engine = AudioEngine.getInstance();
+          engine.startKeepAlive();
+          setRunning(true);
+          setError(null);
+          return;
+        }
+
+        if (!nodes.input) {
+          console.error("No input node available");
+          return;
+        }
+
+        // Check if an input device is selected
+        const deviceId = useAudioStore.getState().inputDeviceId;
+
+        if (!deviceId) {
+          // No input device selected - start in preview-only mode to avoid feedback
+          console.log(
+            "No input device selected - starting in preview-only mode",
+          );
+          const engine = AudioEngine.getInstance();
+          engine.startKeepAlive();
+          setRunning(true);
+          setError(null);
+          return;
+        }
+
+        console.log("Requesting audio input...");
+        await nodes.input.setInput(deviceId);
+
+        // Connect raw media stream to vinyl mode (first in chain)
+        nodes.input.connectRawSource(nodes.vinylMode!.getInput());
+
+        console.log("Audio input started with vinyl mode as first processor");
+
         // Start keep-alive to prevent background throttling
         const engine = AudioEngine.getInstance();
         engine.startKeepAlive();
+
         setRunning(true);
         setError(null);
-        return;
-      }
-
-      if (!nodes.input) {
-        console.error('No input node available');
-        return;
-      }
-
-      // Check if an input device is selected
-      const deviceId = useAudioStore.getState().inputDeviceId;
-
-      if (!deviceId) {
-        // No input device selected - start in preview-only mode to avoid feedback
-        console.log('No input device selected - starting in preview-only mode');
-        const engine = AudioEngine.getInstance();
-        engine.startKeepAlive();
-        setRunning(true);
-        setError(null);
-        return;
-      }
-
-      console.log('Requesting audio input...');
-      await nodes.input.setInput(deviceId);
-
-      // Connect raw media stream to vinyl mode (first in chain)
-      nodes.input.connectRawSource(nodes.vinylMode!.getInput());
-
-      console.log('Audio input started with vinyl mode as first processor');
-
-      // Start keep-alive to prevent background throttling
-      const engine = AudioEngine.getInstance();
-      engine.startKeepAlive();
-
-      setRunning(true);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to start audio:', err);
-      if (err instanceof DOMException) {
-        switch (err.name) {
-          case 'NotAllowedError':
-            setError('Microphone permission denied. Please allow access in your browser settings.');
-            break;
-          case 'NotFoundError':
-            setError('No audio input device found. Please connect a microphone or virtual audio cable.');
-            break;
-          case 'NotReadableError':
-            setError('Audio device is in use by another application.');
-            break;
-          default:
-            setError(`Audio error: ${err.message}`);
+      } catch (err) {
+        console.error("Failed to start audio:", err);
+        if (err instanceof DOMException) {
+          switch (err.name) {
+            case "NotAllowedError":
+              setError(
+                "Microphone permission denied. Please allow access in your browser settings.",
+              );
+              break;
+            case "NotFoundError":
+              setError(
+                "No audio input device found. Please connect a microphone or virtual audio cable.",
+              );
+              break;
+            case "NotReadableError":
+              setError("Audio device is in use by another application.");
+              break;
+            default:
+              setError(`Audio error: ${err.message}`);
+          }
+        } else {
+          setError("Failed to start audio");
         }
-      } else {
-        setError('Failed to start audio');
       }
-    }
-  }, [setRunning]);
+    },
+    [setRunning],
+  );
 
   // Stop audio processing
   const stopAudio = useCallback(() => {
@@ -282,14 +315,21 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
         const nodes = await initializeAudio();
         await startAudio(nodes, isMobile);
       } catch (err) {
-        console.error('Power toggle failed:', err);
+        console.error("Power toggle failed:", err);
       }
     } else if (isRunning) {
       stopAudio();
     } else {
       await startAudio(audioNodesRef.current, isMobile);
     }
-  }, [isInitialized, isRunning, isMobile, initializeAudio, startAudio, stopAudio]);
+  }, [
+    isInitialized,
+    isRunning,
+    isMobile,
+    initializeAudio,
+    startAudio,
+    stopAudio,
+  ]);
 
   // Subscribe to all audio parameters
   const inputGain = useAudioStore((state) => state.inputGain);
@@ -311,7 +351,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   // Check if current input is dangerous (for consistent badge display)
   const isInputDangerous = useMemo(() => {
     if (!currentInputDeviceId) return false;
-    const device = inputDevices.find(d => d.deviceId === currentInputDeviceId);
+    const device = inputDevices.find(
+      (d) => d.deviceId === currentInputDeviceId,
+    );
     return device ? isMicrophoneDevice(device.label) : false;
   }, [currentInputDeviceId, inputDevices]);
 
@@ -365,7 +407,8 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   // Handle master bypass - reroute signal chain
   useEffect(() => {
     const nodes = audioNodesRef.current;
-    if (!isInitialized || !nodes.input || !nodes.output || !nodes.vinylMode) return;
+    if (!isInitialized || !nodes.input || !nodes.output || !nodes.vinylMode)
+      return;
 
     if (bypassAll) {
       // Disconnect ALL nodes to prevent any signal bleeding
@@ -383,7 +426,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.vinylMode.connect(nodes.input.getGainInput());
       nodes.input.getOutput().connect(nodes.output.getMasterGainNode());
 
-      console.log('Master bypass ENABLED - dry signal through master gain');
+      console.log("Master bypass ENABLED - dry signal through master gain");
     } else {
       // Disconnect bypass route
       nodes.input.getOutput().disconnect();
@@ -403,7 +446,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.transient!.connect(nodes.speakerSim!.getInput());
       nodes.speakerSim!.connect(nodes.output.getInput());
 
-      console.log('Master bypass DISABLED - processing active');
+      console.log("Master bypass DISABLED - processing active");
     }
   }, [isInitialized, bypassAll]);
 
@@ -411,7 +454,8 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const bypassTapeSim = useAudioStore((state) => state.bypassTapeSim);
   useEffect(() => {
     const nodes = audioNodesRef.current;
-    if (!isInitialized || !nodes.tapeSim || !nodes.input || !nodes.toneStack) return;
+    if (!isInitialized || !nodes.tapeSim || !nodes.input || !nodes.toneStack)
+      return;
 
     // Update bypass state in TapeSimNode FIRST
     nodes.tapeSim.setBypass(bypassTapeSim);
@@ -427,7 +471,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.input.connect(nodes.tapeSim.getInput());
       nodes.tapeSim.connect(nodes.toneStack.getInput());
 
-      console.log(`Tape sim ${bypassTapeSim ? 'bypassed' : 'active'}`);
+      console.log(`Tape sim ${bypassTapeSim ? "bypassed" : "active"}`);
     }
   }, [isInitialized, bypassTapeSim, bypassAll]);
 
@@ -462,7 +506,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           nodes.vinylMode.flushBuffer();
         }
       },
-    }
+    },
   );
 
   // Handle vinyl mode state changes
@@ -471,7 +515,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     if (!isInitialized || !nodes.vinylMode) return;
 
     // Update bypass state based on vinyl mode state
-    const shouldBypass = vinylMode.state === 'idle';
+    const shouldBypass = vinylMode.state === "idle";
     nodes.vinylMode.setBypass(shouldBypass);
 
     // Reconnect signal chain if needed (when not in master bypass)
@@ -495,13 +539,15 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       try {
         await audioNodesRef.current.input.setInput(deviceId);
         // Reconnect raw source to vinyl mode after device change
-        audioNodesRef.current.input.connectRawSource(audioNodesRef.current.vinylMode.getInput());
+        audioNodesRef.current.input.connectRawSource(
+          audioNodesRef.current.vinylMode.getInput(),
+        );
 
         // Clear error if success
         setError(null);
       } catch (err) {
-        console.error('Failed to change input device:', err);
-        setError('Failed to change audio input device');
+        console.error("Failed to change input device:", err);
+        setError("Failed to change audio input device");
       }
     }
   }, []);
@@ -510,8 +556,8 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const handleInputDeviceChange = useCallback(
     async (deviceId: string) => {
       // Find the device label
-      const device = inputDevices.find(d => d.deviceId === deviceId);
-      const label = device?.label || 'Unknown Device';
+      const device = inputDevices.find((d) => d.deviceId === deviceId);
+      const label = device?.label || "Unknown Device";
 
       // Check if it's a suspicious device (microphone)
       if (isMicrophoneDevice(label)) {
@@ -525,7 +571,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       useAudioStore.getState().setInputDevice(deviceId);
       applyInputDeviceChange(deviceId);
     },
-    [inputDevices, applyInputDeviceChange]
+    [inputDevices, applyInputDeviceChange],
   );
 
   const handleSafetyConfirm = useCallback(() => {
@@ -545,63 +591,64 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   }, []);
 
   // Handle output device change
-  const handleOutputDeviceChange = useCallback(
-    async (deviceId: string) => {
-      try {
-        const engine = AudioEngine.getInstance();
-
-        // If engine isn't initialized yet, the device selection is stored in the
-        // store and will be applied when the amp powers on. No error needed.
-        if (!engine.getInitialized()) {
-          console.log('Output device selection stored, will apply on power-on:', deviceId);
-          return;
-        }
-
-        const success = await engine.setOutputDevice(deviceId);
-        if (!success) {
-          setError('Failed to change output device');
-        } else {
-          // Reconnect output node to destination after sinkId change
-          // This ensures audio routes to the new output device in PWA context
-          const outputNode = audioNodesRef.current.output;
-          if (outputNode) {
-            const ctx = engine.getContext();
-            outputNode.reconnectToDestination(ctx);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to change output device:', err);
-        setError('Failed to change audio output device');
-      }
-    },
-    []
-  );
-
-  // Preview audio: load and play demo file through signal chain
-  const loadPreviewBuffer = useCallback(async (): Promise<AudioBuffer | null> => {
-    if (previewBufferRef.current) return previewBufferRef.current;
-
+  const handleOutputDeviceChange = useCallback(async (deviceId: string) => {
     try {
       const engine = AudioEngine.getInstance();
-      const ctx = engine.getContext();
-      const response = await fetch('/audio/assumptions.mp3');
-      if (!response.ok) throw new Error('Failed to fetch preview audio');
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-      previewBufferRef.current = audioBuffer;
-      return audioBuffer;
+
+      // If engine isn't initialized yet, the device selection is stored in the
+      // store and will be applied when the amp powers on. No error needed.
+      if (!engine.getInitialized()) {
+        console.log(
+          "Output device selection stored, will apply on power-on:",
+          deviceId,
+        );
+        return;
+      }
+
+      const success = await engine.setOutputDevice(deviceId);
+      if (!success) {
+        setError("Failed to change output device");
+      } else {
+        // Reconnect output node to destination after sinkId change
+        // This ensures audio routes to the new output device in PWA context
+        const outputNode = audioNodesRef.current.output;
+        if (outputNode) {
+          const ctx = engine.getContext();
+          outputNode.reconnectToDestination(ctx);
+        }
+      }
     } catch (err) {
-      console.error('Failed to load preview audio:', err);
-      return null;
+      console.error("Failed to change output device:", err);
+      setError("Failed to change audio output device");
     }
   }, []);
+
+  // Preview audio: load and play demo file through signal chain
+  const loadPreviewBuffer =
+    useCallback(async (): Promise<AudioBuffer | null> => {
+      if (previewBufferRef.current) return previewBufferRef.current;
+
+      try {
+        const engine = AudioEngine.getInstance();
+        const ctx = engine.getContext();
+        const response = await fetch("/audio/assumptions.mp3");
+        if (!response.ok) throw new Error("Failed to fetch preview audio");
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        previewBufferRef.current = audioBuffer;
+        return audioBuffer;
+      } catch (err) {
+        console.error("Failed to load preview audio:", err);
+        return null;
+      }
+    }, []);
 
   const stopPreview = useCallback(() => {
     if (previewSourceRef.current) {
       try {
         previewSourceRef.current.stop();
         previewSourceRef.current.disconnect();
-      } catch { }
+      } catch {}
       previewSourceRef.current = null;
     }
     if (previewGainRef.current) {
@@ -622,7 +669,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     }
 
     if (!audioNodesRef.current.vinylMode) {
-      setError('Audio engine not initialized');
+      setError("Audio engine not initialized");
       return;
     }
 
@@ -630,7 +677,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     try {
       const buffer = await loadPreviewBuffer();
       if (!buffer) {
-        setError('Failed to load preview audio');
+        setError("Failed to load preview audio");
         setIsPreviewLoading(false);
         return;
       }
@@ -664,10 +711,12 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       setIsPreviewPlaying(true);
       setIsPreviewLoading(false);
 
-      console.log('[Preview] Started playing through signal chain (input muted)');
+      console.log(
+        "[Preview] Started playing through signal chain (input muted)",
+      );
     } catch (err) {
-      console.error('Failed to start preview:', err);
-      setError('Failed to start preview');
+      console.error("Failed to start preview:", err);
+      setError("Failed to start preview");
       setIsPreviewLoading(false);
     }
   }, [isPreviewPlaying, loadPreviewBuffer, stopPreview]);
@@ -701,7 +750,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
         setOutputDevices(outputList);
         setIsOutputDeviceSupported(engine.isOutputDeviceSupported());
       } catch (err) {
-        console.error('Failed to enumerate devices:', err);
+        console.error("Failed to enumerate devices:", err);
       }
     };
     refreshDevices();
@@ -710,26 +759,31 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     const handleDeviceChange = (): void => {
       refreshDevices();
     };
-    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
 
     return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        handleDeviceChange,
+      );
     };
   }, [isInitialized, isMobile]);
 
   const presets = presetsData as PresetCollection;
 
   return (
-    <div className="min-h-screen bg-dark-bg p-4 md:p-8 select-none">
+    <div className="min-h-screen bg-bg-primary p-4 md:p-8 pb-16 select-none">
       <div className="max-w-7xl mx-auto">
         {/* Mobile Notice - shown only on actual mobile devices */}
         {isMobile && (
-          <div className="mb-4 p-3 bg-ember-orange/20 border border-ember-orange/40 rounded-lg text-center">
-            <p className="text-sm text-ember-orange">
-              Ember Amp is designed for desktop browsers with virtual audio cables.
+          <div className="mb-4 p-3 bg-accent-primary/15 border border-accent-primary/30 rounded-xl text-center">
+            <p className="text-sm text-accent-primary">
+              Ember Amp is designed for desktop browsers with virtual audio
+              cables.
             </p>
-            <p className="text-xs text-amber-400/80 mt-1">
-              Power on and tap <strong>Preview</strong> to hear how the amp sounds!
+            <p className="text-xs text-accent-bright/80 mt-1">
+              Power on and tap <strong>Preview</strong> to hear how the amp
+              sounds!
             </p>
           </div>
         )}
@@ -743,7 +797,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
+          <div className="mb-6 p-4 bg-meter-red/15 border border-meter-red/30 rounded-xl text-meter-red">
             {error}
           </div>
         )}
@@ -771,8 +825,12 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           {/* Bottom Row: Output (1 column width) + Credits (2 columns width) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
             <OutputStage
-              preClipperAnalyser={audioNodes.output?.getPreClipperAnalyser() || null}
-              postGainAnalyser={audioNodes.output?.getPostGainAnalyser() || null}
+              preClipperAnalyser={
+                audioNodes.output?.getPreClipperAnalyser() || null
+              }
+              postGainAnalyser={
+                audioNodes.output?.getPostGainAnalyser() || null
+              }
               outputDevices={outputDevices}
               onOutputDeviceChange={handleOutputDeviceChange}
               isOutputDeviceSupported={isOutputDeviceSupported}
@@ -796,6 +854,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
 
       {/* Debug UI - Temporary for parameter tuning */}
       {/* <TransientDebug /> */}
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

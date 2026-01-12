@@ -1,15 +1,15 @@
 /**
- * OutputStage - Output device selector, master gain slider, and LED meter
+ * OutputStage - Premium output device selector, master gain slider, and LED meter
  */
 
-import { MasterSlider } from '../ui/MasterSlider';
-import { LEDMeter } from '../ui/LEDMeter';
-import { useAudioStore } from '../../store/useAudioStore';
-import type { AudioDeviceInfo } from '../../types/audio.types';
+import { MasterSlider } from "../ui/MasterSlider";
+import { LEDMeter } from "../ui/LEDMeter";
+import { useAudioStore } from "../../store/useAudioStore";
+import type { AudioDeviceInfo } from "../../types/audio.types";
 
 interface OutputStageProps {
-  preClipperAnalyser: AnalyserNode | null;   // Pre-clipper (Clipper meter, shows clipping)
-  postGainAnalyser: AnalyserNode | null;     // Post-gain (DAC out meter)
+  preClipperAnalyser: AnalyserNode | null;
+  postGainAnalyser: AnalyserNode | null;
   outputDevices: AudioDeviceInfo[];
   onOutputDeviceChange: (deviceId: string) => void;
   isOutputDeviceSupported: boolean;
@@ -29,41 +29,48 @@ export function OutputStage({
   const outputDeviceId = useAudioStore((state) => state.outputDeviceId);
   const setParameter = useAudioStore((state) => state.setParameter);
 
-  // Format value to show -∞ for very low values
   const formatGainValue = (value: number): string => {
     if (value <= -90) {
-      return '-∞ dB';
+      return "-Inf dB";
     }
     return `${value.toFixed(1)} dB`;
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 h-full min-w-0 overflow-hidden">
-      <h3 className="text-lg font-semibold text-ember-orange">OUTPUT</h3>
+    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden backdrop-blur-sm">
+      <h3 className="text-lg font-semibold" style={{ color: "#e8dccc" }}>
+        OUTPUT
+      </h3>
 
       {/* Output Device Selector */}
       <div className="flex flex-col gap-2 min-h-[60px]">
-        <label className="text-xs text-text-light opacity-80">Device</label>
+        <label className="text-xs text-text-secondary">Device</label>
         {isMobileMode ? (
-          <div className="bg-gray-800/50 border border-gray-700/50 rounded px-3 py-2 text-gray-500 text-sm">
+          <div className="bg-bg-tertiary/50 border border-white/5 rounded-lg px-3 py-2 text-text-tertiary text-sm">
             Default output (mobile)
           </div>
         ) : isOutputDeviceSupported ? (
           <select
-            value={outputDeviceId || 'default'}
+            value={outputDeviceId || "default"}
             onChange={(e) => {
               const deviceId = e.target.value;
-              useAudioStore.getState().setOutputDevice(deviceId === 'default' ? null : deviceId);
-              if (deviceId !== 'default') {
+              useAudioStore
+                .getState()
+                .setOutputDevice(deviceId === "default" ? null : deviceId);
+              if (deviceId !== "default") {
                 onOutputDeviceChange(deviceId);
               }
             }}
             className="
-              bg-gray-800 border border-gray-700 rounded
-              px-3 py-2 text-text-light text-sm
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-orange
+              bg-bg-secondary text-text-primary rounded-lg
+              px-3 py-2 text-sm
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary
               cursor-pointer w-full
+              transition-colors duration-150 hover:bg-bg-hover
             "
+            style={{
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+            }}
           >
             {outputDevices.map((device) => (
               <option key={device.deviceId} value={device.deviceId}>
@@ -72,7 +79,7 @@ export function OutputStage({
             ))}
           </select>
         ) : (
-          <p className="text-xs text-text-light opacity-60 py-2">
+          <p className="text-xs text-text-tertiary py-2">
             Output device selection not supported in this browser
           </p>
         )}
@@ -89,7 +96,7 @@ export function OutputStage({
             centerDb={0}
             step={0.1}
             formatValue={formatGainValue}
-            onChange={(value) => setParameter('preGain', value)}
+            onChange={(value) => setParameter("preGain", value)}
             defaultValue={0}
           />
         </div>
@@ -105,13 +112,16 @@ export function OutputStage({
             centerDb={0}
             step={0.5}
             formatValue={formatGainValue}
-            onChange={(value) => setParameter('outputGain', value)}
+            onChange={(value) => setParameter("outputGain", value)}
             defaultValue={0}
           />
         </div>
-        <LEDMeter analyser={postGainAnalyser} label="DAC out (Don't clip this!)" mode="peak" />
+        <LEDMeter
+          analyser={postGainAnalyser}
+          label="DAC out (Don't clip this!)"
+          mode="peak"
+        />
       </div>
     </div>
   );
 }
-

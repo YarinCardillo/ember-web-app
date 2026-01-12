@@ -1,49 +1,45 @@
 /**
- * VUMeter - Analog needle-style VU meter with arc scale
+ * VUMeter - Premium analog needle-style VU meter with arc scale
  */
 
-import { useEffect, useRef, useMemo } from 'react';
-import { linearToDb } from '../../utils/dsp-math';
-
-// Helper to get CSS variable value
-const getCSSVariable = (varName: string, fallback: string): string => {
-  if (typeof window !== 'undefined') {
-    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
-  }
-  return fallback;
-};
+import { useEffect, useRef } from "react";
+import { linearToDb } from "../../utils/dsp-math";
 
 interface VUMeterProps {
   analyser: AnalyserNode | null;
   label?: string;
-  range?: { min: number; max: number }; // dB range
+  range?: { min: number; max: number };
 }
 
-// Fixed dimensions for consistent sizing
 const METER_WIDTH = 200;
 const METER_HEIGHT = 110;
-
-// Peak bar configuration
 const PEAK_BAR_WIDTH = 3;
-const PEAK_BAR_MARGIN = 4; // from right edge
+const PEAK_BAR_MARGIN = 4;
+
+// Premium color palette
+const COLORS = {
+  bgStart: "#0A0A0B",
+  bgEnd: "#111113",
+  meterGreen: "#4ADE80",
+  meterYellow: "#FACC15",
+  meterRed: "#F87171",
+  accentPrimary: "#F59E0B",
+  accentBright: "#FBBF24",
+  tickColor: "#52525B",
+  labelColor: "#A1A1AA",
+  bezelColor: "rgba(255, 255, 255, 0.06)",
+};
 
 export function VUMeter({
   analyser,
-  label = 'Level',
+  label = "Level",
   range = { min: -60, max: 6 },
 }: VUMeterProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
-  
-  // Get CSS variables for colors
-  const emberOrange = useMemo(() => getCSSVariable('--ember-orange', '#ff6b35'), []);
-  const amberGlow = useMemo(() => getCSSVariable('--amber-glow', '#ffaa00'), []);
-  
-  // Smooth needle position for analog feel
   const currentNeedleAngleRef = useRef<number>(-135 * (Math.PI / 180));
   const lastUpdateTimeRef = useRef<number>(Date.now());
 
-  // Draw static elements (runs once or when canvas mounts)
   const drawStaticElements = (ctx: CanvasRenderingContext2D): void => {
     const width = METER_WIDTH;
     const height = METER_HEIGHT;
@@ -55,26 +51,31 @@ export function VUMeter({
     const angleRange = endAngle - startAngle;
     const dbRange = range.max - range.min;
 
-    // Scale markings (dB values)
     const scaleMarks = [-60, -48, -36, -24, -12, -6, 0, 6];
 
     // Draw meter face background (gradient)
     const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
-    bgGradient.addColorStop(0, '#0f0f0f');
-    bgGradient.addColorStop(1, '#1a1a1a');
+    bgGradient.addColorStop(0, COLORS.bgStart);
+    bgGradient.addColorStop(1, COLORS.bgEnd);
     ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, width, height);
 
     // Draw color zones on arc
     const zoneAngles = [
-      { start: -60, end: -12, color: '#22c55e' }, // Green
-      { start: -12, end: 0, color: '#eab308' }, // Yellow
-      { start: 0, end: 6, color: '#ef4444' }, // Red
+      { start: -60, end: -12, color: COLORS.meterGreen },
+      { start: -12, end: 0, color: COLORS.meterYellow },
+      { start: 0, end: 6, color: COLORS.meterRed },
     ];
 
     zoneAngles.forEach((zone) => {
-      const startNorm = Math.max(0, Math.min(1, (zone.start - range.min) / dbRange));
-      const endNorm = Math.max(0, Math.min(1, (zone.end - range.min) / dbRange));
+      const startNorm = Math.max(
+        0,
+        Math.min(1, (zone.start - range.min) / dbRange),
+      );
+      const endNorm = Math.max(
+        0,
+        Math.min(1, (zone.end - range.min) / dbRange),
+      );
       const zoneStartAngle = startAngle + startNorm * angleRange;
       const zoneEndAngle = startAngle + endNorm * angleRange;
 
@@ -86,26 +87,33 @@ export function VUMeter({
     });
 
     // Draw scale arc (main arc line)
-    ctx.strokeStyle = '#4a4a4a';
+    ctx.strokeStyle = COLORS.tickColor;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, startAngle, endAngle);
     ctx.stroke();
 
     // Draw tick marks and labels
-    ctx.strokeStyle = '#6a6a6a';
+    ctx.strokeStyle = COLORS.tickColor;
     ctx.lineWidth = 1;
-    ctx.fillStyle = '#e0e0e0';
-    ctx.font = '8px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.fillStyle = COLORS.labelColor;
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
     scaleMarks.forEach((db) => {
       const normalized = Math.max(0, Math.min(1, (db - range.min) / dbRange));
       const angle = startAngle + normalized * angleRange;
-      const isMajor = db === 0 || db === -12 || db === -24 || db === -36 || db === -48 || db === -60 || db === 6;
+      const isMajor =
+        db === 0 ||
+        db === -12 ||
+        db === -24 ||
+        db === -36 ||
+        db === -48 ||
+        db === -60 ||
+        db === 6;
       const tickLength = isMajor ? 10 : 5;
-      
+
       const x1 = centerX + Math.cos(angle) * (radius - tickLength);
       const y1 = centerY + Math.sin(angle) * (radius - tickLength);
       const x2 = centerX + Math.cos(angle) * radius;
@@ -116,7 +124,6 @@ export function VUMeter({
       ctx.lineTo(x2, y2);
       ctx.stroke();
 
-      // Draw label for major marks only
       if (isMajor) {
         const labelX = centerX + Math.cos(angle) * (radius - 22);
         const labelY = centerY + Math.sin(angle) * (radius - 22);
@@ -125,20 +132,18 @@ export function VUMeter({
     });
 
     // Draw bezel border
-    ctx.strokeStyle = '#2a2a2a';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = COLORS.bezelColor;
+    ctx.lineWidth = 1;
     ctx.strokeRect(0, 0, width, height);
   };
 
-  // Main animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Set canvas size for high DPI displays
     const dpr = window.devicePixelRatio || 1;
     canvas.width = METER_WIDTH * dpr;
     canvas.height = METER_HEIGHT * dpr;
@@ -154,52 +159,46 @@ export function VUMeter({
     const angleRange = endAngle - startAngle;
     const dbRange = range.max - range.min;
 
-    // Smoothing constants (analog ballistics)
-    const attackTime = 10; // ms
-    const releaseTime = 300; // ms
+    const attackTime = 10;
+    const releaseTime = 300;
 
-    // If no analyser, just draw static elements
     if (!analyser) {
       drawStaticElements(ctx);
-      
-      // Draw needle at min position
+
       const needleAngle = startAngle;
-      
-      // Draw needle shadow
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
       ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
+      ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(centerX + 1, centerY + 1);
       ctx.lineTo(
         centerX + 1 + Math.cos(needleAngle) * (radius - 8),
-        centerY + 1 + Math.sin(needleAngle) * (radius - 8)
+        centerY + 1 + Math.sin(needleAngle) * (radius - 8),
       );
       ctx.stroke();
 
-      // Draw needle
-      ctx.strokeStyle = emberOrange;
+      ctx.strokeStyle = COLORS.accentPrimary;
       ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
+      ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.lineTo(
         centerX + Math.cos(needleAngle) * (radius - 8),
-        centerY + Math.sin(needleAngle) * (radius - 8)
+        centerY + Math.sin(needleAngle) * (radius - 8),
       );
       ctx.stroke();
 
-      // Draw pivot point
-      ctx.fillStyle = '#4a4a4a';
+      ctx.fillStyle = "#27272A";
       ctx.beginPath();
       ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
       ctx.fill();
-      
-      ctx.fillStyle = '#6a6a6a';
+
+      ctx.fillStyle = "#3F3F46";
       ctx.beginPath();
       ctx.arc(centerX, centerY, 2, 0, Math.PI * 2);
       ctx.fill();
-      
+
       return;
     }
 
@@ -215,7 +214,6 @@ export function VUMeter({
 
       analyser.getFloatTimeDomainData(dataArray);
 
-      // Calculate RMS and Peak
       let sum = 0;
       let peak = 0;
       for (let i = 0; i < bufferLength; i++) {
@@ -227,95 +225,96 @@ export function VUMeter({
       const rmsDb = linearToDb(rmsLevel);
       const peakDb = linearToDb(peak);
 
-      // Calculate target needle angle
-      const normalizedRms = Math.max(0, Math.min(1, (rmsDb - range.min) / dbRange));
+      const normalizedRms = Math.max(
+        0,
+        Math.min(1, (rmsDb - range.min) / dbRange),
+      );
       const targetNeedleAngle = startAngle + normalizedRms * angleRange;
 
-      // Smooth needle movement (analog ballistics)
       const currentAngle = currentNeedleAngleRef.current;
       const angleDiff = targetNeedleAngle - currentAngle;
-      
+
       const timeConstant = angleDiff > 0 ? attackTime : releaseTime;
       const smoothingFactor = 1 - Math.exp(-deltaTime / timeConstant);
-      currentNeedleAngleRef.current = currentAngle + angleDiff * smoothingFactor;
+      currentNeedleAngleRef.current =
+        currentAngle + angleDiff * smoothingFactor;
 
-      // Redraw everything
       ctx.clearRect(0, 0, width, height);
       drawStaticElements(ctx);
 
-      // Draw needle shadow
       const needleAngle = currentNeedleAngleRef.current;
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
       ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
+      ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(centerX + 1, centerY + 1);
       ctx.lineTo(
         centerX + 1 + Math.cos(needleAngle) * (radius - 8),
-        centerY + 1 + Math.sin(needleAngle) * (radius - 8)
+        centerY + 1 + Math.sin(needleAngle) * (radius - 8),
       );
       ctx.stroke();
 
-      // Draw needle with glow
       const needleGradient = ctx.createLinearGradient(
         centerX,
         centerY,
         centerX + Math.cos(needleAngle) * radius,
-        centerY + Math.sin(needleAngle) * radius
+        centerY + Math.sin(needleAngle) * radius,
       );
-      needleGradient.addColorStop(0, emberOrange);
-      needleGradient.addColorStop(0.7, amberGlow);
-      needleGradient.addColorStop(1, amberGlow);
+      needleGradient.addColorStop(0, COLORS.accentPrimary);
+      needleGradient.addColorStop(0.7, COLORS.accentBright);
+      needleGradient.addColorStop(1, COLORS.accentBright);
 
       ctx.strokeStyle = needleGradient;
       ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      ctx.shadowColor = amberGlow;
-      ctx.shadowBlur = 6;
+      ctx.lineCap = "round";
+      ctx.shadowColor = COLORS.accentBright;
+      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.lineTo(
         centerX + Math.cos(needleAngle) * (radius - 8),
-        centerY + Math.sin(needleAngle) * (radius - 8)
+        centerY + Math.sin(needleAngle) * (radius - 8),
       );
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Draw pivot point
-      ctx.fillStyle = '#4a4a4a';
+      ctx.fillStyle = "#27272A";
       ctx.beginPath();
       ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
       ctx.fill();
-      
-      ctx.fillStyle = '#6a6a6a';
+
+      ctx.fillStyle = "#3F3F46";
       ctx.beginPath();
       ctx.arc(centerX, centerY, 2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw peak bar on right side
       const peakBarX = width - PEAK_BAR_MARGIN - PEAK_BAR_WIDTH;
-      const peakBarHeight = height - 8; // Leave margin top and bottom
+      const peakBarHeight = height - 8;
       const peakBarY = 4;
-      
-      // Background track
-      ctx.fillStyle = '#1a1a1a';
+
+      ctx.fillStyle = COLORS.bgEnd;
       ctx.fillRect(peakBarX, peakBarY, PEAK_BAR_WIDTH, peakBarHeight);
-      
-      // Calculate fill height based on peak level
-      const normalizedPeak = Math.max(0, Math.min(1, (peakDb - range.min) / dbRange));
+
+      const normalizedPeak = Math.max(
+        0,
+        Math.min(1, (peakDb - range.min) / dbRange),
+      );
       const fillHeight = normalizedPeak * peakBarHeight;
-      
-      // Determine color based on level
-      let peakColor = '#22c55e'; // Green
+
+      let peakColor = COLORS.meterGreen;
       if (peakDb > 0) {
-        peakColor = '#ef4444'; // Red
+        peakColor = COLORS.meterRed;
       } else if (peakDb > -12) {
-        peakColor = '#eab308'; // Yellow
+        peakColor = COLORS.meterYellow;
       }
-      
-      // Draw filled portion (from bottom up)
+
       ctx.fillStyle = peakColor;
-      ctx.fillRect(peakBarX, peakBarY + peakBarHeight - fillHeight, PEAK_BAR_WIDTH, fillHeight);
+      ctx.fillRect(
+        peakBarX,
+        peakBarY + peakBarHeight - fillHeight,
+        PEAK_BAR_WIDTH,
+        fillHeight,
+      );
     };
 
     draw();
@@ -329,14 +328,20 @@ export function VUMeter({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="text-xs text-text-light opacity-80">{label}</div>
-      <div className="vu-glow bg-dark-bg border border-gray-700 rounded p-2">
+      <div className="text-xs text-text-secondary">{label}</div>
+      <div
+        className="vu-glow rounded-lg p-2"
+        style={{
+          backgroundColor: COLORS.bgEnd,
+          border: `1px solid ${COLORS.bezelColor}`,
+        }}
+      >
         <canvas
           ref={canvasRef}
           width={METER_WIDTH}
           height={METER_HEIGHT}
           style={{ width: METER_WIDTH, height: METER_HEIGHT }}
-          className="block"
+          className="block rounded"
         />
       </div>
     </div>
