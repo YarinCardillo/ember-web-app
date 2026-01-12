@@ -690,19 +690,60 @@ if (ctx.state === 'suspended') {
 
 ---
 
-## PWA Cache Management
+## PWA Update Management
 
 ### The Problem
 
-PWAs cache JavaScript, CSS, and HTML via Service Workers for offline functionality. When deploying breaking changes, users with stale caches may experience bugs (e.g., audio not working) until their cache is refreshed.
+PWAs cache JavaScript, CSS, and HTML via Service Workers for offline functionality. Silent auto-updates can cause issues during active audio sessions (audio dropouts, state loss). Users need control over when updates are applied.
 
-### Solution: Versioned Cache Clearing
+### Solution: User-Prompted Updates
 
-The app implements a one-time cache clearing mechanism in `src/main.tsx`:
+The app uses `vite-plugin-pwa` in **prompt mode**, which notifies users when updates are available and lets them choose when to apply:
+
+```typescript
+// src/main.tsx
+import { registerSW } from 'virtual:pwa-register';
+
+function setupPWAUpdatePrompt(): void {
+  const updateSW = registerSW({
+    onNeedRefresh() {
+      // Show toast notification to user
+      showUpdateToast(updateSW);
+    },
+    onOfflineReady() {
+      console.log('App ready for offline use');
+    },
+  });
+}
+```
+
+When a new version is available, a toast notification appears at the bottom of the screen with:
+- "New version available" message
+- **Refresh** button - applies update immediately
+- **Later** button - dismisses toast, user can continue working
+
+### Service Worker Configuration
+
+The `vite.config.ts` uses prompt mode without forced activation:
+
+```typescript
+VitePWA({
+  registerType: 'prompt',  // User controls when to update
+  workbox: {
+    // No skipWaiting or clientsClaim - prevents mid-session updates
+    cleanupOutdatedCaches: true,
+    // ...
+  }
+})
+```
+
+### Versioned Cache Clearing (Fallback)
+
+For breaking changes, the app also implements a one-time cache clearing mechanism:
 
 ```typescript
 // Increment this when deploying a fix for cache-related bugs
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v5';
 const CACHE_CLEARED_KEY = `ember-amp-cache-cleared-${CACHE_VERSION}`;
 
 async function clearStaleCaches(): Promise<void> {
@@ -710,61 +751,26 @@ async function clearStaleCaches(): Promise<void> {
     return; // Already cleared for this version
   }
 
-  // Clear all caches
-  const cacheNames = await caches.keys();
-  await Promise.all(cacheNames.map(name => caches.delete(name)));
-
-  // Unregister service workers
-  const registrations = await navigator.serviceWorker.getRegistrations();
-  await Promise.all(registrations.map(reg => reg.unregister()));
-
-  // Mark as cleared and reload
-  localStorage.setItem(CACHE_CLEARED_KEY, 'true');
-  window.location.reload();
+  // Clear all caches and unregister service workers
+  // ... (forces fresh install on next load)
 }
 ```
 
 ### When to Increment CACHE_VERSION
 
-Increment `CACHE_VERSION` (e.g., `'v1'` → `'v2'`) when:
+Increment `CACHE_VERSION` (e.g., `'v4'` → `'v5'`) when:
 
-1. **Fixing a bug that affects cached users** - e.g., audio routing issues in PWA
-2. **Changing Service Worker configuration** - e.g., modifying `vite.config.ts` workbox settings
+1. **Fixing a critical bug that affects cached users** - e.g., audio routing issues
+2. **Changing Service Worker configuration** - e.g., modifying workbox settings
 3. **Breaking changes to cached assets** - e.g., renaming worklet files
 
-### How It Works
+### Developer Checklist for Updates
 
-1. User opens the PWA with stale cache
-2. Old SW eventually downloads new JS in background
-3. `skipWaiting: true` (in `vite.config.ts`) forces new SW activation
-4. On next page load, new `main.tsx` runs
-5. Cache version check fails → all caches cleared, SW unregistered
-6. Automatic reload → fresh app loads
-7. Flag saved in localStorage → won't repeat
-
-### Service Worker Configuration
-
-The `vite.config.ts` includes aggressive cache invalidation settings:
-
-```typescript
-VitePWA({
-  registerType: 'autoUpdate',
-  workbox: {
-    skipWaiting: true,           // Activate new SW immediately
-    clientsClaim: true,          // Control all clients immediately
-    cleanupOutdatedCaches: true, // Remove old cache versions
-    // ...
-  }
-})
-```
-
-### Developer Checklist for Cache-Related Fixes
-
-- [ ] Fix the underlying bug
-- [ ] Increment `CACHE_VERSION` in `src/main.tsx`
+- [ ] Make changes and test locally
+- [ ] Increment `CACHE_VERSION` in `src/main.tsx` (if breaking change)
 - [ ] Run `npm run build`
 - [ ] Deploy to production
-- [ ] Users will auto-clear cache on next app open
+- [ ] Users will see update toast on next visit
 
 ---
 
