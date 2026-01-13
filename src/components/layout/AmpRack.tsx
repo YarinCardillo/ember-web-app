@@ -767,6 +767,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
         audioNodesRef.current.input.muteInput();
       }
 
+      // Ensure AudioContext is active before starting playback
+      await engine.resume();
+
       // Start playback
       source.start();
       setIsPreviewPlaying(true);
