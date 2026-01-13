@@ -16,6 +16,9 @@ class PitchShifterProcessor extends AudioWorkletProcessor {
     this.grainSize = 2048; // Samples per grain
     this.overlap = 4; // Overlap factor
     this.hopSize = this.grainSize / this.overlap;
+    // Overlap-add normalization: compensates for gain buildup from overlapping grains.
+    // With Hann window and 4x overlap, theoretical gain is ~2x, so we scale by 0.5.
+    this.overlapAddGain = 0.5;
 
     // Buffers
     this.inputBuffer = new Float32Array(this.grainSize * 2);
@@ -133,9 +136,9 @@ class PitchShifterProcessor extends AudioWorkletProcessor {
       const inputIdx = (grainStart + i) % this.inputBuffer.length;
       const outputIdx = (this.outputWritePos + i) % this.outputBuffer.length;
 
-      // Apply window and add to output
+      // Apply window and add to output with overlap-add normalization
       this.outputBuffer[outputIdx] +=
-        this.inputBuffer[inputIdx] * this.grainWindow[i] * 0.5;
+        this.inputBuffer[inputIdx] * this.grainWindow[i] * this.overlapAddGain;
     }
 
     this.outputWritePos =
