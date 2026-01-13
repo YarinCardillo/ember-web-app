@@ -1,14 +1,26 @@
 /**
  * TapeSimNode - Analog tape simulation with wow/flutter, head bump, HF rolloff, and odd harmonic saturation
- * 
- * Signal chain: Input → HeadBump → HFRolloff → WowFlutter → OddHarmonicSaturation → Output
+ *
+ * Signal chain: Input → HeadBump → HFRolloff → WowFlutter → PreSatGain → OddHarmonicSaturation → PostSatGain → Output
+ *
+ * Calibration: Reference level is -18 dBFS (0 VU)
+ * - Pre-saturation gain boosts signal so -18 dBFS hits the harmonic generation threshold
+ * - Post-saturation gain compensates to restore original level
  */
+
+// Reference level calibration: -18 dBFS = 0 VU
+// We want -18 dBFS (0.126 linear) to map to ~0.5 on the WaveShaper curve
+// Gain = 0.5 / 0.126 ≈ 4.0 (+12dB)
+const PRE_SAT_GAIN = 4.0;
+const POST_SAT_GAIN = 1.0 / PRE_SAT_GAIN; // Compensate
 
 export class TapeSimNode {
   private headBumpFilter: BiquadFilterNode;
   private hfRolloffFilter: BiquadFilterNode;
   private wobbleWorklet: AudioWorkletNode | null = null;
+  private preSatGain: GainNode;
   private oddHarmonicSaturator: WaveShaperNode;
+  private postSatGain: GainNode;
   private outputGain: GainNode;
   private bypassGain: GainNode;
   private ctx: AudioContext;
@@ -17,34 +29,43 @@ export class TapeSimNode {
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
-    
+
     // Head bump filter: subtle low-frequency boost (tape head resonance)
     this.headBumpFilter = ctx.createBiquadFilter();
-    this.headBumpFilter.type = 'peaking';
+    this.headBumpFilter.type = "peaking";
     this.headBumpFilter.frequency.value = 80; // Hz
     this.headBumpFilter.Q.value = 0.7;
     this.headBumpFilter.gain.value = 2; // +2dB subtle warmth
-    
+
     // HF rolloff filter: gentle high-frequency smoothing
     this.hfRolloffFilter = ctx.createBiquadFilter();
-    this.hfRolloffFilter.type = 'lowpass';
+    this.hfRolloffFilter.type = "lowpass";
     this.hfRolloffFilter.frequency.value = 15000; // Hz - subtle rolloff
     this.hfRolloffFilter.Q.value = 0.5;
-    
-    // Odd harmonic saturation: adds 3rd harmonic (tube character) at 100% intensity
-    // Formula: output = input + 0.2 * input^3
+
+    // Pre-saturation gain: boost signal so -18 dBFS hits the saturation knee
+    this.preSatGain = ctx.createGain();
+    this.preSatGain.gain.value = PRE_SAT_GAIN;
+
+    // Odd harmonic saturation: adds 3rd harmonic (tape character) at 100% intensity
+    // Formula: output = input + harmonics (3rd, 5th, 7th with 1/n³ decay)
     this.oddHarmonicSaturator = ctx.createWaveShaper();
-    this.oddHarmonicSaturator.curve = this.createOddHarmonicCurve() as Float32Array<ArrayBuffer>;
-    this.oddHarmonicSaturator.oversample = '4x'; // Reduce aliasing
-    
+    this.oddHarmonicSaturator.curve =
+      this.createOddHarmonicCurve() as Float32Array<ArrayBuffer>;
+    this.oddHarmonicSaturator.oversample = "4x"; // Reduce aliasing
+
+    // Post-saturation gain: compensate for the pre-saturation boost
+    this.postSatGain = ctx.createGain();
+    this.postSatGain.gain.value = POST_SAT_GAIN;
+
     // Output gain (stereo processing handled in worklet)
     this.outputGain = ctx.createGain();
     this.outputGain.gain.value = 1.0;
-    
+
     // Bypass gain
     this.bypassGain = ctx.createGain();
     this.bypassGain.gain.value = 1.0;
-    
+
     // Connect processing chain (will be completed after worklet initialization)
     this.headBumpFilter.connect(this.hfRolloffFilter);
   }
@@ -55,25 +76,29 @@ export class TapeSimNode {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
-    
+
     try {
-      this.wobbleWorklet = new AudioWorkletNode(this.ctx, 'tape-wobble');
-      
+      this.wobbleWorklet = new AudioWorkletNode(this.ctx, "tape-wobble");
+
       // Complete the signal chain
-      // HeadBump → HFRolloff → WowFlutter → OddHarmonicSaturation → Output
+      // HeadBump → HFRolloff → WowFlutter → PreSatGain → OddHarmonicSaturation → PostSatGain → Output
       this.hfRolloffFilter.connect(this.wobbleWorklet);
-      this.wobbleWorklet.connect(this.oddHarmonicSaturator);
-      this.oddHarmonicSaturator.connect(this.outputGain);
-      
+      this.wobbleWorklet.connect(this.preSatGain);
+      this.preSatGain.connect(this.oddHarmonicSaturator);
+      this.oddHarmonicSaturator.connect(this.postSatGain);
+      this.postSatGain.connect(this.outputGain);
+
       this.isInitialized = true;
-      console.log('TapeSimNode initialized successfully with wow/flutter');
+      console.log("TapeSimNode initialized successfully with wow/flutter");
     } catch (error) {
-      console.error('Failed to create TapeWobble AudioWorkletNode:', error);
+      console.error("Failed to create TapeWobble AudioWorkletNode:", error);
       // Fallback: connect filters + saturation directly (no wow/flutter)
-      this.hfRolloffFilter.connect(this.oddHarmonicSaturator);
-      this.oddHarmonicSaturator.connect(this.outputGain);
+      this.hfRolloffFilter.connect(this.preSatGain);
+      this.preSatGain.connect(this.oddHarmonicSaturator);
+      this.oddHarmonicSaturator.connect(this.postSatGain);
+      this.postSatGain.connect(this.outputGain);
       this.isInitialized = true;
-      console.log('TapeSimNode initialized with fallback (filters only)');
+      console.log("TapeSimNode initialized with fallback (filters only)");
     }
   }
 
@@ -126,28 +151,27 @@ export class TapeSimNode {
   private createOddHarmonicCurve(): Float32Array {
     const samples = 65537; // Odd number for symmetry, high resolution
     const curve = new Float32Array(samples);
-    
+
     const baseCoeff = 1.0; // Base coefficient
     const harmonics = [3, 5, 7]; // Odd harmonic orders
-    
+
     for (let i = 0; i < samples; i++) {
       // Map index to -1.0 to +1.0 range (standard Web Audio input range)
       const x = (i / (samples - 1)) * 2 - 1;
-      
+
       let y = x; // Start with fundamental
-      
+
       // Add odd harmonics with 1/n³ decay
       for (const n of harmonics) {
         const coeff = baseCoeff / (n * n * n); // 1/n³ decay
         // Odd harmonics: symmetric, use x^n
         y += coeff * Math.pow(x, n);
       }
-      
+
       // Soft limit using tanh to prevent harsh clipping
       curve[i] = Math.tanh(y);
     }
-    
+
     return curve;
   }
 }
-

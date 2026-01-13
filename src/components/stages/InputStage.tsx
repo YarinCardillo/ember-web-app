@@ -6,6 +6,7 @@ import { VerticalSlider } from "../ui/VerticalSlider";
 import { VintageVuMeter } from "../ui/VintageVuMeter";
 import { TapeButton } from "../ui/TapeButton";
 import { VinylButton } from "../ui/VinylButton";
+import { VinylIntensitySlider } from "../ui/VinylIntensitySlider";
 import { PreviewButton } from "../ui/PreviewButton";
 import { useAudioStore } from "../../store/useAudioStore";
 import type { AudioDeviceInfo } from "../../types/audio.types";
@@ -16,6 +17,7 @@ interface InputStageProps {
   onDeviceChange: (deviceId: string) => void;
   onVinylModeActivate?: () => void;
   onVinylModeDeactivate?: () => void;
+  onVinylIntensityChange?: (intensity: number) => void;
   isPreviewPlaying?: boolean;
   isPreviewLoading?: boolean;
   onPreviewToggle?: () => void;
@@ -29,6 +31,7 @@ export function InputStage({
   onDeviceChange,
   onVinylModeActivate,
   onVinylModeDeactivate,
+  onVinylIntensityChange,
   isPreviewPlaying = false,
   isPreviewLoading = false,
   onPreviewToggle,
@@ -40,6 +43,7 @@ export function InputStage({
   const inputDeviceId = useAudioStore((state) => state.inputDeviceId);
   const bypassTapeSim = useAudioStore((state) => state.bypassTapeSim);
   const vinylModeActive = useAudioStore((state) => state.vinylMode.isActive);
+  const vinylIntensity = useAudioStore((state) => state.vinylMode.intensity);
   const isRunning = useAudioStore((state) => state.isRunning);
 
   return (
@@ -55,6 +59,11 @@ export function InputStage({
           className="flex items-center gap-2 justify-end"
           style={{ marginTop: "-12px", minWidth: "140px" }}
         >
+          <VinylIntensitySlider
+            value={vinylIntensity}
+            onChange={onVinylIntensityChange ?? (() => {})}
+            visible={vinylModeActive}
+          />
           <div className="translate-x-1.5">
             <VinylButton
               active={vinylModeActive}

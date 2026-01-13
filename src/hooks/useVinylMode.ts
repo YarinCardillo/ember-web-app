@@ -10,7 +10,6 @@ import { useCallback, useMemo } from "react";
 import { useAudioStore } from "../store/useAudioStore";
 
 interface VinylModeConfig {
-  targetPlaybackRate: number; // 0.733 for 33/45 ratio
   transitionDuration: number; // ms for spin up/down
   maxBufferDuration: number; // seconds before auto-exit
   reverbWet: number; // 0-1 reverb mix when active
@@ -18,7 +17,6 @@ interface VinylModeConfig {
 }
 
 const DEFAULT_CONFIG: VinylModeConfig = {
-  targetPlaybackRate: 0.733, // 33⅓ / 45 ≈ 0.733
   transitionDuration: 1500, // Faster transition (was 2500ms)
   maxBufferDuration: 240, // 4 minutes
   reverbWet: 0.75, // 75% reverb when vinyl mode active
@@ -28,7 +26,8 @@ const DEFAULT_CONFIG: VinylModeConfig = {
 interface UseVinylModeCallbacks {
   onRampPitch?: (semitones: number) => void;
   onRampReverb?: (wet: number) => void;
-  onRampPlaybackRate?: (rate: number) => void;
+  onRampIntensity?: (intensity: number) => void;
+  onSetIntensity?: (intensity: number) => void;
   onFlushBuffer?: () => void;
 }
 
@@ -43,7 +42,6 @@ export const useVinylMode = (
     () => ({ ...DEFAULT_CONFIG, ...config }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      config.targetPlaybackRate,
       config.transitionDuration,
       config.maxBufferDuration,
       config.reverbWet,
@@ -57,6 +55,7 @@ export const useVinylMode = (
     (state) => state.setVinylModeRemainingTime,
   );
   const setVinylModeActive = useAudioStore((state) => state.setVinylModeActive);
+  const setVinylIntensity = useAudioStore((state) => state.setVinylIntensity);
 
   /**
    * Ramp parameters to vinyl mode values
@@ -64,9 +63,9 @@ export const useVinylMode = (
    */
   const rampToVinylMode = useCallback(() => {
     callbacks?.onRampPitch?.(0); // Pitch shift disabled for now
-    callbacks?.onRampReverb?.(cfg.reverbWet); // Enable reverb at 80%
-    callbacks?.onRampPlaybackRate?.(cfg.targetPlaybackRate);
-  }, [cfg, callbacks]);
+    callbacks?.onRampReverb?.(cfg.reverbWet); // Enable reverb at 75%
+    callbacks?.onRampIntensity?.(vinylMode.intensity);
+  }, [cfg, callbacks, vinylMode.intensity]);
 
   /**
    * Ramp parameters back to normal
@@ -76,8 +75,21 @@ export const useVinylMode = (
     // Start ramps back to normal - Web Audio API will handle smooth transitions
     callbacks?.onRampPitch?.(0);
     callbacks?.onRampReverb?.(0);
-    callbacks?.onRampPlaybackRate?.(1.0);
+    callbacks?.onRampIntensity?.(0); // Ramp to no slowdown (rate = 1.0)
   }, [callbacks]);
+
+  /**
+   * Update intensity in real-time (when slider changes during active mode)
+   */
+  const updateIntensity = useCallback(
+    (intensity: number) => {
+      setVinylIntensity(intensity);
+      if (vinylMode.isActive) {
+        callbacks?.onSetIntensity?.(intensity);
+      }
+    },
+    [vinylMode.isActive, setVinylIntensity, callbacks],
+  );
 
   /**
    * Activate vinyl mode
@@ -134,6 +146,8 @@ export const useVinylMode = (
     state: vinylMode.state,
     remainingTime: vinylMode.remainingTime,
     isActive: vinylMode.isActive,
+    intensity: vinylMode.intensity,
+    updateIntensity,
     isTransitioning:
       vinylMode.state === "entering" || vinylMode.state === "exiting",
     activate,

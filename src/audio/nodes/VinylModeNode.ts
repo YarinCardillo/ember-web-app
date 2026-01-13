@@ -33,6 +33,9 @@ export class VinylModeNode {
   // Gain boost for reverb volume loss (8dB ≈ 2.5 linear)
   private static readonly REVERB_GAIN_COMPENSATION = 2.5;
 
+  // Full vinyl ratio: 33⅓ / 45 ≈ 0.733 (authentic 45→33 RPM)
+  private static readonly VINYL_RATIO_FULL = 33 / 45;
+
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
 
@@ -358,6 +361,39 @@ export class VinylModeNode {
         );
       }
     }
+  }
+
+  /**
+   * Convert intensity (0-1) to playback rate
+   * @param intensity - 0.0 = no slowdown, 1.0 = full 45→33 RPM
+   * @returns Playback rate (1.0 to 0.733)
+   */
+  private intensityToRate(intensity: number): number {
+    // Interpolate: 1.0 → 0.733
+    // intensity = 0.0 → rate = 1.0 (no change)
+    // intensity = 0.3 → rate = 0.92 (-8% speed, sweet spot)
+    // intensity = 0.5 → rate = 0.867 (-13% speed)
+    // intensity = 1.0 → rate = 0.733 (-26.7% speed, authentic)
+    return 1.0 - intensity * (1.0 - VinylModeNode.VINYL_RATIO_FULL);
+  }
+
+  /**
+   * Set vinyl intensity (affects playback rate)
+   * @param intensity - 0.0 = no slowdown, 1.0 = full 45→33 RPM
+   */
+  setIntensity(intensity: number): void {
+    const rate = this.intensityToRate(intensity);
+    this.setPlaybackRate(rate);
+  }
+
+  /**
+   * Smoothly ramp vinyl intensity
+   * @param intensity - 0.0 = no slowdown, 1.0 = full 45→33 RPM
+   * @param durationMs - Ramp duration in milliseconds
+   */
+  rampIntensity(intensity: number, durationMs: number): void {
+    const rate = this.intensityToRate(intensity);
+    this.rampPlaybackRate(rate, durationMs);
   }
 
   /**

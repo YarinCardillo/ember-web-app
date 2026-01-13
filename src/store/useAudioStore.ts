@@ -2,10 +2,10 @@
  * Zustand store for audio state management
  */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { PresetConfig, AudioDeviceInfo } from '../types/audio.types';
-import presets from '../audio/presets/amp-presets.json';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { PresetConfig, AudioDeviceInfo } from "../types/audio.types";
+import presets from "../audio/presets/amp-presets.json";
 
 const STARTER_PRESET = presets.starter as PresetConfig;
 
@@ -23,19 +23,19 @@ interface AudioState {
   mid: number;
   treble: number;
   presence: number;
-  drive: number;        // 0-1
-  harmonics: number;    // 0-1
+  drive: number; // 0-1
+  harmonics: number; // 0-1
   saturationMix: number; // 0-1
-  preGain: number;      // Pre-clipper gain in dB
-  outputGain: number;   // Master volume in dB
+  preGain: number; // Pre-clipper gain in dB
+  outputGain: number; // Master volume in dB
 
   // Transient shaper parameters (for debug)
-  transientAttack: number;  // -1.0 to +1.0
-  transientSustain: number;  // -1.0 to +1.0
-  transientMix: number;      // 0.0 to 1.0
+  transientAttack: number; // -1.0 to +1.0
+  transientSustain: number; // -1.0 to +1.0
+  transientMix: number; // 0.0 to 1.0
 
   // Bypass states
-  bypassAll: boolean;          // Master bypass - routes input directly to output
+  bypassAll: boolean; // Master bypass - routes input directly to output
   bypassTapeSim: boolean;
   bypassToneStack: boolean;
   bypassSaturation: boolean;
@@ -44,24 +44,31 @@ interface AudioState {
   // Vinyl mode state
   vinylMode: {
     isActive: boolean;
-    remainingTime: number;  // seconds
-    state: 'idle' | 'entering' | 'active' | 'exiting';
+    remainingTime: number; // seconds
+    state: "idle" | "entering" | "active" | "exiting";
+    intensity: number; // 0.0 to 1.0, default 0.3
   };
 
   // Presets
   currentPreset: string | null;
 
   // Actions
-  setParameter: <K extends keyof AudioState>(param: K, value: AudioState[K]) => void;
+  setParameter: <K extends keyof AudioState>(
+    param: K,
+    value: AudioState[K],
+  ) => void;
   loadPreset: (preset: PresetConfig) => void;
   setInitialized: (initialized: boolean) => void;
   setRunning: (running: boolean) => void;
   setInputDevice: (deviceId: string | null) => void;
   setOutputDevice: (deviceId: string | null) => void;
   setAvailableDevices: (devices: AudioDeviceInfo[]) => void;
-  setVinylModeState: (state: 'idle' | 'entering' | 'active' | 'exiting') => void;
+  setVinylModeState: (
+    state: "idle" | "entering" | "active" | "exiting",
+  ) => void;
   setVinylModeRemainingTime: (time: number) => void;
   setVinylModeActive: (active: boolean) => void;
+  setVinylIntensity: (intensity: number) => void;
 }
 
 export const useAudioStore = create<AudioState>()(
@@ -82,19 +89,20 @@ export const useAudioStore = create<AudioState>()(
       harmonics: STARTER_PRESET.harmonics ?? 0.4,
       saturationMix: STARTER_PRESET.saturationMix ?? 0.6,
       preGain: STARTER_PRESET.preGain ?? 0,
-      outputGain: 0,  // Master volume starts at 0, not controlled by presets
-      transientAttack: 0.75,  // Default: 75% (optimal)
-      transientSustain: 0.0,  // Default: 0% (optimal)
-      transientMix: 0.55,      // Default: 55% (optimal)
+      outputGain: 0, // Master volume starts at 0, not controlled by presets
+      transientAttack: 0.75, // Default: 75% (optimal)
+      transientSustain: 0.0, // Default: 0% (optimal)
+      transientMix: 0.55, // Default: 55% (optimal)
       bypassAll: false,
       bypassTapeSim: STARTER_PRESET.bypassTapeSim ?? false,
       bypassToneStack: STARTER_PRESET.bypassToneStack ?? false,
       bypassSaturation: STARTER_PRESET.bypassSaturation ?? false,
-      bypassSpeakerSim: true,  // Speaker sim always bypassed by default (no IR)
+      bypassSpeakerSim: true, // Speaker sim always bypassed by default (no IR)
       vinylMode: {
         isActive: false,
-        remainingTime: 240,  // 4 minutes in seconds
-        state: 'idle',
+        remainingTime: 240, // 4 minutes in seconds
+        state: "idle",
+        intensity: 0.3, // Default: 0.3 (~-8% speed, sweet spot for "slowed & reverb")
       },
       currentPreset: STARTER_PRESET.name,
 
@@ -160,9 +168,15 @@ export const useAudioStore = create<AudioState>()(
           vinylMode: { ...prev.vinylMode, isActive: active },
         }));
       },
+
+      setVinylIntensity: (intensity) => {
+        set((prev) => ({
+          vinylMode: { ...prev.vinylMode, intensity },
+        }));
+      },
     }),
     {
-      name: 'ember-amp-storage',
+      name: "ember-amp-storage",
       partialize: (state) => ({
         inputGain: state.inputGain,
         bass: state.bass,
@@ -180,7 +194,22 @@ export const useAudioStore = create<AudioState>()(
         bypassToneStack: state.bypassToneStack,
         bypassSaturation: state.bypassSaturation,
         bypassSpeakerSim: state.bypassSpeakerSim,
+        vinylIntensity: state.vinylMode.intensity,
       }),
-    }
-  )
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<AudioState> & {
+          vinylIntensity?: number;
+        };
+        return {
+          ...currentState,
+          ...persisted,
+          vinylMode: {
+            ...currentState.vinylMode,
+            intensity:
+              persisted.vinylIntensity ?? currentState.vinylMode.intensity,
+          },
+        };
+      },
+    },
+  ),
 );

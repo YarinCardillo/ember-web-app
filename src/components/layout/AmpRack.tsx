@@ -494,10 +494,16 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           nodes.vinylMode.rampReverbMix(wet, 1500);
         }
       },
-      onRampPlaybackRate: (rate) => {
+      onRampIntensity: (intensity) => {
         const nodes = audioNodesRef.current;
         if (nodes.vinylMode) {
-          nodes.vinylMode.rampPlaybackRate(rate, 2500);
+          nodes.vinylMode.rampIntensity(intensity, 1500);
+        }
+      },
+      onSetIntensity: (intensity) => {
+        const nodes = audioNodesRef.current;
+        if (nodes.vinylMode) {
+          nodes.vinylMode.setIntensity(intensity);
         }
       },
       onFlushBuffer: () => {
@@ -532,6 +538,14 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const handleVinylModeDeactivate = useCallback(() => {
     vinylModeHook.deactivate();
   }, [vinylModeHook]);
+
+  // Handle vinyl intensity slider change
+  const handleVinylIntensityChange = useCallback(
+    (intensity: number) => {
+      vinylModeHook.updateIntensity(intensity);
+    },
+    [vinylModeHook],
+  );
 
   // Handle confirmed input device change
   const applyInputDeviceChange = useCallback(async (deviceId: string) => {
@@ -825,6 +839,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
               onDeviceChange={handleInputDeviceChange}
               onVinylModeActivate={handleVinylModeActivate}
               onVinylModeDeactivate={handleVinylModeDeactivate}
+              onVinylIntensityChange={handleVinylIntensityChange}
               isPreviewPlaying={isPreviewPlaying}
               isPreviewLoading={isPreviewLoading}
               onPreviewToggle={togglePreview}

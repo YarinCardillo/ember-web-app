@@ -34,14 +34,18 @@ export function VintageVuMeter({
   const minAngle = -35;
   const maxAngle = 35;
 
-  // Peak threshold (0 dB on VU scale)
+  // VU calibration: 0 VU = -18 dBFS (broadcast/pro-audio standard)
+  const VU_REFERENCE_DBFS = -18;
+
+  // Peak threshold (0 VU on display = -18 dBFS)
   const peakThresholdDb = 0;
   const peakHoldDuration = 1000; // ms
   const peakFallTime = 1500; // ms for full fade out
 
-  // VU meter ballistics (300ms integration time per IEC 60268-17)
-  const attackTime = 300;
-  const releaseTime = 300;
+  // VU meter ballistics (IEC 60268-17: 99% in 300ms)
+  // Exponential smoothing reaches 99% at 5τ, so τ = 300ms / 5 = 60ms
+  const attackTime = 65;
+  const releaseTime = 65;
 
   // SVG dimensions - wider arc with larger radius for flatter appearance
   const svgWidth = 360;
@@ -118,11 +122,15 @@ export function VintageVuMeter({
         if (abs > peak) peak = abs;
       }
       const rmsLevel = Math.sqrt(sum / bufferLength);
-      const rmsDb = linearToDb(rmsLevel);
-      const peakDb = linearToDb(peak);
+      const rmsDbfs = linearToDb(rmsLevel);
+      const peakDbfs = linearToDb(peak);
+
+      // Convert dBFS to VU scale (0 VU = -18 dBFS)
+      const rmsVu = rmsDbfs - VU_REFERENCE_DBFS;
+      const peakVu = peakDbfs - VU_REFERENCE_DBFS;
 
       // Map to VU scale (-20 to +3)
-      const clampedLevel = Math.max(minDb, Math.min(maxDb, rmsDb));
+      const clampedLevel = Math.max(minDb, Math.min(maxDb, rmsVu));
       const normalizedLevel = (clampedLevel - minDb) / (maxDb - minDb);
       const targetAngle = minAngle + normalizedLevel * (maxAngle - minAngle);
 
@@ -138,7 +146,7 @@ export function VintageVuMeter({
       }
 
       // Peak LED logic with hold and fade
-      if (peakDb >= peakThresholdDb) {
+      if (peakVu >= peakThresholdDb) {
         // New peak detected - full brightness and reset hold timer
         peakBrightnessRef.current = 1;
         peakHoldTimeRef.current = now;

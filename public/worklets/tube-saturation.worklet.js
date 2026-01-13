@@ -1,36 +1,45 @@
 /**
  * TubeSaturationProcessor - AudioWorklet for tube saturation with harmonics
- * 
+ *
  * Parameters:
  * - drive: 0-1, amount of saturation
  * - harmonics: 0-1, amount of harmonic generation
  * - mix: 0-1, dry/wet blend
+ *
+ * Calibration:
+ * - Reference level: -18 dBFS (0 VU)
+ * - Signals below reference pass relatively clean
+ * - Signals at/above reference hit the saturation curve
  */
+
+// Reference level: -18 dBFS (0 VU) in linear amplitude
+// 10^(-18/20) = 0.12589254117941673
+const REFERENCE_LINEAR = 0.12589254117941673;
 
 class TubeSaturationProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
       {
-        name: 'drive',
+        name: "drive",
         defaultValue: 0.5,
         minValue: 0,
         maxValue: 1,
-        automationRate: 'a-rate'
+        automationRate: "a-rate",
       },
       {
-        name: 'harmonics',
+        name: "harmonics",
         defaultValue: 0.5,
         minValue: 0,
         maxValue: 1,
-        automationRate: 'a-rate'
+        automationRate: "a-rate",
       },
       {
-        name: 'mix',
+        name: "mix",
         defaultValue: 1.0,
         minValue: 0,
         maxValue: 1,
-        automationRate: 'a-rate'
-      }
+        automationRate: "a-rate",
+      },
     ];
   }
 
@@ -46,7 +55,7 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
    */
   saturate(sample, drive) {
     if (drive < 0.001) return sample;
-    const k = 2 * drive / (1 - drive + 0.001); // Avoid division by zero
+    const k = (2 * drive) / (1 - drive + 0.001); // Avoid division by zero
     return Math.tanh(k * sample) / Math.tanh(k); // Normalize output
   }
 
@@ -60,7 +69,7 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
   addEvenHarmonics(x, amount) {
     const baseCoeff = 1.0; // Base coefficient, scaled by amount
     const harmonics = [2, 4, 6]; // Even harmonic orders
-    
+
     let result = x;
     for (const n of harmonics) {
       // 1/n² decay for even harmonics
@@ -68,14 +77,14 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
       // Even harmonics: asymmetric, use x * |x|^(n-1)
       result += amount * coeff * x * Math.pow(Math.abs(x), n - 1);
     }
-    
+
     return result;
   }
 
   process(inputs, outputs, parameters) {
     const input = inputs[0];
     const output = outputs[0];
-    
+
     if (!input || !input.length) {
       return true;
     }
@@ -91,14 +100,20 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
 
       for (let i = 0; i < inputChannel.length; i++) {
         const drySample = inputChannel[i];
-        
+
         // Get parameter values (handle both constant and variable rate)
         const driveValue = drive.length > 1 ? drive[i] : drive[0];
-        const harmonicsValue = harmonics.length > 1 ? harmonics[i] : harmonics[0];
+        const harmonicsValue =
+          harmonics.length > 1 ? harmonics[i] : harmonics[0];
         const mixValue = mix.length > 1 ? mix[i] : mix[0];
 
-        // Apply saturation
-        let wetSample = this.saturate(drySample, driveValue);
+        // Normalize to reference level before saturation
+        // This ensures -18 dBFS (0 VU) maps to the saturation knee
+        const normalizedSample = drySample / REFERENCE_LINEAR;
+
+        // Apply saturation to normalized signal
+        let wetSample =
+          this.saturate(normalizedSample, driveValue) * REFERENCE_LINEAR;
 
         // Add even harmonics if enabled (2nd, 4th, 6th with 1/n² decay)
         if (harmonicsValue > 0.01) {
@@ -110,7 +125,8 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
 
         // Gain compensation: reduce output proportional to drive + harmonics
         // This keeps perceived loudness more consistent
-        const gainCompensation = 1.0 / (1.0 + driveValue * 0.3 + harmonicsValue * 0.25);
+        const gainCompensation =
+          1.0 / (1.0 + driveValue * 0.3 + harmonicsValue * 0.25);
         wetSample *= gainCompensation;
 
         // Dry/wet mix
@@ -122,4 +138,4 @@ class TubeSaturationProcessor extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('tube-saturation', TubeSaturationProcessor);
+registerProcessor("tube-saturation", TubeSaturationProcessor);
