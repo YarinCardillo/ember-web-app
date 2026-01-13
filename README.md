@@ -261,7 +261,7 @@ ember-web-app/
 1. **VinylModeNode** - Slowed playback (0.733x), synthetic reverb, and +8dB boost for vinyl record simulation. Processes audio FIRST, before input gain. Activated via the "33" button in the Input stage.
 2. **InputNode** - Captures audio via `getUserMedia()`, gain control (-36 to +36 dB), level metering (RMS VU meter + peak bar)
 3. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening, odd harmonic saturation (3rd, 5th, 7th with 1/n³ decay)
-4. **ToneStackNode** - 4-band EQ (Bass 100Hz, Mid 1kHz, Treble 4kHz, Presence 8kHz)
+4. **ToneStackNode** - 4-band EQ (Bass 75Hz, Mid 800Hz, Treble 4kHz, Presence 11kHz)
 5. **TubeSaturationNode** - AudioWorklet with tanh clipping, even harmonic generation (2nd, 4th, 6th with 1/n² decay), controllable via Drive and Harmonics knobs
 6. **TransientNode** - SPL Transient Designer-style processor using sidechain filtering (150Hz lowpass for detection, fullband gain modulation). Fixed parameters: Attack 75%, Sustain 0%, Mix 55%. Always active, no user controls.
 7. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
@@ -317,8 +317,8 @@ npm run lint     # Run ESLint
 | Chrome 110+  | ✅ Full support | Output device selection available                 |
 | Edge 110+    | ✅ Full support | Output device selection available                 |
 | Brave, Opera | ✅ Full support | Chromium-based, output device selection available |
-| Firefox 76+  | ⚠️ Partial      | No output device selection (uses system default)  |
-| Safari 14.1+ | ⚠️ Partial      | No output device selection (uses system default)  |
+| Firefox 76+  | ⚠️ Not supported| No output device selection (uses system default)  |
+| Safari 14.1+ | ⚠️ Not supported| No output device selection (uses system default)  |
 
 **Recommended:** Use Chromium-based browsers (Chrome, Edge, Brave, Opera) for full functionality.
 
@@ -332,4 +332,4 @@ MIT
 
 ---
 
-*Made with 🧡 by [Yarin Cardillo](https://yarincardillo.com)*
+*Made with care by [Yarin Cardillo](https://yarincardillo.com)*
