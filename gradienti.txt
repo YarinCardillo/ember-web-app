@@ -1,0 +1,53 @@
+#lancetta bianca glow
+(to top, #8b0000 0%, #dc2626 8%, #ffffff 10%, #ffffff 100%)
+--------------------------------------------------------------------------------------------------------------
+#lancetta gradiente rosso crema
+to top, #1a1a1a 0%, #ef4444 20%, #fef3c7 100%
+--------------------------------------------------------------------------------------------------------------
+#classic cream
+// Background
+background: "linear-gradient(180deg, #f5f0e1 0%, #e8dcc8 100%)"
+
+// Needle
+background: "linear-gradient(to top, #1a1a1a 0%, #1a1a1a 100%)"
+boxShadow: "none" // Nessun glow, puro vintage
+--------------------------------------------------------------------------------------------------------------
+#darkmode amber
+// Background
+background: "linear-gradient(180deg, #0a0a0a 0%, #1a1510 100%)"
+
+// Needle
+background: "linear-gradient(to top, #1a1a1a 0%, #F5A524 15%, #fbbf24 100%)"
+boxShadow: "0 0 12px rgba(245, 165, 36, 1), 0 0 30px rgba(245, 165, 36, 0.5)"
+--------------------------------------------------------------------------------------------------------------
+#green phosphor
+// Background
+background: "linear-gradient(180deg, #0d1a0d 0%, #0a0f0a 100%)"
+border: "2px solid #1a3d1a"
+
+// Needle
+background: "linear-gradient(to top, #0a0a0a 0%, #22c55e 20%, #4ade80 100%)"
+boxShadow: "0 0 10px rgba(74, 222, 128, 0.9), 0 0 25px rgba(74, 222, 128, 0.5)"
+
+// Scale text color
+fill: "#22c55e" // invece di #3d2e1a
+--------------------------------------------------------------------------------------------------------------
+#warm copper
+// Background
+background: "linear-gradient(180deg, #1a1412 0%, #2d2118 100%)"
+
+// Needle
+background: "linear-gradient(to top, #1a1a1a 0%, #b45309 15%, #f59e0b 50%, #fcd34d 100%)"
+boxShadow: "0 0 8px rgba(245, 158, 11, 0.8), 0 0 20px rgba(180, 83, 9, 0.5)"
+--------------------------------------------------------------------------------------------------------------
+#cool blue
+// Background
+background: "linear-gradient(180deg, #0a0a12 0%, #12121a 100%)"
+border: "2px solid #1e3a5f"
+
+// Needle
+background: "linear-gradient(to top, #0a0a0a 0%, #3b82f6 20%, #93c5fd 100%)"
+boxShadow: "0 0 10px rgba(59, 130, 246, 0.9), 0 0 25px rgba(59, 130, 246, 0.5)"
+
+// Scale/accent color
+fill: "#60a5fa" // per la zona "hot"

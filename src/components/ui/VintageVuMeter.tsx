@@ -273,18 +273,17 @@ export function VintageVuMeter({
       );
     });
 
-    // VU label - positioned below the scale arc
+    // VU label
     elements.push(
       <text
         key="vu-label"
         x={cx}
-        y={115}
+        y={cy - 55}
         fill="#2a2015"
         fontFamily="Georgia, serif"
-        fontSize={22}
-        fontWeight="bold"
+        fontSize={24}
         textAnchor="middle"
-        letterSpacing={6}
+        letterSpacing={4}
       >
         VU
       </text>,
