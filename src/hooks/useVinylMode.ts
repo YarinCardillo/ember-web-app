@@ -1,28 +1,28 @@
 /**
  * useVinylMode - Hook to manage vinyl mode state transitions
- * 
+ *
  * This hook coordinates the state machine and provides callbacks for
  * audio parameter ramps. The actual audio nodes are controlled via
  * callbacks passed from AmpRack.
  */
 
-import { useCallback } from 'react';
-import { useAudioStore } from '../store/useAudioStore';
+import { useCallback, useMemo } from "react";
+import { useAudioStore } from "../store/useAudioStore";
 
 interface VinylModeConfig {
-  targetPlaybackRate: number;    // 0.733 for 33/45 ratio
-  transitionDuration: number;    // ms for spin up/down
-  maxBufferDuration: number;     // seconds before auto-exit
-  reverbWet: number;             // 0-1 reverb mix when active
-  pitchShiftSemitones: number;   // negative for lower pitch
+  targetPlaybackRate: number; // 0.733 for 33/45 ratio
+  transitionDuration: number; // ms for spin up/down
+  maxBufferDuration: number; // seconds before auto-exit
+  reverbWet: number; // 0-1 reverb mix when active
+  pitchShiftSemitones: number; // negative for lower pitch
 }
 
 const DEFAULT_CONFIG: VinylModeConfig = {
-  targetPlaybackRate: 0.733,     // 33⅓ / 45 ≈ 0.733
-  transitionDuration: 1500,      // Faster transition (was 2500ms)
-  maxBufferDuration: 240,        // 4 minutes
-  reverbWet: 0.75,               // 75% reverb when vinyl mode active
-  pitchShiftSemitones: -4,       // ~4 semitones down matches the speed ratio
+  targetPlaybackRate: 0.733, // 33⅓ / 45 ≈ 0.733
+  transitionDuration: 1500, // Faster transition (was 2500ms)
+  maxBufferDuration: 240, // 4 minutes
+  reverbWet: 0.75, // 75% reverb when vinyl mode active
+  pitchShiftSemitones: -4, // ~4 semitones down matches the speed ratio
 };
 
 interface UseVinylModeCallbacks {
@@ -37,13 +37,25 @@ interface UseVinylModeCallbacks {
  */
 export const useVinylMode = (
   config: Partial<VinylModeConfig> = {},
-  callbacks?: UseVinylModeCallbacks
+  callbacks?: UseVinylModeCallbacks,
 ) => {
-  const cfg = { ...DEFAULT_CONFIG, ...config };
-  
+  const cfg = useMemo(
+    () => ({ ...DEFAULT_CONFIG, ...config }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      config.targetPlaybackRate,
+      config.transitionDuration,
+      config.maxBufferDuration,
+      config.reverbWet,
+      config.pitchShiftSemitones,
+    ],
+  );
+
   const vinylMode = useAudioStore((state) => state.vinylMode);
   const setVinylModeState = useAudioStore((state) => state.setVinylModeState);
-  const setVinylModeRemainingTime = useAudioStore((state) => state.setVinylModeRemainingTime);
+  const setVinylModeRemainingTime = useAudioStore(
+    (state) => state.setVinylModeRemainingTime,
+  );
   const setVinylModeActive = useAudioStore((state) => state.setVinylModeActive);
 
   /**
@@ -65,51 +77,66 @@ export const useVinylMode = (
     callbacks?.onRampPitch?.(0);
     callbacks?.onRampReverb?.(0);
     callbacks?.onRampPlaybackRate?.(1.0);
-  }, [cfg, callbacks]);
+  }, [callbacks]);
 
   /**
    * Activate vinyl mode
    */
   const activate = useCallback(() => {
-    if (vinylMode.state !== 'idle') return;
+    if (vinylMode.state !== "idle") return;
 
-    setVinylModeState('entering');
+    setVinylModeState("entering");
     rampToVinylMode();
 
     setTimeout(() => {
-      setVinylModeState('active');
+      setVinylModeState("active");
       setVinylModeActive(true);
       setVinylModeRemainingTime(cfg.maxBufferDuration);
     }, cfg.transitionDuration);
-  }, [vinylMode.state, cfg, callbacks, rampToVinylMode, setVinylModeState, setVinylModeActive, setVinylModeRemainingTime]);
+  }, [
+    vinylMode.state,
+    cfg,
+    rampToVinylMode,
+    setVinylModeState,
+    setVinylModeActive,
+    setVinylModeRemainingTime,
+  ]);
 
   /**
    * Deactivate vinyl mode
    */
   const deactivate = useCallback(() => {
-    if (vinylMode.state !== 'active') return;
+    if (vinylMode.state !== "active") return;
 
-    setVinylModeState('exiting');
+    setVinylModeState("exiting");
     // Don't flush buffer - let it drain naturally as playback rate increases to 1.0
     // This creates a smoother transition without audio dropout
     rampToNormalMode();
 
     setTimeout(() => {
-      setVinylModeState('idle');
+      setVinylModeState("idle");
       setVinylModeActive(false);
       setVinylModeRemainingTime(cfg.maxBufferDuration);
       // Flush buffer AFTER transition completes and we're back to bypass mode
       callbacks?.onFlushBuffer?.();
     }, cfg.transitionDuration);
-  }, [vinylMode.state, cfg, callbacks, rampToNormalMode, setVinylModeState, setVinylModeActive, setVinylModeRemainingTime]);
+  }, [
+    vinylMode.state,
+    cfg,
+    callbacks,
+    rampToNormalMode,
+    setVinylModeState,
+    setVinylModeActive,
+    setVinylModeRemainingTime,
+  ]);
 
   return {
     state: vinylMode.state,
     remainingTime: vinylMode.remainingTime,
     isActive: vinylMode.isActive,
-    isTransitioning: vinylMode.state === 'entering' || vinylMode.state === 'exiting',
+    isTransitioning:
+      vinylMode.state === "entering" || vinylMode.state === "exiting",
     activate,
     deactivate,
   };
 };
-

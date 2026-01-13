@@ -2,8 +2,8 @@
  * InputStage - Premium device selector, input gain knob, and input VU meter
  */
 
-import { Knob } from "../ui/Knob";
-import { VUMeter } from "../ui/VUMeter";
+import { VerticalSlider } from "../ui/VerticalSlider";
+import { VintageVuMeter } from "../ui/VintageVuMeter";
 import { TapeButton } from "../ui/TapeButton";
 import { VinylButton } from "../ui/VinylButton";
 import { PreviewButton } from "../ui/PreviewButton";
@@ -43,7 +43,7 @@ export function InputStage({
   const isRunning = useAudioStore((state) => state.isRunning);
 
   return (
-    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden backdrop-blur-sm">
+    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden">
       <div className="flex items-center justify-between">
         <h3
           className="text-lg font-semibold leading-none -mt-2"
@@ -134,25 +134,19 @@ export function InputStage({
         )}
       </div>
 
-      <div className="flex items-start min-w-0">
-        <div
-          className="flex-1 flex justify-center min-w-0"
-          style={{ marginTop: "40px", marginRight: "20px" }}
-        >
-          <Knob
-            label="Gain"
-            value={inputGain}
-            min={-36}
-            max={36}
-            step={0.5}
-            unit=" dB"
-            onChange={(value) => setParameter("inputGain", value)}
-            defaultValue={0}
-          />
-        </div>
-        <div className="flex-shrink-0">
-          <VUMeter analyser={inputAnalyser} label="Input" />
-        </div>
+      <div className="flex items-center justify-center gap-10 min-w-0 py-2">
+        <VerticalSlider
+          label="Gain"
+          value={inputGain}
+          minDb={-36}
+          maxDb={36}
+          centerDb={0}
+          step={0.5}
+          height={160}
+          onChange={(value) => setParameter("inputGain", value)}
+          defaultValue={0}
+        />
+        <VintageVuMeter analyser={inputAnalyser} label="Input" width={300} />
       </div>
     </div>
   );

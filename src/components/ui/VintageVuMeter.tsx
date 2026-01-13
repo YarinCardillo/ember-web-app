@@ -1,0 +1,438 @@
+/**
+ * VintageVuMeter - Premium analog needle-style VU meter with vintage aesthetics
+ * Used for input metering with warm analog appearance
+ */
+
+import { useEffect, useRef, useMemo } from "react";
+import { linearToDb } from "../../utils/dsp-math";
+
+interface VintageVuMeterProps {
+  analyser: AnalyserNode | null;
+  label?: string;
+  width?: number;
+}
+
+export function VintageVuMeter({
+  analyser,
+  label = "Input",
+  width = 360,
+}: VintageVuMeterProps): JSX.Element {
+  const needleRef = useRef<HTMLDivElement>(null);
+  const peakLedRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number>();
+  const currentAngleRef = useRef(-45);
+  const lastUpdateTimeRef = useRef(Date.now());
+  const peakBrightnessRef = useRef(0);
+  const peakHoldTimeRef = useRef(0);
+
+  const scale = width / 360;
+  const height = 180 * scale;
+
+  // VU meter scale: -20 to +3 dB
+  const minDb = -20;
+  const maxDb = 3;
+  const minAngle = -35;
+  const maxAngle = 35;
+
+  // Peak threshold (0 dB on VU scale)
+  const peakThresholdDb = 0;
+  const peakHoldDuration = 1000; // ms
+  const peakFallTime = 1500; // ms for full fade out
+
+  // VU meter ballistics (300ms integration time per IEC 60268-17)
+  const attackTime = 300;
+  const releaseTime = 300;
+
+  // SVG dimensions - wider arc with larger radius for flatter appearance
+  const svgWidth = 360;
+  const svgHeight = 140;
+  const cx = 180;
+  const cy = 220;
+  const arcRadius = 200;
+  const tickOuter = 200;
+  const tickInnerMajor = 170;
+  const tickInnerMinor = 180;
+  const textRadius = 152;
+
+  // Convert angle to SVG coordinates
+  const angleToPoint = (angleDeg: number, r: number) => {
+    const angleRad = ((angleDeg - 90) * Math.PI) / 180;
+    return {
+      x: cx + r * Math.cos(angleRad),
+      y: cy + r * Math.sin(angleRad),
+    };
+  };
+
+  // Create arc path
+  const createArc = (r: number, startDeg: number, endDeg: number) => {
+    const start = angleToPoint(startDeg, r);
+    const end = angleToPoint(endDeg, r);
+    return `M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`;
+  };
+
+  // Scale marks - adjusted for -35 to +35 degree range
+  const marks = [
+    { angle: -45, label: "20", isRed: false, isMajor: true },
+    { angle: -30, label: "10", isRed: false, isMajor: true },
+    { angle: -18, label: "7", isRed: false, isMajor: true },
+    { angle: -8, label: "5", isRed: false, isMajor: true },
+    { angle: 5, label: "3", isRed: false, isMajor: true },
+    { angle: 20, label: "0", isRed: true, isMajor: true },
+    { angle: 35, label: "3", isRed: true, isMajor: true },
+  ];
+
+  const minorTicks = [
+    -42, -39, -36, -33, -27, -24, -21, -15, -12, -3, 0, 10, 15, 25, 30, 40, 45,
+  ];
+
+  useEffect(() => {
+    if (!analyser || !needleRef.current) {
+      if (needleRef.current) {
+        needleRef.current.style.transform = `translateX(-50%) rotate(${minAngle}deg)`;
+      }
+      if (peakLedRef.current) {
+        peakLedRef.current.style.background = "#3d1a1a";
+        peakLedRef.current.style.boxShadow = "inset 0 1px 2px rgba(0,0,0,0.5)";
+      }
+      return;
+    }
+
+    const bufferLength = analyser.fftSize;
+    const dataArray = new Float32Array(bufferLength);
+
+    const draw = (): void => {
+      animationFrameRef.current = requestAnimationFrame(draw);
+
+      const now = Date.now();
+      const deltaTime = now - lastUpdateTimeRef.current;
+      lastUpdateTimeRef.current = now;
+
+      analyser.getFloatTimeDomainData(dataArray);
+
+      // RMS measurement for VU meter behavior
+      let sum = 0;
+      let peak = 0;
+      for (let i = 0; i < bufferLength; i++) {
+        sum += dataArray[i] * dataArray[i];
+        const abs = Math.abs(dataArray[i]);
+        if (abs > peak) peak = abs;
+      }
+      const rmsLevel = Math.sqrt(sum / bufferLength);
+      const rmsDb = linearToDb(rmsLevel);
+      const peakDb = linearToDb(peak);
+
+      // Map to VU scale (-20 to +3)
+      const clampedLevel = Math.max(minDb, Math.min(maxDb, rmsDb));
+      const normalizedLevel = (clampedLevel - minDb) / (maxDb - minDb);
+      const targetAngle = minAngle + normalizedLevel * (maxAngle - minAngle);
+
+      // Apply VU meter ballistics
+      const currentAngle = currentAngleRef.current;
+      const angleDiff = targetAngle - currentAngle;
+      const timeConstant = angleDiff > 0 ? attackTime : releaseTime;
+      const smoothingFactor = 1 - Math.exp(-deltaTime / timeConstant);
+      currentAngleRef.current = currentAngle + angleDiff * smoothingFactor;
+
+      if (needleRef.current) {
+        needleRef.current.style.transform = `translateX(-50%) rotate(${currentAngleRef.current}deg)`;
+      }
+
+      // Peak LED logic with hold and fade
+      if (peakDb >= peakThresholdDb) {
+        // New peak detected - full brightness and reset hold timer
+        peakBrightnessRef.current = 1;
+        peakHoldTimeRef.current = now;
+      } else {
+        const timeSincePeak = now - peakHoldTimeRef.current;
+        if (timeSincePeak > peakHoldDuration) {
+          // After hold time, start fading
+          const fadeProgress =
+            (timeSincePeak - peakHoldDuration) / peakFallTime;
+          peakBrightnessRef.current = Math.max(0, 1 - fadeProgress);
+        }
+        // During hold time, brightness stays at current level
+      }
+
+      if (peakLedRef.current) {
+        const brightness = peakBrightnessRef.current;
+        if (brightness > 0) {
+          // Interpolate colors based on brightness
+          const r = Math.round(61 + (255 - 61) * brightness); // 61 = 0x3d (dim), 255 = full red
+          const g = Math.round(26 + (68 - 26) * brightness); // 26 = 0x1a (dim), 68 = red component
+          const b = Math.round(26 + (68 - 26) * brightness);
+          peakLedRef.current.style.background = `radial-gradient(circle at 30% 30%, rgb(${r}, ${g}, ${b}), rgb(${Math.round(r * 0.86)}, ${Math.round(g * 0.6)}, ${Math.round(b * 0.6)}))`;
+          peakLedRef.current.style.boxShadow = `0 0 ${8 * brightness}px rgba(220, 38, 38, ${brightness}), 0 0 ${16 * brightness}px rgba(220, 38, 38, ${brightness * 0.6})`;
+        } else {
+          peakLedRef.current.style.background = "#3d1a1a";
+          peakLedRef.current.style.boxShadow =
+            "inset 0 1px 2px rgba(0,0,0,0.5)";
+        }
+      }
+    };
+
+    draw();
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analyser]);
+
+  const svgContent = useMemo(() => {
+    const elements: JSX.Element[] = [];
+
+    // Main arc
+    elements.push(
+      <path
+        key="main-arc"
+        d={createArc(arcRadius, -45, 45)}
+        fill="none"
+        stroke="#2a2015"
+        strokeWidth="1.5"
+      />,
+    );
+
+    // Red zone arc
+    elements.push(
+      <path
+        key="red-arc"
+        d={createArc(arcRadius - 8, 20, 45)}
+        fill="none"
+        stroke="#991b1b"
+        strokeWidth="8"
+        strokeLinecap="butt"
+      />,
+    );
+
+    // Major tick marks and labels
+    marks.forEach(({ angle, label: markLabel, isRed, isMajor }, i) => {
+      const outer = angleToPoint(angle, tickOuter);
+      const inner = angleToPoint(
+        angle,
+        isMajor ? tickInnerMajor : tickInnerMinor,
+      );
+      const textPos = angleToPoint(angle, textRadius);
+
+      elements.push(
+        <line
+          key={`tick-${i}`}
+          x1={inner.x}
+          y1={inner.y}
+          x2={outer.x}
+          y2={outer.y}
+          stroke={isRed ? "#991b1b" : "#2a2015"}
+          strokeWidth={isMajor ? 2 : 1.5}
+        />,
+      );
+
+      if (markLabel) {
+        elements.push(
+          <text
+            key={`label-${i}`}
+            x={textPos.x}
+            y={textPos.y}
+            fill={isRed ? "#991b1b" : "#3d2e1a"}
+            fontFamily="Georgia, serif"
+            fontSize={markLabel === "0" ? 15 : 13}
+            fontWeight={markLabel === "0" ? "bold" : "normal"}
+            textAnchor="middle"
+            dominantBaseline="middle"
+          >
+            {markLabel}
+          </text>,
+        );
+      }
+    });
+
+    // Minor tick marks
+    minorTicks.forEach((angle, i) => {
+      const outer = angleToPoint(angle, tickOuter);
+      const inner = angleToPoint(angle, tickInnerMinor);
+      const isRed = angle > 20;
+
+      elements.push(
+        <line
+          key={`minor-${i}`}
+          x1={inner.x}
+          y1={inner.y}
+          x2={outer.x}
+          y2={outer.y}
+          stroke={isRed ? "#991b1b" : "#2a2015"}
+          strokeWidth={1}
+        />,
+      );
+    });
+
+    // VU label
+    elements.push(
+      <text
+        key="vu-label"
+        x={cx}
+        y={cy - 55}
+        fill="#2a2015"
+        fontFamily="Georgia, serif"
+        fontSize={24}
+        textAnchor="middle"
+        letterSpacing={4}
+      >
+        VU
+      </text>,
+    );
+
+    return elements;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      {label && <div className="text-xs text-text-secondary">{label}</div>}
+      <div
+        style={{
+          width,
+          height,
+          background: "linear-gradient(180deg, #1a1612 0%, #e1cf95 100%)",
+          border: "2px solid #3d3022",
+          borderRadius: 8 * scale,
+          position: "relative",
+          overflow: "hidden",
+          boxShadow:
+            "inset 0 0 80px rgba(245, 165, 36, 0.08), inset 0 -20px 40px rgba(0,0,0,0.3)",
+        }}
+      >
+        {/* Warm glow */}
+        {/*<div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 300 * scale,
+            height: 150 * scale,
+            background:
+              "radial-gradient(ellipse at center bottom, rgba(245, 165, 36, 0.12) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />*/}
+
+        {/* Scale SVG */}
+        <svg
+          width={svgWidth * scale}
+          height={svgHeight * scale}
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          style={{
+            position: "absolute",
+            top: 10 * scale,
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          {svgContent}
+        </svg>
+
+        {/* Peak indicator section (+ sign and LED) */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 12 * scale,
+            right: 15 * scale,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4 * scale,
+          }}
+        >
+          {/* + sign */}
+          <span
+            style={{
+              color: "#991b1b",
+              fontFamily: "Georgia, serif",
+              fontSize: 14 * scale,
+              fontWeight: "bold",
+            }}
+          >
+            +
+          </span>
+          {/* Peak LED */}
+          <div
+            ref={peakLedRef}
+            style={{
+              width: 10 * scale,
+              height: 10 * scale,
+              borderRadius: "50%",
+              background: "#3d1a1a",
+              border: "1px solid #5c2a2a",
+              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)",
+            }}
+          />
+          {/* PEAK label */}
+          <span
+            style={{
+              color: "#3d2e1a",
+              fontFamily: "Georgia, serif",
+              fontSize: 10 * scale,
+              letterSpacing: 1,
+            }}
+          >
+            PEAK
+          </span>
+        </div>
+
+        {/* Needle slot - dark opening where needle emerges */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 120 * scale,
+            height: 10 * scale,
+            background: "linear-gradient(to bottom, #1a1612 0%, #0d0b09 100%)",
+            borderRadius: `${4 * scale}px ${4 * scale}px 0 0`,
+            boxShadow: "inset 0 2px 6px rgba(0,0,0,0.8)",
+            zIndex: 5,
+          }}
+        />
+
+        {/* Glowing White Needle with Red Base */}
+        <div
+          ref={needleRef}
+          style={{
+            position: "absolute",
+            bottom: -62 * scale,
+            left: "50%",
+            width: 2 * scale,
+            height: 200 * scale,
+            background:
+              "linear-gradient(to top, #8b0000 0%, #dc2626 8%, #ffffff 10%, #ffffff 100%)",
+            transformOrigin: "bottom center",
+            transform: `translateX(-50%) rotate(${minAngle}deg)`,
+            borderRadius: 1,
+            boxShadow:
+              "0 0 8px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3)",
+            zIndex: 6,
+          }}
+        />
+
+        {/* Pivot */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: -68 * scale,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 12 * scale,
+            height: 12 * scale,
+            background: "radial-gradient(circle, #333 0%, #1a1a1a 100%)",
+            border: "1px solid #444",
+            borderRadius: "50%",
+            zIndex: 10,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default VintageVuMeter;

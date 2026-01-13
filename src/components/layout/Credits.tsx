@@ -4,7 +4,7 @@
 
 export function Credits(): JSX.Element {
   return (
-    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full backdrop-blur-sm">
+    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full">
       <h3 className="text-lg font-semibold" style={{ color: "#e8dccc" }}>
         ABOUT
       </h3>

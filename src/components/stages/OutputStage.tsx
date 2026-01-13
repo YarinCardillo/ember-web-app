@@ -3,7 +3,8 @@
  */
 
 import { MasterSlider } from "../ui/MasterSlider";
-import { LEDMeter } from "../ui/LEDMeter";
+import { StereoMeter } from "../ui/StereoMeter";
+import { OutputMeter } from "../ui/OutputMeter";
 import { useAudioStore } from "../../store/useAudioStore";
 import type { AudioDeviceInfo } from "../../types/audio.types";
 
@@ -37,7 +38,7 @@ export function OutputStage({
   };
 
   return (
-    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden backdrop-blur-sm">
+    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden">
       <h3 className="text-lg font-semibold" style={{ color: "#e8dccc" }}>
         OUTPUT
       </h3>
@@ -100,7 +101,11 @@ export function OutputStage({
             defaultValue={0}
           />
         </div>
-        <LEDMeter analyser={preClipperAnalyser} label="Clipper" mode="peak" />
+        <StereoMeter
+          analyser={preClipperAnalyser}
+          label="Clipper"
+          mode="peak"
+        />
 
         {/* Post-clipper section */}
         <div className="w-full max-w-xs mt-4">
@@ -116,7 +121,7 @@ export function OutputStage({
             defaultValue={0}
           />
         </div>
-        <LEDMeter
+        <OutputMeter
           analyser={postGainAnalyser}
           label="DAC out (Don't clip this!)"
           mode="peak"

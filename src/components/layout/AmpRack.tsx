@@ -785,7 +785,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const presets = presetsData as PresetCollection;
 
   return (
-    <div className="min-h-screen bg-bg-primary p-4 md:p-8 pb-16 select-none">
+    <div className="min-h-screen bg-bg-primary p-4 md:p-8 pb-32 select-none">
       <div className="max-w-7xl mx-auto">
         {/* Mobile Notice - shown only on actual mobile devices */}
         {isMobile && (
@@ -867,6 +867,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
 
       {/* Debug UI - Temporary for parameter tuning */}
       {/* <TransientDebug /> */}
+
+      {/* Spacer for fixed footer */}
+      <div className="h-10" />
 
       {/* Footer */}
       <Footer />

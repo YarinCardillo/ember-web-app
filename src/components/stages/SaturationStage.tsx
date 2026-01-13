@@ -14,7 +14,7 @@ export function SaturationStage(): JSX.Element {
   const setParameter = useAudioStore((state) => state.setParameter);
 
   return (
-    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden backdrop-blur-sm">
+    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold" style={{ color: "#e8dccc" }}>
           TUBES
