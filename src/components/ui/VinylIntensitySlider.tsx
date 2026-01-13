@@ -85,13 +85,14 @@ function VinylIntensitySliderComponent({
   const trackWidth = 4;
   const thumbSize = 14;
   const touchTargetWidth = 36; // Larger touch area for mobile
+  // Calculate thumb position to stay within bounds (0 to sliderHeight - thumbSize)
+  const thumbBottom = (currentPosition / 100) * (sliderHeight - thumbSize);
 
   return (
     <div
       className={`
         flex items-center justify-center transition-all duration-200 ease-out
         ${visible ? "opacity-100 w-9 mr-1" : "opacity-0 w-0 pointer-events-none"}
-        overflow-hidden
       `}
       title={`${speedPercent}% speed (double-click to reset)`}
     >
@@ -142,7 +143,7 @@ function VinylIntensitySliderComponent({
           style={{
             width: thumbSize,
             height: thumbSize,
-            bottom: `calc(${currentPosition}% - ${thumbSize / 2}px)`,
+            bottom: thumbBottom,
             transform: "translateX(-50%)",
             background: `radial-gradient(circle at 30% 30%, ${VINYL_COLOR}, #b8780f)`,
             borderRadius: "50%",
