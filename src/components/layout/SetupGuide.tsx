@@ -203,7 +203,7 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
 
                 <p className="text-sm mb-2">
                   Create{" "}
-                  <code className="bg-bg-tertiary px-1 rounded font-mono">
+                  <code className="bg-bg-tertiary px-1 rounded font-mono text-xs break-all">
                     ~/.config/pipewire/pipewire.conf.d/ember-virtual.conf
                   </code>
                   :

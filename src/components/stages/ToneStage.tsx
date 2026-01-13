@@ -26,7 +26,7 @@ export function ToneStage(): JSX.Element {
         />
       </div>
 
-      <div className="flex items-center justify-around gap-4 flex-1 my-auto pb-6 min-w-0 flex-wrap">
+      <div className="grid grid-cols-2 sm:flex sm:justify-around gap-4 flex-1 my-auto pb-6 min-w-0 place-items-center">
         <Knob
           label="Bass"
           value={bass}
