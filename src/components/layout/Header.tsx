@@ -102,38 +102,32 @@ export function Header({
           {/* Master Bypass Button */}
           <motion.button
             onClick={handleBypassToggle}
-            disabled={!isRunning || isMobile}
-            whileHover={!isRunning || isMobile ? {} : { scale: 1.02 }}
-            whileTap={!isRunning || isMobile ? {} : { scale: 0.98 }}
+            disabled={!isRunning}
+            whileHover={!isRunning ? {} : { scale: 1.02 }}
+            whileTap={!isRunning ? {} : { scale: 0.98 }}
             className={`
               px-3 py-2 md:px-4 md:py-3 rounded-lg font-semibold transition-colors duration-200
               flex items-center gap-2 text-sm md:text-base
               ${
-                !isRunning || isMobile
+                !isRunning
                   ? "bg-bg-secondary text-text-tertiary cursor-not-allowed"
                   : bypassAll
                     ? "bg-meter-yellow/20 text-meter-yellow"
                     : "bg-bg-secondary hover:bg-bg-hover text-text-secondary"
               }
-              ${isMobile ? "opacity-50" : ""}
             `}
             style={{
-              border:
-                !isRunning || isMobile
-                  ? "1px solid rgba(255, 255, 255, 0.06)"
-                  : bypassAll
-                    ? "1px solid rgba(250, 204, 21, 0.4)"
-                    : "1px solid rgba(255, 255, 255, 0.1)",
+              border: !isRunning
+                ? "1px solid rgba(255, 255, 255, 0.06)"
+                : bypassAll
+                  ? "1px solid rgba(250, 204, 21, 0.4)"
+                  : "1px solid rgba(255, 255, 255, 0.1)",
               boxShadow:
                 bypassAll && isRunning
                   ? "0 0 16px rgba(250, 204, 21, 0.2)"
                   : "none",
             }}
-            title={
-              isMobile
-                ? "Desktop only"
-                : "Bypass all processing to hear dry signal"
-            }
+            title="Bypass all processing to hear dry signal"
           >
             {/* Bypass LED indicator */}
             <motion.div
