@@ -143,7 +143,7 @@ export function InputStage({
         )}
       </div>
 
-      <div className="flex items-center justify-center gap-10 min-w-0 py-2">
+      <div className="flex items-center justify-center gap-4 sm:gap-10 min-w-0 py-2 flex-col-reverse sm:flex-row">
         <VerticalSlider
           label="Gain"
           value={inputGain}
@@ -151,11 +151,13 @@ export function InputStage({
           maxDb={36}
           centerDb={0}
           step={0.5}
-          height={160}
+          height={120}
           onChange={(value) => setParameter("inputGain", value)}
           defaultValue={0}
         />
-        <VintageVuMeter analyser={inputAnalyser} label="Input" width={300} />
+        <div className="w-full sm:w-auto flex justify-center overflow-hidden px-2">
+          <VintageVuMeter analyser={inputAnalyser} label="Input" width={280} />
+        </div>
       </div>
     </div>
   );

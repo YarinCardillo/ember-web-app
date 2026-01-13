@@ -84,12 +84,13 @@ function VinylIntensitySliderComponent({
   const sliderHeight = 48;
   const trackWidth = 4;
   const thumbSize = 14;
+  const touchTargetWidth = 36; // Larger touch area for mobile
 
   return (
     <div
       className={`
         flex items-center justify-center transition-all duration-200 ease-out
-        ${visible ? "opacity-100 w-6 mr-1" : "opacity-0 w-0 pointer-events-none"}
+        ${visible ? "opacity-100 w-9 mr-1" : "opacity-0 w-0 pointer-events-none"}
         overflow-hidden
       `}
       title={`${speedPercent}% speed (double-click to reset)`}
@@ -97,7 +98,7 @@ function VinylIntensitySliderComponent({
       <div
         ref={sliderRef}
         className="relative cursor-pointer touch-none"
-        style={{ width: 24, height: sliderHeight }}
+        style={{ width: touchTargetWidth, height: sliderHeight }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

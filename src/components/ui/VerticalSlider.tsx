@@ -99,13 +99,14 @@ export function VerticalSlider({
 
   const thumbSize = 20;
   const trackWidth = 8;
+  const touchTargetWidth = 48; // Larger touch area for mobile
 
   return (
     <div className="flex flex-col items-center gap-2">
       <div
         ref={sliderRef}
-        className="relative cursor-pointer"
-        style={{ width: 32, height }}
+        className="relative cursor-pointer touch-none"
+        style={{ width: touchTargetWidth, height }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
