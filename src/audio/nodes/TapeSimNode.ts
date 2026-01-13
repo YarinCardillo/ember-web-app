@@ -104,6 +104,7 @@ export class TapeSimNode {
 
   /**
    * Get input node for connection
+   * @returns HeadBumpFilter when active, GainNode when bypassed
    */
   getInput(): AudioNode {
     // When bypassed, return bypassGain; when active, return headBumpFilter
@@ -112,6 +113,7 @@ export class TapeSimNode {
 
   /**
    * Set bypass state
+   * @param bypassed - True to bypass tape simulation, false to enable
    */
   setBypass(bypassed: boolean): void {
     this.isBypassed = bypassed;
@@ -119,6 +121,7 @@ export class TapeSimNode {
 
   /**
    * Get bypass state
+   * @returns True if bypassed, false if processing
    */
   getBypass(): boolean {
     return this.isBypassed;
@@ -126,6 +129,7 @@ export class TapeSimNode {
 
   /**
    * Connect to destination
+   * @param destination - AudioNode to connect output to
    */
   connect(destination: AudioNode): void {
     if (this.isBypassed) {
@@ -149,7 +153,9 @@ export class TapeSimNode {
    * Always applied at 100% intensity (no user control)
    */
   private createOddHarmonicCurve(): Float32Array {
-    const samples = 65537; // Odd number for symmetry, high resolution
+    // WaveShaper curve resolution: 2^16 + 1 = 65537
+    // Odd count ensures a center sample at x=0 for proper symmetry
+    const samples = 65537;
     const curve = new Float32Array(samples);
 
     const baseCoeff = 1.0; // Base coefficient

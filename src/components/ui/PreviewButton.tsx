@@ -30,6 +30,14 @@ export function PreviewButton({
         ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
       `}
       title="Play demo audio through the signal chain"
+      aria-label={
+        isLoading
+          ? "Loading preview audio"
+          : isPlaying
+            ? "Stop preview"
+            : "Play preview audio"
+      }
+      aria-pressed={isPlaying}
     >
       {isLoading ? (
         <span className="flex items-center gap-1">

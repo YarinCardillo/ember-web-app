@@ -85,6 +85,7 @@ export function Header({
             "
             style={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}
             title="Setup Guide"
+            aria-label="Open setup guide"
           >
             ?
           </motion.button>
@@ -128,6 +129,10 @@ export function Header({
                   : "none",
             }}
             title="Bypass all processing to hear dry signal"
+            aria-label={
+              bypassAll ? "Disable bypass mode" : "Enable bypass mode"
+            }
+            aria-pressed={bypassAll}
           >
             {/* Bypass LED indicator */}
             <motion.div
@@ -167,6 +172,10 @@ export function Header({
                 : "0 0 16px rgba(245, 158, 11, 0.15)",
             }}
             title={isMobile ? "Power on to use Preview" : undefined}
+            aria-label={
+              isRunning ? "Power off the amplifier" : "Power on the amplifier"
+            }
+            aria-pressed={isRunning}
           >
             {/* Power LED indicator */}
             <motion.div

@@ -1,15 +1,15 @@
 /**
  * TransientProcessor - AudioWorklet for SPL Transient Designer-style processing
- * 
+ *
  * Sidechain filtering approach:
  * - Lowpass filter (150Hz default) applied to COPY of input for envelope detection
  * - Envelope detection runs on filtered signal (focuses on bass transients)
  * - Gain modulation applied to ORIGINAL fullband signal
- * 
+ *
  * Dual envelope follower:
  * - Fast envelope: catches transients (attack ~0.1ms, release ~5ms)
  * - Slow envelope: follows body/sustain (attack ~10ms, release ~100ms)
- * 
+ *
  * Parameters:
  * - attack: -1.0 to +1.0, gain adjustment during transient phase
  * - sustain: -1.0 to +1.0, gain adjustment during sustain phase
@@ -21,55 +21,57 @@ class TransientProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
       {
-        name: 'attack',
+        name: "attack",
         defaultValue: 0.0,
         minValue: -1.0,
         maxValue: 1.0,
-        automationRate: 'a-rate'
+        automationRate: "a-rate",
       },
       {
-        name: 'sustain',
+        name: "sustain",
         defaultValue: 0.0,
         minValue: -1.0,
         maxValue: 1.0,
-        automationRate: 'a-rate'
+        automationRate: "a-rate",
       },
       {
-        name: 'mix',
+        name: "mix",
         defaultValue: 1.0,
         minValue: 0.0,
         maxValue: 1.0,
-        automationRate: 'a-rate'
+        automationRate: "a-rate",
       },
       {
-        name: 'sidechainFreq',
+        name: "sidechainFreq",
         defaultValue: 150.0,
         minValue: 100.0,
         maxValue: 300.0,
-        automationRate: 'k-rate' // Constant rate (rarely changes)
-      }
+        automationRate: "k-rate", // Constant rate (rarely changes)
+      },
     ];
   }
 
   constructor(options) {
     super(options);
-    
+
     // Get sample rate from processor options or use default
-    this.sampleRate = options.processorOptions?.sampleRate || (typeof sampleRate !== 'undefined' ? sampleRate : 48000);
-    
+    this.sampleRate =
+      options.processorOptions?.sampleRate ||
+      (typeof sampleRate !== "undefined" ? sampleRate : 48000);
+
     // Sidechain lowpass filter state (per channel)
     this.sidechainFiltered = [0.0, 0.0]; // Stereo
-    
+
     // Envelope follower state (per channel)
     this.fastEnv = [0.0, 0.0]; // Stereo
     this.slowEnv = [0.0, 0.0];
-    
+
     // Smoothed gain (per channel) to avoid clicks
     this.smoothedGain = [1.0, 1.0];
-    
+
     // Sidechain filter coefficient (will be updated from sidechainFreq parameter)
     this.sidechainAlpha = 0.0;
-    
+
     // Envelope coefficients (computed from time constants)
     // Fast: attack 0.1ms, release 5ms
     // Slow: attack 10ms, release 100ms
@@ -83,15 +85,15 @@ class TransientProcessor extends AudioWorkletProcessor {
    */
   updateCoefficients() {
     const sampleRate = this.sampleRate;
-    
+
     // Fast envelope: attack 0.1ms, release 5ms
     this.fastAttackCoeff = 1.0 - Math.exp(-1.0 / (0.0001 * sampleRate));
     this.fastReleaseCoeff = 1.0 - Math.exp(-1.0 / (0.005 * sampleRate));
-    
+
     // Slow envelope: attack 10ms, release 100ms
     this.slowAttackCoeff = 1.0 - Math.exp(-1.0 / (0.01 * sampleRate));
     this.slowReleaseCoeff = 1.0 - Math.exp(-1.0 / (0.1 * sampleRate));
-    
+
     // Gain smoothing: 5ms to avoid clicks
     this.gainSmoothCoeff = 1.0 - Math.exp(-1.0 / (0.005 * sampleRate));
   }
@@ -102,7 +104,8 @@ class TransientProcessor extends AudioWorkletProcessor {
    * where alpha = 1 - exp(-2π * freq / sampleRate)
    */
   updateSidechainCoeff(freq) {
-    this.sidechainAlpha = 1.0 - Math.exp(-2.0 * Math.PI * freq / this.sampleRate);
+    this.sidechainAlpha =
+      1.0 - Math.exp((-2.0 * Math.PI * freq) / this.sampleRate);
   }
 
   /**
@@ -114,19 +117,22 @@ class TransientProcessor extends AudioWorkletProcessor {
    * @returns {number} Updated envelope value
    */
   updateEnvelope(input, currentEnv, attackCoeff, releaseCoeff) {
-    if (input > currentEnv) {
+    const DC_OFFSET = 1e-25; // Prevent denormals
+    const adjusted = input + DC_OFFSET;
+
+    if (adjusted > currentEnv) {
       // Attack phase
-      return currentEnv + attackCoeff * (input - currentEnv);
+      return currentEnv + attackCoeff * (adjusted - currentEnv);
     } else {
       // Release phase
-      return currentEnv + releaseCoeff * (input - currentEnv);
+      return currentEnv + releaseCoeff * (adjusted - currentEnv);
     }
   }
 
   process(inputs, outputs, parameters) {
     const input = inputs[0];
     const output = outputs[0];
-    
+
     if (!input || !input.length) {
       return true;
     }
@@ -137,14 +143,15 @@ class TransientProcessor extends AudioWorkletProcessor {
     const sidechainFreq = parameters.sidechainFreq;
 
     // Update sidechain filter coefficient if frequency changed
-    const freqValue = sidechainFreq.length > 0 ? sidechainFreq[0] : sidechainFreq;
+    const freqValue =
+      sidechainFreq.length > 0 ? sidechainFreq[0] : sidechainFreq;
     this.updateSidechainCoeff(freqValue);
 
     // Process each channel
     for (let channel = 0; channel < input.length; channel++) {
       const inputChannel = input[channel];
       const outputChannel = output[channel];
-      
+
       // Get current state for this channel
       let sidechainFiltered = this.sidechainFiltered[channel];
       let fastEnv = this.fastEnv[channel];
@@ -153,19 +160,31 @@ class TransientProcessor extends AudioWorkletProcessor {
 
       for (let i = 0; i < inputChannel.length; i++) {
         const drySample = inputChannel[i]; // Original fullband signal
-        
+
         // Get parameter values (handle both constant and variable rate)
         const attackValue = attack.length > 1 ? attack[i] : attack[0];
         const sustainValue = sustain.length > 1 ? sustain[i] : sustain[0];
         const mixValue = mix.length > 1 ? mix[i] : mix[0];
 
         // SIDECHAIN PATH: Apply lowpass filter to COPY of input for detection
-        sidechainFiltered = sidechainFiltered + this.sidechainAlpha * (drySample - sidechainFiltered);
-        
+        sidechainFiltered =
+          sidechainFiltered +
+          this.sidechainAlpha * (drySample - sidechainFiltered);
+
         // Update envelopes using ABSOLUTE VALUE of FILTERED signal
         const absFiltered = Math.abs(sidechainFiltered);
-        fastEnv = this.updateEnvelope(absFiltered, fastEnv, this.fastAttackCoeff, this.fastReleaseCoeff);
-        slowEnv = this.updateEnvelope(absFiltered, slowEnv, this.slowAttackCoeff, this.slowReleaseCoeff);
+        fastEnv = this.updateEnvelope(
+          absFiltered,
+          fastEnv,
+          this.fastAttackCoeff,
+          this.fastReleaseCoeff,
+        );
+        slowEnv = this.updateEnvelope(
+          absFiltered,
+          slowEnv,
+          this.slowAttackCoeff,
+          this.slowReleaseCoeff,
+        );
 
         // Compute ratio for transient detection
         const epsilon = 1e-10;
@@ -184,7 +203,8 @@ class TransientProcessor extends AudioWorkletProcessor {
         }
 
         // Smooth gain changes to avoid clicks
-        smoothedGain = smoothedGain + this.gainSmoothCoeff * (targetGain - smoothedGain);
+        smoothedGain =
+          smoothedGain + this.gainSmoothCoeff * (targetGain - smoothedGain);
 
         // AUDIO PATH: Apply gain to ORIGINAL fullband signal
         const wetSample = drySample * smoothedGain;
@@ -204,4 +224,4 @@ class TransientProcessor extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('transient', TransientProcessor);
+registerProcessor("transient", TransientProcessor);

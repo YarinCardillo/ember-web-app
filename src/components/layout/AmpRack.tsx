@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { Credits } from "./Credits";
@@ -331,22 +332,44 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     stopAudio,
   ]);
 
-  // Subscribe to all audio parameters
-  const inputGain = useAudioStore((state) => state.inputGain);
-  const bass = useAudioStore((state) => state.bass);
-  const mid = useAudioStore((state) => state.mid);
-  const treble = useAudioStore((state) => state.treble);
-  const presence = useAudioStore((state) => state.presence);
-  const drive = useAudioStore((state) => state.drive);
-  const harmonics = useAudioStore((state) => state.harmonics);
-  const saturationMix = useAudioStore((state) => state.saturationMix);
-  const bypassSaturation = useAudioStore((state) => state.bypassSaturation);
-  const transientAttack = useAudioStore((state) => state.transientAttack);
-  const transientSustain = useAudioStore((state) => state.transientSustain);
-  const transientMix = useAudioStore((state) => state.transientMix);
-  const preGain = useAudioStore((state) => state.preGain);
-  const outputGain = useAudioStore((state) => state.outputGain);
-  const currentInputDeviceId = useAudioStore((state) => state.inputDeviceId);
+  // Subscribe to audio parameters with grouped selector to reduce re-renders
+  const audioParams = useAudioStore(
+    useShallow((state) => ({
+      inputGain: state.inputGain,
+      bass: state.bass,
+      mid: state.mid,
+      treble: state.treble,
+      presence: state.presence,
+      drive: state.drive,
+      harmonics: state.harmonics,
+      saturationMix: state.saturationMix,
+      bypassSaturation: state.bypassSaturation,
+      transientAttack: state.transientAttack,
+      transientSustain: state.transientSustain,
+      transientMix: state.transientMix,
+      preGain: state.preGain,
+      outputGain: state.outputGain,
+      inputDeviceId: state.inputDeviceId,
+    })),
+  );
+
+  const {
+    inputGain,
+    bass,
+    mid,
+    treble,
+    presence,
+    drive,
+    harmonics,
+    saturationMix,
+    bypassSaturation,
+    transientAttack,
+    transientSustain,
+    transientMix,
+    preGain,
+    outputGain,
+    inputDeviceId: currentInputDeviceId,
+  } = audioParams;
 
   // Check if current input is dangerous (for consistent badge display)
   const isInputDangerous = useMemo(() => {
@@ -450,6 +473,16 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     }
   }, [isInitialized, bypassAll]);
 
+  // Handle tone stack (EQ) bypass state
+  const bypassToneStack = useAudioStore((state) => state.bypassToneStack);
+  useEffect(() => {
+    const nodes = audioNodesRef.current;
+    if (!isInitialized || !nodes.toneStack) return;
+
+    nodes.toneStack.setBypass(bypassToneStack);
+    console.log(`EQ ${bypassToneStack ? "bypassed" : "active"}`);
+  }, [isInitialized, bypassToneStack]);
+
   // Handle tape sim bypass state
   const bypassTapeSim = useAudioStore((state) => state.bypassTapeSim);
   useEffect(() => {
@@ -482,12 +515,6 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const vinylModeHook = useVinylMode(
     {},
     {
-      onRampPitch: (semitones) => {
-        const nodes = audioNodesRef.current;
-        if (nodes.vinylMode) {
-          nodes.vinylMode.rampPitchShift(semitones, 2500);
-        }
-      },
       onRampReverb: (wet) => {
         const nodes = audioNodesRef.current;
         if (nodes.vinylMode) {
@@ -638,26 +665,38 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   }, []);
 
   // Preview audio: load and play demo file through signal chain
-  const loadPreviewBuffer =
-    useCallback(async (): Promise<AudioBuffer | null> => {
+  const previewAbortRef = useRef<AbortController | null>(null);
+
+  const loadPreviewBuffer = useCallback(
+    async (signal?: AbortSignal): Promise<AudioBuffer | null> => {
       if (previewBufferRef.current) return previewBufferRef.current;
 
       try {
         const engine = AudioEngine.getInstance();
         const ctx = engine.getContext();
-        const response = await fetch("/audio/assumptions.mp3");
+        const response = await fetch("/audio/assumptions.mp3", { signal });
         if (!response.ok) throw new Error("Failed to fetch preview audio");
         const arrayBuffer = await response.arrayBuffer();
         const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
         previewBufferRef.current = audioBuffer;
         return audioBuffer;
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return null;
+        }
         console.error("Failed to load preview audio:", err);
         return null;
       }
-    }, []);
+    },
+    [],
+  );
 
   const stopPreview = useCallback(() => {
+    // Abort any pending fetch
+    if (previewAbortRef.current) {
+      previewAbortRef.current.abort();
+      previewAbortRef.current = null;
+    }
     if (previewSourceRef.current) {
       try {
         previewSourceRef.current.stop();
@@ -689,11 +728,17 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       return;
     }
 
+    // Create abort controller for this fetch
+    previewAbortRef.current = new AbortController();
+
     setIsPreviewLoading(true);
     try {
-      const buffer = await loadPreviewBuffer();
+      const buffer = await loadPreviewBuffer(previewAbortRef.current.signal);
       if (!buffer) {
-        setError("Failed to load preview audio");
+        // Aborted or failed - don't show error for aborts
+        if (!previewAbortRef.current?.signal.aborted) {
+          setError("Failed to load preview audio");
+        }
         setIsPreviewLoading(false);
         return;
       }
@@ -737,11 +782,14 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     }
   }, [isPreviewPlaying, loadPreviewBuffer, stopPreview]);
 
-  // Stop preview when audio stops
+  // Stop preview when audio stops or component unmounts
   useEffect(() => {
     if (!isRunning && isPreviewPlaying) {
       stopPreview();
     }
+    return () => {
+      stopPreview();
+    };
   }, [isRunning, isPreviewPlaying, stopPreview]);
 
   // Enumerate devices (refreshes after initialization when we have permission)
@@ -800,7 +848,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
 
   return (
     <div className="min-h-screen bg-bg-primary p-4 md:p-8 pb-32 select-none">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1800px] mx-auto">
         {/* Mobile Notice - shown only on actual mobile devices */}
         {isMobile && (
           <div className="mb-4 p-3 bg-accent-primary/15 border border-accent-primary/30 rounded-xl text-center">

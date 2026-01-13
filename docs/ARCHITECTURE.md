@@ -101,6 +101,19 @@ class AudioEngine {
     }
     return false;
   }
+  
+  getSampleRate(): number | null {
+    // Returns actual sample rate from AudioContext (e.g., 44100, 48000)
+    return this.ctx?.sampleRate ?? null;
+  }
+  
+  getBufferSizeSamples(): number | null {
+    // Returns buffer size in samples, calculated from baseLatency
+    if (!this.ctx) return null;
+    const baseLatency = this.ctx.baseLatency;
+    if (baseLatency === undefined) return null;
+    return Math.round(baseLatency * this.ctx.sampleRate);
+  }
 }
 ```
 
@@ -298,6 +311,11 @@ Input → HeadBumpFilter → HFRolloffFilter → WowFlutterWorklet → OddHarmon
 
 **Web Audio Nodes Used:**
 - 4x `BiquadFilterNode` connected in series
+
+**Bypass Implementation:**
+- `setBypass(true)` sets all filter gains to 0dB (flat response)
+- Stores current gain values and restores them when un-bypassed
+- Uses `setTargetAtTime()` for click-free transitions
 
 ### TubeSaturationNode
 
@@ -531,12 +549,12 @@ App
     │   ├── BypassButton
     │   └── PowerButton
     ├── InputStage
-    │   ├── VinylModeButton (33 Mode - slowed playback, reverb, +8dB boost)
+    │   ├── VinylButton (33 Mode - slowed playback, reverb, +8dB boost)
     │   ├── TapeButton (tape sim toggle)
     │   ├── PreviewButton (demo audio through signal chain)
     │   ├── DeviceSelector (disabled on mobile)
     │   ├── Knob (Gain)
-    │   └── VUMeter (analog needle)
+    │   └── VintageVuMeter (analog needle)
     ├── ToneStage
     │   ├── Toggle (Bypass)
     │   ├── Knob (Bass)
@@ -552,9 +570,9 @@ App
     ├── OutputStage
     │   ├── DeviceSelector (output)
     │   ├── MasterSlider "Gain" (pre-clipper: -36 to +36 dB, 0.1 dB steps)
-    │   ├── LEDMeter "Clipper" (pre-clipper peak meter, 18 LEDs, horizontal)
+    │   ├── OutputMeter "Clipper" (pre-clipper peak meter, 18 LEDs, horizontal)
     │   ├── MasterSlider "Master" (post-clipper: -96 to +6 dB, 0 dB centered, non-linear)
-    │   └── LEDMeter "DAC out (Don't clip this!)" (post-gain peak meter, 18 LEDs, horizontal)
+    │   └── OutputMeter "DAC out (Don't clip this!)" (post-gain peak meter, 18 LEDs, horizontal)
     └── Credits
 ```
 
@@ -577,7 +595,7 @@ Horizontal slider control optimized for master volume:
 - Visual fill from left to thumb position
 - Used for pre-clipper "Gain" control and post-clipper "Master" volume
 
-### VUMeter Component
+### VintageVuMeter Component
 
 Analog needle-style VU meter with:
 - Semi-circular arc scale (-60 to +6 dB)
@@ -586,7 +604,7 @@ Analog needle-style VU meter with:
 - Peak hold indicator (small dot, click to reset)
 - High-DPI canvas rendering
 
-### LEDMeter Component
+### OutputMeter Component
 
 Compact horizontal LED-bar style meter with:
 - 18 circular LED segments representing thresholds: -60, -54, -48, -42, -36, -30, -24, -18, -12, -9, -6, -4, -2, 0, 2, 4, 6, 8 dB
@@ -597,6 +615,10 @@ Compact horizontal LED-bar style meter with:
 - Used in OutputStage:
   - "Clipper" meter: Pre-clipper peak meter (mode="peak") to show when signal clips
   - "DAC out" meter: Post-gain peak meter (mode="peak") with warning label "DAC out (Don't clip this!)"
+
+### StereoMeter Component
+
+Dual-channel LED-bar meter for stereo level visualization.
 
 ### EmberSparks Component
 
@@ -846,7 +868,7 @@ On mobile devices:
 
 ---
 
-*Last updated: December 2024*
+*Last updated: January 2025*
 
 **Browser Compatibility:**
 - **Chrome/Edge (Chromium-based):** Full support including output device selection

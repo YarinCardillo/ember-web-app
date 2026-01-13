@@ -2,17 +2,18 @@
  * App - Main application component
  */
 
-import { useState, useEffect } from 'react';
-import { AmpRack } from './components/layout/AmpRack';
-import { SetupGuide } from './components/layout/SetupGuide';
-import { EmberSparks } from './components/ui/EmberSparks';
+import { useState, useEffect } from "react";
+import { AmpRack } from "./components/layout/AmpRack";
+import { SetupGuide } from "./components/layout/SetupGuide";
+import { ErrorBoundary } from "./components/layout/ErrorBoundary";
+import { EmberSparks } from "./components/ui/EmberSparks";
 
 function App(): JSX.Element {
   const [showSetupGuide, setShowSetupGuide] = useState(false);
 
   // Check if user has seen setup guide
   useEffect(() => {
-    const hasSeenGuide = localStorage.getItem('ember-amp-seen-setup-guide');
+    const hasSeenGuide = localStorage.getItem("ember-amp-seen-setup-guide");
     if (!hasSeenGuide) {
       setShowSetupGuide(true);
     }
@@ -20,7 +21,7 @@ function App(): JSX.Element {
 
   const handleCloseSetupGuide = (): void => {
     setShowSetupGuide(false);
-    localStorage.setItem('ember-amp-seen-setup-guide', 'true');
+    localStorage.setItem("ember-amp-seen-setup-guide", "true");
   };
 
   const handleOpenSetupGuide = (): void => {
@@ -28,11 +29,11 @@ function App(): JSX.Element {
   };
 
   return (
-    <>
+    <ErrorBoundary>
       <EmberSparks />
       <AmpRack onHelpClick={handleOpenSetupGuide} />
       {showSetupGuide && <SetupGuide onClose={handleCloseSetupGuide} />}
-    </>
+    </ErrorBoundary>
   );
 }
 

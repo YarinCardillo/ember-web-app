@@ -1,32 +1,35 @@
 /**
  * Pitch Shifter AudioWorklet Processor
- * 
+ *
  * Uses a simple granular synthesis approach for real-time pitch shifting.
  * This is a simplified implementation - for production quality, consider
  * using a proper phase vocoder or the SoundTouchJS library.
- * 
+ *
  * Place this file in: public/worklets/pitch-shifter.worklet.js
  */
 
 class PitchShifterProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
-    
+
     // Granular synthesis parameters
-    this.grainSize = 2048;        // Samples per grain
-    this.overlap = 4;             // Overlap factor
+    this.grainSize = 2048; // Samples per grain
+    this.overlap = 4; // Overlap factor
     this.hopSize = this.grainSize / this.overlap;
-    
+
     // Buffers
     this.inputBuffer = new Float32Array(this.grainSize * 2);
     this.outputBuffer = new Float32Array(this.grainSize * 2);
     this.grainWindow = this.createHannWindow(this.grainSize);
-    
+
     // Positions
     this.inputWritePos = 0;
     this.outputWritePos = 0;
     this.outputReadPos = 0;
-    
+
+    // Hop counter for proper grain scheduling
+    this.hopCounter = 0;
+
     // Current pitch ratio (semitones converted to ratio)
     this.pitchRatio = 1.0;
     this.targetPitchRatio = 1.0;
@@ -36,11 +39,11 @@ class PitchShifterProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
       {
-        name: 'pitchShift',
+        name: "pitchShift",
         defaultValue: 0,
         minValue: -12,
         maxValue: 12,
-        automationRate: 'k-rate',
+        automationRate: "k-rate",
       },
     ];
   }
@@ -60,7 +63,7 @@ class PitchShifterProcessor extends AudioWorkletProcessor {
   process(inputs, outputs, parameters) {
     const input = inputs[0];
     const output = outputs[0];
-    
+
     if (!input || !input[0]) {
       return true;
     }
@@ -68,9 +71,10 @@ class PitchShifterProcessor extends AudioWorkletProcessor {
     // Get pitch shift in semitones and convert to ratio
     const pitchShiftSemitones = parameters.pitchShift[0] || 0;
     this.targetPitchRatio = this.semitonesToRatio(pitchShiftSemitones);
-    
+
     // Smooth pitch changes to avoid clicks
-    this.pitchRatio += (this.targetPitchRatio - this.pitchRatio) * this.smoothingFactor;
+    this.pitchRatio +=
+      (this.targetPitchRatio - this.pitchRatio) * this.smoothingFactor;
 
     const inputChannel = input[0];
     const outputChannel = output[0];
@@ -93,21 +97,26 @@ class PitchShifterProcessor extends AudioWorkletProcessor {
       // Read from output buffer
       const readPos = Math.floor(this.outputReadPos);
       const frac = this.outputReadPos - readPos;
-      
+
       // Linear interpolation
       const idx1 = readPos % this.outputBuffer.length;
       const idx2 = (readPos + 1) % this.outputBuffer.length;
-      outputChannel[i] = this.outputBuffer[idx1] * (1 - frac) + this.outputBuffer[idx2] * frac;
-      
+      outputChannel[i] =
+        this.outputBuffer[idx1] * (1 - frac) + this.outputBuffer[idx2] * frac;
+
       // Advance read position based on pitch ratio
       this.outputReadPos += this.pitchRatio;
-      
-      // Clear output buffer as we read
-      this.outputBuffer[idx1] *= 0.5;
+
+      // Clear already-read samples to prevent re-reading stale data
+      this.outputBuffer[idx1] = 0;
     }
 
-    // Generate new grains periodically
-    this.generateGrains();
+    // Generate new grains based on hop timing
+    this.hopCounter += blockSize;
+    if (this.hopCounter >= this.hopSize) {
+      this.generateGrains();
+      this.hopCounter -= this.hopSize;
+    }
 
     return true;
   }
@@ -115,20 +124,23 @@ class PitchShifterProcessor extends AudioWorkletProcessor {
   generateGrains() {
     // Simple grain generation - overlap-add
     // In a full implementation, this would be more sophisticated
-    
-    const grainStart = (this.inputWritePos - this.grainSize + this.inputBuffer.length) % this.inputBuffer.length;
-    
+
+    const grainStart =
+      (this.inputWritePos - this.grainSize + this.inputBuffer.length) %
+      this.inputBuffer.length;
+
     for (let i = 0; i < this.grainSize; i++) {
       const inputIdx = (grainStart + i) % this.inputBuffer.length;
       const outputIdx = (this.outputWritePos + i) % this.outputBuffer.length;
-      
+
       // Apply window and add to output
-      this.outputBuffer[outputIdx] += this.inputBuffer[inputIdx] * this.grainWindow[i] * 0.5;
+      this.outputBuffer[outputIdx] +=
+        this.inputBuffer[inputIdx] * this.grainWindow[i] * 0.5;
     }
-    
-    this.outputWritePos = (this.outputWritePos + this.hopSize) % this.outputBuffer.length;
+
+    this.outputWritePos =
+      (this.outputWritePos + this.hopSize) % this.outputBuffer.length;
   }
 }
 
-registerProcessor('pitch-shifter-processor', PitchShifterProcessor);
-
+registerProcessor("pitch-shifter-processor", PitchShifterProcessor);

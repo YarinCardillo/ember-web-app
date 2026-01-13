@@ -14,7 +14,7 @@ export class TransientNode {
     this.ctx = ctx;
     this.inputGain = ctx.createGain();
     this.bypassGain = ctx.createGain();
-    
+
     // Initially connect input to bypass (passthrough)
     this.inputGain.connect(this.bypassGain);
   }
@@ -25,19 +25,19 @@ export class TransientNode {
    */
   async initialize(): Promise<void> {
     try {
-      this.workletNode = new AudioWorkletNode(this.ctx, 'transient', {
+      this.workletNode = new AudioWorkletNode(this.ctx, "transient", {
         processorOptions: {
-          sampleRate: this.ctx.sampleRate
-        }
+          sampleRate: this.ctx.sampleRate,
+        },
       });
-      
+
       // Simple fullband routing: inputGain → workletNode → bypassGain
       // Sidechain filtering happens inside the worklet
       this.workletNode.connect(this.bypassGain);
-      
+
       this.updateRouting();
     } catch (error) {
-      console.error('Failed to create AudioWorkletNode:', error);
+      console.error("Failed to create AudioWorkletNode:", error);
       // Fallback: use bypass gain only (no processing)
     }
   }
@@ -59,12 +59,12 @@ export class TransientNode {
   }
 
   /**
-   * Set attack amount (-1.0 to +1.0)
-   * Positive = boost transients, negative = reduce transients
+   * Set attack amount
+   * @param attack - Attack intensity (-1.0 to +1.0). Positive boosts transients, negative reduces them.
    */
   setAttack(attack: number): void {
     if (this.workletNode) {
-      const attackParam = this.workletNode.parameters.get('attack');
+      const attackParam = this.workletNode.parameters.get("attack");
       if (attackParam) {
         attackParam.value = Math.max(-1.0, Math.min(1.0, attack));
       }
@@ -72,12 +72,12 @@ export class TransientNode {
   }
 
   /**
-   * Set sustain amount (-1.0 to +1.0)
-   * Positive = boost body/sustain, negative = reduce body/sustain
+   * Set sustain amount
+   * @param sustain - Sustain intensity (-1.0 to +1.0). Positive boosts body, negative reduces it.
    */
   setSustain(sustain: number): void {
     if (this.workletNode) {
-      const sustainParam = this.workletNode.parameters.get('sustain');
+      const sustainParam = this.workletNode.parameters.get("sustain");
       if (sustainParam) {
         sustainParam.value = Math.max(-1.0, Math.min(1.0, sustain));
       }
@@ -85,11 +85,12 @@ export class TransientNode {
   }
 
   /**
-   * Set mix amount (0.0 to 1.0, dry/wet)
+   * Set mix amount (dry/wet blend)
+   * @param mix - Mix amount (0.0 = dry, 1.0 = wet)
    */
   setMix(mix: number): void {
     if (this.workletNode) {
-      const mixParam = this.workletNode.parameters.get('mix');
+      const mixParam = this.workletNode.parameters.get("mix");
       if (mixParam) {
         mixParam.value = Math.max(0.0, Math.min(1.0, mix));
       }
@@ -97,12 +98,13 @@ export class TransientNode {
   }
 
   /**
-   * Set sidechain filter frequency (100-300 Hz)
+   * Set sidechain filter frequency
    * Lower frequencies are used for envelope detection
+   * @param freq - Frequency in Hz (100 to 300)
    */
   setSidechainFreq(freq: number): void {
     if (this.workletNode) {
-      const freqParam = this.workletNode.parameters.get('sidechainFreq');
+      const freqParam = this.workletNode.parameters.get("sidechainFreq");
       if (freqParam) {
         freqParam.value = Math.max(100, Math.min(300, freq));
       }
@@ -111,6 +113,7 @@ export class TransientNode {
 
   /**
    * Set bypass state
+   * @param bypassed - True to bypass processing, false to enable
    */
   setBypass(bypassed: boolean): void {
     this.isBypassed = bypassed;
@@ -119,6 +122,7 @@ export class TransientNode {
 
   /**
    * Get bypass state
+   * @returns True if bypassed, false if processing
    */
   getBypass(): boolean {
     return this.isBypassed;
@@ -126,6 +130,7 @@ export class TransientNode {
 
   /**
    * Connect this node to destination (standard AudioNode pattern)
+   * @param destination - AudioNode to connect output to
    */
   connect(destination: AudioNode): void {
     this.bypassGain.connect(destination);
@@ -142,6 +147,7 @@ export class TransientNode {
 
   /**
    * Restore internal routing (call after reconnection)
+   * Ensures worklet node is properly connected to bypass gain
    */
   restoreRouting(): void {
     if (this.workletNode) {

@@ -34,6 +34,98 @@ export function VintageVuMeter({
   const minAngle = -35;
   const maxAngle = 35;
 
+  // Memoize scale-dependent styles to avoid object recreation on each render
+  const meterStyles = useMemo(
+    () => ({
+      container: {
+        width,
+        height,
+        background: "linear-gradient(180deg, #1a1612 0%, #e1cf95 100%)",
+        border: "2px solid #3d3022",
+        borderRadius: 8 * scale,
+        position: "relative" as const,
+        overflow: "hidden" as const,
+        boxShadow:
+          "inset 0 0 80px rgba(245, 165, 36, 0.08), inset 0 -20px 40px rgba(0,0,0,0.3)",
+      },
+      svg: {
+        position: "absolute" as const,
+        top: 10 * scale,
+        left: "50%",
+        transform: "translateX(-50%)",
+      },
+      peakSection: {
+        position: "absolute" as const,
+        bottom: 12 * scale,
+        right: 15 * scale,
+        display: "flex",
+        flexDirection: "column" as const,
+        alignItems: "center" as const,
+        gap: 4 * scale,
+      },
+      plusSign: {
+        color: "#991b1b",
+        fontFamily: "Georgia, serif",
+        fontSize: 14 * scale,
+        fontWeight: "bold" as const,
+      },
+      peakLed: {
+        width: 10 * scale,
+        height: 10 * scale,
+        borderRadius: "50%",
+        background: "#3d1a1a",
+        border: "1px solid #5c2a2a",
+        boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)",
+      },
+      peakLabel: {
+        color: "#3d2e1a",
+        fontFamily: "Georgia, serif",
+        fontSize: 10 * scale,
+        letterSpacing: 1,
+      },
+      needleSlot: {
+        position: "absolute" as const,
+        bottom: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 120 * scale,
+        height: 10 * scale,
+        background: "linear-gradient(to bottom, #1a1612 0%, #0d0b09 100%)",
+        borderRadius: `${4 * scale}px ${4 * scale}px 0 0`,
+        boxShadow: "inset 0 2px 6px rgba(0,0,0,0.8)",
+        zIndex: 5,
+      },
+      needle: {
+        position: "absolute" as const,
+        bottom: -62 * scale,
+        left: "50%",
+        width: 2 * scale,
+        height: 200 * scale,
+        background:
+          "linear-gradient(to top, #8b0000 0%, #dc2626 8%, #ffffff 10%, #ffffff 100%)",
+        transformOrigin: "bottom center",
+        transform: `translateX(-50%) rotate(${minAngle}deg)`,
+        borderRadius: 1,
+        boxShadow:
+          "0 0 8px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3)",
+        zIndex: 6,
+      },
+      pivot: {
+        position: "absolute" as const,
+        bottom: -68 * scale,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 12 * scale,
+        height: 12 * scale,
+        background: "radial-gradient(circle, #333 0%, #1a1a1a 100%)",
+        border: "1px solid #444",
+        borderRadius: "50%",
+        zIndex: 10,
+      },
+    }),
+    [width, height, scale, minAngle],
+  );
+
   // VU calibration: 0 VU = -18 dBFS (broadcast/pro-audio standard)
   const VU_REFERENCE_DBFS = -18;
 
@@ -184,6 +276,9 @@ export function VintageVuMeter({
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      // Reset refs to prevent visual jumps when analyser changes
+      currentAngleRef.current = minAngle;
+      peakBrightnessRef.current = 0;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analyser]);
@@ -296,149 +391,52 @@ export function VintageVuMeter({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {label && <div className="text-xs text-text-secondary">{label}</div>}
+      {label && (
+        <div
+          className="text-xs text-text-secondary"
+          id={`vu-meter-label-${label}`}
+        >
+          {label}
+        </div>
+      )}
       <div
-        style={{
-          width,
-          height,
-          background: "linear-gradient(180deg, #1a1612 0%, #e1cf95 100%)",
-          border: "2px solid #3d3022",
-          borderRadius: 8 * scale,
-          position: "relative",
-          overflow: "hidden",
-          boxShadow:
-            "inset 0 0 80px rgba(245, 165, 36, 0.08), inset 0 -20px 40px rgba(0,0,0,0.3)",
-        }}
+        style={meterStyles.container}
+        role="meter"
+        aria-label={`${label} VU meter`}
+        aria-labelledby={label ? `vu-meter-label-${label}` : undefined}
+        aria-valuemin={minDb}
+        aria-valuemax={maxDb}
+        aria-valuenow={0}
+        aria-valuetext="Audio level meter"
       >
-        {/* Warm glow */}
-        {/*<div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 300 * scale,
-            height: 150 * scale,
-            background:
-              "radial-gradient(ellipse at center bottom, rgba(245, 165, 36, 0.12) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />*/}
-
         {/* Scale SVG */}
         <svg
           width={svgWidth * scale}
           height={svgHeight * scale}
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          style={{
-            position: "absolute",
-            top: 10 * scale,
-            left: "50%",
-            transform: "translateX(-50%)",
-          }}
+          style={meterStyles.svg}
         >
           {svgContent}
         </svg>
 
         {/* Peak indicator section (+ sign and LED) */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 12 * scale,
-            right: 15 * scale,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 4 * scale,
-          }}
-        >
+        <div style={meterStyles.peakSection}>
           {/* + sign */}
-          <span
-            style={{
-              color: "#991b1b",
-              fontFamily: "Georgia, serif",
-              fontSize: 14 * scale,
-              fontWeight: "bold",
-            }}
-          >
-            +
-          </span>
+          <span style={meterStyles.plusSign}>+</span>
           {/* Peak LED */}
-          <div
-            ref={peakLedRef}
-            style={{
-              width: 10 * scale,
-              height: 10 * scale,
-              borderRadius: "50%",
-              background: "#3d1a1a",
-              border: "1px solid #5c2a2a",
-              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)",
-            }}
-          />
+          <div ref={peakLedRef} style={meterStyles.peakLed} />
           {/* PEAK label */}
-          <span
-            style={{
-              color: "#3d2e1a",
-              fontFamily: "Georgia, serif",
-              fontSize: 10 * scale,
-              letterSpacing: 1,
-            }}
-          >
-            PEAK
-          </span>
+          <span style={meterStyles.peakLabel}>PEAK</span>
         </div>
 
         {/* Needle slot - dark opening where needle emerges */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 120 * scale,
-            height: 10 * scale,
-            background: "linear-gradient(to bottom, #1a1612 0%, #0d0b09 100%)",
-            borderRadius: `${4 * scale}px ${4 * scale}px 0 0`,
-            boxShadow: "inset 0 2px 6px rgba(0,0,0,0.8)",
-            zIndex: 5,
-          }}
-        />
+        <div style={meterStyles.needleSlot} />
 
         {/* Glowing White Needle with Red Base */}
-        <div
-          ref={needleRef}
-          style={{
-            position: "absolute",
-            bottom: -62 * scale,
-            left: "50%",
-            width: 2 * scale,
-            height: 200 * scale,
-            background:
-              "linear-gradient(to top, #8b0000 0%, #dc2626 8%, #ffffff 10%, #ffffff 100%)",
-            transformOrigin: "bottom center",
-            transform: `translateX(-50%) rotate(${minAngle}deg)`,
-            borderRadius: 1,
-            boxShadow:
-              "0 0 8px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3)",
-            zIndex: 6,
-          }}
-        />
+        <div ref={needleRef} style={meterStyles.needle} />
 
         {/* Pivot */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: -68 * scale,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 12 * scale,
-            height: 12 * scale,
-            background: "radial-gradient(circle, #333 0%, #1a1a1a 100%)",
-            border: "1px solid #444",
-            borderRadius: "50%",
-            zIndex: 10,
-          }}
-        />
+        <div style={meterStyles.pivot} />
       </div>
     </div>
   );

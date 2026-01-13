@@ -13,18 +13,15 @@ interface VinylModeConfig {
   transitionDuration: number; // ms for spin up/down
   maxBufferDuration: number; // seconds before auto-exit
   reverbWet: number; // 0-1 reverb mix when active
-  pitchShiftSemitones: number; // negative for lower pitch
 }
 
 const DEFAULT_CONFIG: VinylModeConfig = {
   transitionDuration: 1500, // Faster transition (was 2500ms)
   maxBufferDuration: 240, // 4 minutes
   reverbWet: 0.75, // 75% reverb when vinyl mode active
-  pitchShiftSemitones: -4, // ~4 semitones down matches the speed ratio
 };
 
 interface UseVinylModeCallbacks {
-  onRampPitch?: (semitones: number) => void;
   onRampReverb?: (wet: number) => void;
   onRampIntensity?: (intensity: number) => void;
   onSetIntensity?: (intensity: number) => void;
@@ -41,12 +38,7 @@ export const useVinylMode = (
   const cfg = useMemo(
     () => ({ ...DEFAULT_CONFIG, ...config }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      config.transitionDuration,
-      config.maxBufferDuration,
-      config.reverbWet,
-      config.pitchShiftSemitones,
-    ],
+    [config.transitionDuration, config.maxBufferDuration, config.reverbWet],
   );
 
   const vinylMode = useAudioStore((state) => state.vinylMode);
@@ -62,8 +54,7 @@ export const useVinylMode = (
    * Web Audio API handles the smooth ramping internally
    */
   const rampToVinylMode = useCallback(() => {
-    callbacks?.onRampPitch?.(0); // Pitch shift disabled for now
-    callbacks?.onRampReverb?.(cfg.reverbWet); // Enable reverb at 75%
+    callbacks?.onRampReverb?.(cfg.reverbWet);
     callbacks?.onRampIntensity?.(vinylMode.intensity);
   }, [cfg, callbacks, vinylMode.intensity]);
 
@@ -72,8 +63,6 @@ export const useVinylMode = (
    * Web Audio API handles the smooth ramping internally
    */
   const rampToNormalMode = useCallback(() => {
-    // Start ramps back to normal - Web Audio API will handle smooth transitions
-    callbacks?.onRampPitch?.(0);
     callbacks?.onRampReverb?.(0);
     callbacks?.onRampIntensity?.(0); // Ramp to no slowdown (rate = 1.0)
   }, [callbacks]);

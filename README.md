@@ -196,11 +196,12 @@ ember-web-app/
 │   ├── components/
 │   │   ├── ui/                   # Reusable UI components
 │   │   │   ├── Knob.tsx
-│   │   │   ├── VUMeter.tsx       # Analog needle meter
-│   │   │   ├── LEDMeter.tsx      # Horizontal LED-bar meter (peak/RMS modes)
+│   │   │   ├── VintageVuMeter.tsx # Analog needle meter
+│   │   │   ├── StereoMeter.tsx   # Dual-channel LED-bar meter
+│   │   │   ├── OutputMeter.tsx   # Output section LED-bar meters
 │   │   │   ├── MasterSlider.tsx  # Non-linear master volume slider
 │   │   │   ├── Toggle.tsx
-│   │   │   ├── VinylModeButton.tsx # 33 Mode button with countdown timer
+│   │   │   ├── VinylButton.tsx   # 33 Mode button with countdown timer
 │   │   │   ├── TapeButton.tsx    # Animated tape sim toggle
 │   │   │   ├── PreviewButton.tsx # Demo audio preview
 │   │   │   ├── Slider.tsx

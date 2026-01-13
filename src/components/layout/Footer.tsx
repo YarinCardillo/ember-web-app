@@ -2,11 +2,38 @@
  * Footer - Premium sticky footer bar with audio status and links
  */
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAudioStore } from "../../store/useAudioStore";
+import AudioEngine from "../../audio/AudioEngine";
 
 export function Footer(): JSX.Element {
   const isRunning = useAudioStore((state) => state.isRunning);
+  const inputDeviceId = useAudioStore((state) => state.inputDeviceId);
+  const outputDeviceId = useAudioStore((state) => state.outputDeviceId);
+  const [sampleRate, setSampleRate] = useState<number | null>(null);
+  const [bufferSize, setBufferSize] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isRunning) {
+      // Small delay to allow AudioContext to update after device change
+      const timeoutId = setTimeout(() => {
+        const engine = AudioEngine.getInstance();
+        setSampleRate(engine.getSampleRate());
+        setBufferSize(engine.getBufferSizeSamples());
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSampleRate(null);
+      setBufferSize(null);
+    }
+  }, [isRunning, inputDeviceId, outputDeviceId]);
+
+  const formatSampleRate = (rate: number): string => {
+    return rate >= 1000
+      ? `${(rate / 1000).toFixed(rate % 1000 === 0 ? 0 : 1)}kHz`
+      : `${rate}Hz`;
+  };
 
   return (
     <motion.footer
@@ -39,23 +66,30 @@ export function Footer(): JSX.Element {
           </span>
         </div>
 
-        {/* Sample rate (only show when running) */}
-        {isRunning && (
+        {/* Sample rate (only show when running and available) */}
+        {isRunning && sampleRate && (
           <div className="hidden sm:flex items-center gap-1.5">
             <span className="text-xs text-text-tertiary">Sample Rate:</span>
-            <span className="text-xs font-mono text-text-secondary">48kHz</span>
-          </div>
-        )}
-
-        {/* Latency indicator (only show when running) */}
-        {isRunning && (
-          <div className="hidden md:flex items-center gap-1.5">
-            <span className="text-xs text-text-tertiary">Buffer:</span>
             <span className="text-xs font-mono text-text-secondary">
-              256 samples
+              {formatSampleRate(sampleRate)}
             </span>
           </div>
         )}
+
+        {/* Buffer size (only show when running and available) */}
+        {isRunning && bufferSize && (
+          <div className="hidden md:flex items-center gap-1.5">
+            <span className="text-xs text-text-tertiary">Buffer:</span>
+            <span className="text-xs font-mono text-text-secondary">
+              {bufferSize} samples
+            </span>
+          </div>
+        )}
+
+        {/* Version */}
+        <div className="hidden sm:flex items-center">
+          <span className="text-xs font-mono text-text-tertiary">v0.9.0</span>
+        </div>
       </div>
 
       {/* Right side: Links */}

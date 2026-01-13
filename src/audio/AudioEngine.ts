@@ -37,11 +37,17 @@ class AudioEngine {
     }
 
     // Create AudioContext
-    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof globalThis.AudioContext }).webkitAudioContext;
+    const AudioContextClass =
+      window.AudioContext ||
+      (
+        window as unknown as {
+          webkitAudioContext: typeof globalThis.AudioContext;
+        }
+      ).webkitAudioContext;
     this.ctx = new AudioContextClass() as AudioContextWithSinkId;
 
     // Resume if suspended
-    if (this.ctx.state === 'suspended') {
+    if (this.ctx.state === "suspended") {
       await this.ctx.resume();
     }
 
@@ -49,15 +55,17 @@ class AudioEngine {
     if (!this.workletsLoaded) {
       try {
         await Promise.all([
-          this.ctx.audioWorklet.addModule('/worklets/tube-saturation.worklet.js'),
-          this.ctx.audioWorklet.addModule('/worklets/tape-wobble.worklet.js'),
-          this.ctx.audioWorklet.addModule('/worklets/transient.worklet.js'),
-          this.ctx.audioWorklet.addModule('/worklets/pitch-shifter.worklet.js'),
-          this.ctx.audioWorklet.addModule('/worklets/vinyl-buffer.worklet.js')
+          this.ctx.audioWorklet.addModule(
+            "/worklets/tube-saturation.worklet.js",
+          ),
+          this.ctx.audioWorklet.addModule("/worklets/tape-wobble.worklet.js"),
+          this.ctx.audioWorklet.addModule("/worklets/transient.worklet.js"),
+          this.ctx.audioWorklet.addModule("/worklets/pitch-shifter.worklet.js"),
+          this.ctx.audioWorklet.addModule("/worklets/vinyl-buffer.worklet.js"),
         ]);
         this.workletsLoaded = true;
       } catch (error) {
-        console.error('Failed to load AudioWorklet:', error);
+        console.error("Failed to load AudioWorklet:", error);
         // Continue without worklet - will use fallback
       }
     }
@@ -75,19 +83,19 @@ class AudioEngine {
 
     try {
       // Request permission with minimal constraints
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: false 
+        video: false,
       });
-      
+
       // Immediately stop the stream - we just needed permission
-      stream.getTracks().forEach(track => track.stop());
-      
+      stream.getTracks().forEach((track) => track.stop());
+
       this.hasPermission = true;
-      console.log('Audio permission granted');
+      console.log("Audio permission granted");
       return true;
     } catch (error) {
-      console.error('Failed to get audio permission:', error);
+      console.error("Failed to get audio permission:", error);
       return false;
     }
   }
@@ -97,7 +105,7 @@ class AudioEngine {
    */
   getContext(): globalThis.AudioContext {
     if (!this.ctx) {
-      throw new Error('AudioEngine not initialized. Call initialize() first.');
+      throw new Error("AudioEngine not initialized. Call initialize() first.");
     }
     return this.ctx;
   }
@@ -120,7 +128,7 @@ class AudioEngine {
    * Resume AudioContext if suspended
    */
   async resume(): Promise<void> {
-    if (this.ctx && this.ctx.state === 'suspended') {
+    if (this.ctx && this.ctx.state === "suspended") {
       await this.ctx.resume();
     }
   }
@@ -132,9 +140,9 @@ class AudioEngine {
   async enumerateInputDevices(): Promise<MediaDeviceInfo[]> {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      return devices.filter(device => device.kind === 'audioinput');
+      return devices.filter((device) => device.kind === "audioinput");
     } catch (error) {
-      console.error('Failed to enumerate input devices:', error);
+      console.error("Failed to enumerate input devices:", error);
       return [];
     }
   }
@@ -146,9 +154,9 @@ class AudioEngine {
   async enumerateOutputDevices(): Promise<MediaDeviceInfo[]> {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      return devices.filter(device => device.kind === 'audiooutput');
+      return devices.filter((device) => device.kind === "audiooutput");
     } catch (error) {
-      console.error('Failed to enumerate output devices:', error);
+      console.error("Failed to enumerate output devices:", error);
       return [];
     }
   }
@@ -166,23 +174,45 @@ class AudioEngine {
    */
   async setOutputDevice(deviceId: string): Promise<boolean> {
     if (!this.ctx) {
-      console.error('AudioContext not initialized');
+      console.error("AudioContext not initialized");
       return false;
     }
 
-    if (typeof this.ctx.setSinkId === 'function') {
+    if (typeof this.ctx.setSinkId === "function") {
       try {
         await this.ctx.setSinkId(deviceId);
-        console.log('Output device set to:', deviceId);
+        console.log("Output device set to:", deviceId);
         return true;
       } catch (error) {
-        console.error('Failed to set output device:', error);
+        console.error("Failed to set output device:", error);
         return false;
       }
     } else {
-      console.warn('setSinkId not supported in this browser (Safari/Firefox)');
+      console.warn("setSinkId not supported in this browser (Safari/Firefox)");
       return false;
     }
+  }
+
+  /**
+   * Get the current sample rate in Hz
+   * @returns Sample rate (e.g., 44100, 48000) or null if not initialized
+   */
+  getSampleRate(): number | null {
+    return this.ctx?.sampleRate ?? null;
+  }
+
+  /**
+   * Get the base latency in samples
+   * @returns Buffer size in samples, or null if not available
+   */
+  getBufferSizeSamples(): number | null {
+    if (!this.ctx) return null;
+
+    // baseLatency is in seconds, convert to samples
+    const baseLatency = this.ctx.baseLatency;
+    if (baseLatency === undefined) return null;
+
+    return Math.round(baseLatency * this.ctx.sampleRate);
   }
 
   /**
@@ -192,14 +222,20 @@ class AudioEngine {
   isOutputDeviceSupported(): boolean {
     // Check if AudioContext has setSinkId
     // Note: We need to check on an actual AudioContext instance
-    if (this.ctx && typeof this.ctx.setSinkId === 'function') {
+    if (this.ctx && typeof this.ctx.setSinkId === "function") {
       return true;
     }
-    
+
     // Fallback: check if the API exists on the prototype
     try {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof globalThis.AudioContext }).webkitAudioContext;
-      return 'setSinkId' in AudioContextClass.prototype;
+      const AudioContextClass =
+        window.AudioContext ||
+        (
+          window as unknown as {
+            webkitAudioContext: typeof globalThis.AudioContext;
+          }
+        ).webkitAudioContext;
+      return "setSinkId" in AudioContextClass.prototype;
     } catch {
       return false;
     }
@@ -210,25 +246,26 @@ class AudioEngine {
    */
   startKeepAlive(): void {
     if (!this.ctx || this.keepAliveOscillator) return;
-    
+
     // Create silent oscillator (inaudible, keeps audio context active)
     this.keepAliveOscillator = this.ctx.createOscillator();
     this.keepAliveGain = this.ctx.createGain();
     this.keepAliveGain.gain.value = 0; // Silent
-    
+
     this.keepAliveOscillator.connect(this.keepAliveGain);
     this.keepAliveGain.connect(this.ctx.destination);
     this.keepAliveOscillator.start();
-    
-    console.log('Audio keep-alive started');
+
+    console.log("Audio keep-alive started");
   }
 
   /**
    * Stop the keep-alive oscillator
    */
   stopKeepAlive(): void {
-    const wasActive = this.keepAliveOscillator !== null || this.keepAliveGain !== null;
-    
+    const wasActive =
+      this.keepAliveOscillator !== null || this.keepAliveGain !== null;
+
     if (this.keepAliveOscillator) {
       this.keepAliveOscillator.stop();
       this.keepAliveOscillator.disconnect();
@@ -238,9 +275,9 @@ class AudioEngine {
       this.keepAliveGain.disconnect();
       this.keepAliveGain = null;
     }
-    
+
     if (wasActive) {
-      console.log('Audio keep-alive stopped');
+      console.log("Audio keep-alive stopped");
     }
   }
 
@@ -249,7 +286,7 @@ class AudioEngine {
    */
   dispose(): void {
     this.stopKeepAlive();
-    
+
     if (this.ctx) {
       this.ctx.close().catch(console.error);
       this.ctx = null;

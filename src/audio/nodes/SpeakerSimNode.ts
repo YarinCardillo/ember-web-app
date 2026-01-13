@@ -13,7 +13,7 @@ export class SpeakerSimNode {
     this.ctx = ctx;
     this.convolver = ctx.createConvolver();
     this.bypassGain = ctx.createGain();
-    
+
     // Default: bypass (no IR loaded)
     // When bypassed, signal goes through bypassGain
     // When active, signal goes through convolver
@@ -21,6 +21,7 @@ export class SpeakerSimNode {
 
   /**
    * Get input node for connection
+   * @returns ConvolverNode when active, GainNode when bypassed
    */
   getInput(): AudioNode {
     // When bypassed, return bypassGain; when active, return convolver
@@ -29,6 +30,7 @@ export class SpeakerSimNode {
 
   /**
    * Load impulse response from URL
+   * @param url - URL to the impulse response audio file
    */
   async loadImpulseResponse(url: string): Promise<void> {
     try {
@@ -38,12 +40,13 @@ export class SpeakerSimNode {
       this.convolver.buffer = audioBuffer;
       this.isBypassed = false;
     } catch (error) {
-      console.error('Failed to load impulse response:', error);
+      console.error("Failed to load impulse response:", error);
     }
   }
 
   /**
    * Set bypass state
+   * @param bypassed - True to bypass processing, false to enable convolution
    */
   setBypass(bypassed: boolean): void {
     this.isBypassed = bypassed;
@@ -51,6 +54,7 @@ export class SpeakerSimNode {
 
   /**
    * Get bypass state
+   * @returns True if bypassed, false if processing
    */
   getBypass(): boolean {
     return this.isBypassed;
@@ -58,6 +62,7 @@ export class SpeakerSimNode {
 
   /**
    * Connect to destination
+   * @param destination - AudioNode to connect output to
    */
   connect(destination: AudioNode): void {
     if (this.isBypassed) {

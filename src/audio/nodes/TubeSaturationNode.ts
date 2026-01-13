@@ -13,7 +13,7 @@ export class TubeSaturationNode {
     this.ctx = ctx;
     this.inputGain = ctx.createGain();
     this.bypassGain = ctx.createGain();
-    
+
     // Initially connect input to bypass (passthrough)
     this.inputGain.connect(this.bypassGain);
   }
@@ -24,12 +24,12 @@ export class TubeSaturationNode {
    */
   async initialize(): Promise<void> {
     try {
-      this.workletNode = new AudioWorkletNode(this.ctx, 'tube-saturation');
+      this.workletNode = new AudioWorkletNode(this.ctx, "tube-saturation");
       // Connect worklet output to bypass gain for routing
       this.workletNode.connect(this.bypassGain);
       this.updateRouting();
     } catch (error) {
-      console.error('Failed to create AudioWorkletNode:', error);
+      console.error("Failed to create AudioWorkletNode:", error);
       // Fallback: use bypass gain only (no saturation)
     }
   }
@@ -51,11 +51,12 @@ export class TubeSaturationNode {
   }
 
   /**
-   * Set drive amount (0-1)
+   * Set drive amount
+   * @param drive - Drive amount (0.0 to 1.0)
    */
   setDrive(drive: number): void {
     if (this.workletNode) {
-      const driveParam = this.workletNode.parameters.get('drive');
+      const driveParam = this.workletNode.parameters.get("drive");
       if (driveParam) {
         driveParam.value = Math.max(0, Math.min(1, drive));
       }
@@ -63,11 +64,12 @@ export class TubeSaturationNode {
   }
 
   /**
-   * Set harmonics amount (0-1)
+   * Set harmonics amount
+   * @param harmonics - Harmonics intensity (0.0 to 1.0)
    */
   setHarmonics(harmonics: number): void {
     if (this.workletNode) {
-      const harmonicsParam = this.workletNode.parameters.get('harmonics');
+      const harmonicsParam = this.workletNode.parameters.get("harmonics");
       if (harmonicsParam) {
         harmonicsParam.value = Math.max(0, Math.min(1, harmonics));
       }
@@ -75,11 +77,12 @@ export class TubeSaturationNode {
   }
 
   /**
-   * Set mix amount (0-1, dry/wet)
+   * Set mix amount (dry/wet blend)
+   * @param mix - Mix amount (0.0 = dry, 1.0 = wet)
    */
   setMix(mix: number): void {
     if (this.workletNode) {
-      const mixParam = this.workletNode.parameters.get('mix');
+      const mixParam = this.workletNode.parameters.get("mix");
       if (mixParam) {
         mixParam.value = Math.max(0, Math.min(1, mix));
       }
@@ -88,6 +91,7 @@ export class TubeSaturationNode {
 
   /**
    * Set bypass state
+   * @param bypassed - True to bypass processing, false to enable
    */
   setBypass(bypassed: boolean): void {
     this.isBypassed = bypassed;
@@ -96,6 +100,7 @@ export class TubeSaturationNode {
 
   /**
    * Get bypass state
+   * @returns True if bypassed, false if processing
    */
   getBypass(): boolean {
     return this.isBypassed;
@@ -103,6 +108,7 @@ export class TubeSaturationNode {
 
   /**
    * Connect this node to destination (standard AudioNode pattern)
+   * @param destination - AudioNode to connect output to
    */
   connect(destination: AudioNode): void {
     this.bypassGain.connect(destination);
@@ -119,6 +125,7 @@ export class TubeSaturationNode {
 
   /**
    * Restore internal routing (call after reconnection)
+   * Ensures worklet node is properly connected to bypass gain
    */
   restoreRouting(): void {
     if (this.workletNode) {

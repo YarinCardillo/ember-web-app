@@ -15,7 +15,6 @@ export class VinylModeNode {
 
   // Processing nodes
   private bufferNode: AudioWorkletNode | null = null;
-  private pitchShifter: AudioWorkletNode | null = null;
   private convolver: ConvolverNode;
   private reverbGain: GainNode;
   private dryGain: GainNode;
@@ -73,12 +72,6 @@ export class VinylModeNode {
     if (this.isInitialized) return;
 
     try {
-      // Load pitch shifter worklet
-      this.pitchShifter = new AudioWorkletNode(
-        this.ctx,
-        "pitch-shifter-processor",
-      );
-
       // Load vinyl buffer worklet (handles variable playback rate)
       this.bufferNode = new AudioWorkletNode(
         this.ctx,
@@ -174,8 +167,10 @@ export class VinylModeNode {
       // First connect both paths
       try {
         this.inputGain.connect(this.bypassGain);
-        // eslint-disable-next-line no-empty
-      } catch {}
+      } catch {
+        // Connection already exists - safe to ignore
+        console.debug("[VinylModeNode] Bypass connection already established");
+      }
 
       // Fade bypass in
       this.bypassGain.gain.cancelScheduledValues(now);
@@ -202,8 +197,10 @@ export class VinylModeNode {
           if (this.isBypassed) {
             try {
               this.inputGain.disconnect(this.bufferNode!);
-              // eslint-disable-next-line no-empty
-            } catch {}
+            } catch {
+              // Already disconnected - safe to ignore
+              console.debug("[VinylModeNode] Buffer already disconnected");
+            }
           }
         },
         crossfadeTime * 1000 + 10,
@@ -213,8 +210,10 @@ export class VinylModeNode {
       // First connect both paths
       try {
         this.inputGain.connect(this.bufferNode);
-        // eslint-disable-next-line no-empty
-      } catch {}
+      } catch {
+        // Connection already exists - safe to ignore
+        console.debug("[VinylModeNode] Buffer connection already established");
+      }
 
       // Fade vinyl mixer in - start at 1.0, compensation will be applied by rampReverbMix
       this.vinylMixerGain.gain.cancelScheduledValues(now);
@@ -238,39 +237,14 @@ export class VinylModeNode {
           if (!this.isBypassed) {
             try {
               this.inputGain.disconnect(this.bypassGain);
-              // eslint-disable-next-line no-empty
-            } catch {}
+            } catch {
+              // Already disconnected - safe to ignore
+              console.debug("[VinylModeNode] Bypass already disconnected");
+            }
           }
         },
         crossfadeTime * 1000 + 10,
       );
-    }
-  }
-
-  /**
-   * Set pitch shift amount (currently unused)
-   */
-  setPitchShift(semitones: number): void {
-    if (this.pitchShifter) {
-      const param = this.pitchShifter.parameters.get("pitchShift");
-      if (param) {
-        param.setValueAtTime(semitones, this.ctx.currentTime);
-      }
-    }
-  }
-
-  /**
-   * Smoothly ramp pitch shift (currently unused)
-   */
-  rampPitchShift(semitones: number, durationMs: number): void {
-    if (this.pitchShifter) {
-      const param = this.pitchShifter.parameters.get("pitchShift");
-      if (param) {
-        param.linearRampToValueAtTime(
-          semitones,
-          this.ctx.currentTime + durationMs / 1000,
-        );
-      }
     }
   }
 
