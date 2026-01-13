@@ -749,7 +749,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       // Create source and gain nodes
       const source = ctx.createBufferSource();
       source.buffer = buffer;
-      source.loop = true; // Loop the preview
+      source.loop = true;
 
       const gain = ctx.createGain();
       gain.gain.value = 1.0;
@@ -772,9 +772,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       setIsPreviewPlaying(true);
       setIsPreviewLoading(false);
 
-      console.log(
-        "[Preview] Started playing through signal chain (input muted)",
-      );
+      console.log("[Preview] Started playing through signal chain");
     } catch (err) {
       console.error("Failed to start preview:", err);
       setError("Failed to start preview");
@@ -782,15 +780,20 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     }
   }, [isPreviewPlaying, loadPreviewBuffer, stopPreview]);
 
-  // Stop preview when audio stops or component unmounts
+  // Stop preview when audio engine stops
   useEffect(() => {
     if (!isRunning && isPreviewPlaying) {
       stopPreview();
     }
+  }, [isRunning, isPreviewPlaying, stopPreview]);
+
+  // Cleanup on unmount only
+  useEffect(() => {
     return () => {
       stopPreview();
     };
-  }, [isRunning, isPreviewPlaying, stopPreview]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Enumerate devices (refreshes after initialization when we have permission)
   useEffect(() => {
