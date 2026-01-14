@@ -348,7 +348,6 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       transientSustain: state.transientSustain,
       transientMix: state.transientMix,
       preGain: state.preGain,
-      outputGain: state.outputGain,
       inputDeviceId: state.inputDeviceId,
     })),
   );
@@ -367,7 +366,6 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     transientSustain,
     transientMix,
     preGain,
-    outputGain,
     inputDeviceId: currentInputDeviceId,
   } = audioParams;
 
@@ -407,7 +405,6 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     }
     if (nodes.output) {
       nodes.output.setPreGain(preGain);
-      nodes.output.setGain(outputGain);
     }
   }, [
     isInitialized,
@@ -424,7 +421,6 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     transientSustain,
     transientMix,
     preGain,
-    outputGain,
   ]);
 
   // Handle master bypass - reroute signal chain

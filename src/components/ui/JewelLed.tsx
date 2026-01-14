@@ -10,12 +10,14 @@ interface JewelLedProps {
   color: LedColor;
   className?: string;
   label?: string;
+  size?: number;
 }
 
 export function JewelLed({
   color,
   className = "",
   label,
+  size,
 }: JewelLedProps): JSX.Element {
   const theme = useThemeStore((state) => state.theme);
 
@@ -56,7 +58,10 @@ export function JewelLed({
 
   return (
     <div className={`flex flex-col items-center gap-1 ${className}`}>
-      <div className={`jewel-led ${color}`} />
+      <div
+        className={`jewel-led ${color}`}
+        style={size ? { width: size, height: size } : undefined}
+      />
       {label && (
         <span className="text-[9px] text-text-tertiary uppercase tracking-wider">
           {label}
