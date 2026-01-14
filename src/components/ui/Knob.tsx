@@ -375,7 +375,7 @@ export function Knob({
       {/* Labels */}
       <div className="text-center w-full">
         <div className="text-xs text-text-secondary truncate">{label}</div>
-        <div className={`text-sm font-mono ${isVintage ? "value-pill" : "text-accent-primary"}`}>
+        <div className={`text-sm font-mono whitespace-nowrap ${isVintage ? "value-pill" : "text-accent-primary"}`}>
           {formatDisplayValue(value)}
         </div>
       </div>

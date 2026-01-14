@@ -4,7 +4,7 @@
  * Features: needle indicator, peak hold, zone colors, tick marks
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { linearToDb } from "../../utils/dsp-math";
 
 interface StereoMeterMinimalProps {
@@ -30,10 +30,11 @@ export function StereoMeterMinimal({
   label = "Clipper",
   mode = "peak",
 }: StereoMeterMinimalProps): JSX.Element {
-  const [levelL, setLevelL] = useState(0);
-  const [levelR, setLevelR] = useState(0);
-  const [peakL, setPeakL] = useState(0);
-  const [peakR, setPeakR] = useState(0);
+  // Use refs for DOM elements to avoid re-renders
+  const needleLRef = useRef<HTMLDivElement>(null);
+  const needleRRef = useRef<HTMLDivElement>(null);
+  const peakLRef = useRef<HTMLDivElement>(null);
+  const peakRRef = useRef<HTMLDivElement>(null);
 
   const animationFrameRef = useRef<number>();
   const smoothedLevelL = useRef(MIN_DB);
@@ -158,11 +159,26 @@ export function StereoMeterMinimal({
       peakLevelR.current = peakResultR.peak;
       peakHoldTimeR.current = peakResultR.holdTime;
 
-      // Update state
-      setLevelL(dbToPercent(smoothedLevelL.current));
-      setLevelR(dbToPercent(smoothedLevelR.current));
-      setPeakL(dbToPercent(peakLevelL.current));
-      setPeakR(dbToPercent(peakLevelR.current));
+      // Update DOM directly via refs (no re-render)
+      const levelLPct = dbToPercent(smoothedLevelL.current);
+      const levelRPct = dbToPercent(smoothedLevelR.current);
+      const peakLPct = dbToPercent(peakLevelL.current);
+      const peakRPct = dbToPercent(peakLevelR.current);
+
+      if (needleLRef.current) {
+        needleLRef.current.style.left = `${levelLPct}%`;
+      }
+      if (needleRRef.current) {
+        needleRRef.current.style.left = `${levelRPct}%`;
+      }
+      if (peakLRef.current) {
+        peakLRef.current.style.left = `${peakLPct}%`;
+        peakLRef.current.style.opacity = peakLPct > 5 ? (peakLPct > levelLPct + 2 ? "0.9" : "0.6") : "0";
+      }
+      if (peakRRef.current) {
+        peakRRef.current.style.left = `${peakRPct}%`;
+        peakRRef.current.style.opacity = peakRPct > 5 ? (peakRPct > levelRPct + 2 ? "0.9" : "0.6") : "0";
+      }
     };
 
     draw();
@@ -174,7 +190,11 @@ export function StereoMeterMinimal({
     };
   }, [analyser, mode]);
 
-  const renderChannel = (channelLabel: string, level: number, peak: number) => (
+  const renderChannel = (
+    channelLabel: string,
+    needleRef: React.RefObject<HTMLDivElement>,
+    peakRef: React.RefObject<HTMLDivElement>,
+  ) => (
     <div className="stereo-channel">
       <span className="channel-label">{channelLabel}</span>
       <div className="hybrid-track">
@@ -191,16 +211,8 @@ export function StereoMeterMinimal({
             />
           ))}
         </div>
-        <div className="hybrid-needle" style={{ left: `${level}%` }} />
-        {peak > 5 && (
-          <div
-            className="hybrid-peak"
-            style={{
-              left: `${peak}%`,
-              opacity: peak > level + 2 ? 0.9 : 0.6,
-            }}
-          />
-        )}
+        <div ref={needleRef} className="hybrid-needle" style={{ left: "0%" }} />
+        <div ref={peakRef} className="hybrid-peak" style={{ left: "0%", opacity: 0 }} />
       </div>
     </div>
   );
@@ -342,8 +354,8 @@ export function StereoMeterMinimal({
           margin-top: 8px;
         }
       `}</style>
-      {renderChannel("L", levelL, peakL)}
-      {renderChannel("R", levelR, peakR)}
+      {renderChannel("L", needleLRef, peakLRef)}
+      {renderChannel("R", needleRRef, peakRRef)}
       <div className="meter-scale">
         <span>-48</span>
         <span>-36</span>
