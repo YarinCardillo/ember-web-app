@@ -11,6 +11,7 @@ interface StereoMeterProps {
   label?: string;
   mode?: "rms" | "peak";
   width?: number;
+  variant?: "modern" | "vintage";
 }
 
 const MIN_DB = -60;
@@ -26,7 +27,7 @@ const ATTACK_TIME = 15;
 const RELEASE_TIME = 150;
 
 // Colors
-const COLORS = {
+const COLORS_MODERN = {
   green: "#4ADE80",
   yellow: "#FACC15",
   red: "#F87171",
@@ -36,12 +37,25 @@ const COLORS = {
   scaleColor: "#444444",
 };
 
+const COLORS_VINTAGE = {
+  green: "#F5A524",
+  yellow: "#fbbf24",
+  red: "#ef4444",
+  background: "linear-gradient(180deg, #e8dcc8 0%, #d4c4a8 100%)",
+  barBackground: "#1a1815",
+  labelColor: "#3d2e1a",
+  scaleColor: "#5c4a2a",
+};
+
 export function StereoMeter({
   analyser,
   label = "Clipper",
   mode = "peak",
   width = 280,
+  variant = "modern",
 }: StereoMeterProps): JSX.Element {
+  const COLORS = variant === "vintage" ? COLORS_VINTAGE : COLORS_MODERN;
+  const isVintage = variant === "vintage";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
   const smoothedLevelL = useRef(MIN_DB);
@@ -178,10 +192,25 @@ export function StereoMeter({
       lastUpdateTime.current = now;
 
       // Clear canvas
-      ctx.fillStyle = COLORS.background;
+      if (isVintage) {
+        // Vintage gradient background
+        const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+        bgGradient.addColorStop(0, "#e8dcc8");
+        bgGradient.addColorStop(1, "#d4c4a8");
+        ctx.fillStyle = bgGradient;
+      } else {
+        ctx.fillStyle = COLORS.background;
+      }
       ctx.beginPath();
       ctx.roundRect(0, 0, width, height, 8 * scale);
       ctx.fill();
+
+      // Vintage border
+      if (isVintage) {
+        ctx.strokeStyle = "#3d3022";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
 
       let targetDbL = MIN_DB;
       let targetDbR = MIN_DB;
@@ -268,6 +297,8 @@ export function StereoMeter({
     barMarginLeft,
     barMarginRight,
     barWidth,
+    isVintage,
+    COLORS,
   ]);
 
   return (

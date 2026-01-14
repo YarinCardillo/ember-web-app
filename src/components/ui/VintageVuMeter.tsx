@@ -31,8 +31,8 @@ export function VintageVuMeter({
   // VU meter scale: -20 to +3 dB
   const minDb = -20;
   const maxDb = 3;
-  const minAngle = -35;
-  const maxAngle = 35;
+  const minAngle = -25;
+  const maxAngle = 25;
 
   // Memoize scale-dependent styles to avoid object recreation on each render
   const meterStyles = useMemo(
@@ -88,7 +88,7 @@ export function VintageVuMeter({
         bottom: 0,
         left: "50%",
         transform: "translateX(-50%)",
-        width: 120 * scale,
+        width: 200 * scale,
         height: 10 * scale,
         background: "linear-gradient(to bottom, #1a1612 0%, #0d0b09 100%)",
         borderRadius: `${4 * scale}px ${4 * scale}px 0 0`,
@@ -97,10 +97,10 @@ export function VintageVuMeter({
       },
       needle: {
         position: "absolute" as const,
-        bottom: -62 * scale,
+        bottom: -160 * scale,
         left: "50%",
         width: 2 * scale,
-        height: 200 * scale,
+        height: 300 * scale,
         background:
           "linear-gradient(to top, #8b0000 0%, #dc2626 8%, #ffffff 10%, #ffffff 100%)",
         transformOrigin: "bottom center",
@@ -112,7 +112,7 @@ export function VintageVuMeter({
       },
       pivot: {
         position: "absolute" as const,
-        bottom: -68 * scale,
+        bottom: -166 * scale,
         left: "50%",
         transform: "translateX(-50%)",
         width: 12 * scale,
@@ -143,12 +143,12 @@ export function VintageVuMeter({
   const svgWidth = 360;
   const svgHeight = 140;
   const cx = 180;
-  const cy = 220;
-  const arcRadius = 200;
-  const tickOuter = 200;
-  const tickInnerMajor = 170;
-  const tickInnerMinor = 180;
-  const textRadius = 152;
+  const cy = 320;
+  const arcRadius = 300;
+  const tickOuter = 300;
+  const tickInnerMajor = 265;
+  const tickInnerMinor = 278;
+  const textRadius = 245;
 
   // Convert angle to SVG coordinates
   const angleToPoint = (angleDeg: number, r: number) => {
@@ -166,19 +166,19 @@ export function VintageVuMeter({
     return `M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`;
   };
 
-  // Scale marks - adjusted for -35 to +35 degree range
+  // Scale marks - adjusted for -25 to +25 degree range (flatter arc)
   const marks = [
-    { angle: -45, label: "20", isRed: false, isMajor: true },
-    { angle: -30, label: "10", isRed: false, isMajor: true },
-    { angle: -18, label: "7", isRed: false, isMajor: true },
-    { angle: -8, label: "5", isRed: false, isMajor: true },
-    { angle: 5, label: "3", isRed: false, isMajor: true },
-    { angle: 20, label: "0", isRed: true, isMajor: true },
-    { angle: 35, label: "3", isRed: true, isMajor: true },
+    { angle: -32, label: "20", isRed: false, isMajor: true },
+    { angle: -21, label: "10", isRed: false, isMajor: true },
+    { angle: -13, label: "7", isRed: false, isMajor: true },
+    { angle: -6, label: "5", isRed: false, isMajor: true },
+    { angle: 4, label: "3", isRed: false, isMajor: true },
+    { angle: 14, label: "0", isRed: true, isMajor: true },
+    { angle: 25, label: "3", isRed: true, isMajor: true },
   ];
 
   const minorTicks = [
-    -42, -39, -36, -33, -27, -24, -21, -15, -12, -3, 0, 10, 15, 25, 30, 40, 45,
+    -30, -28, -26, -24, -19, -17, -15, -11, -9, -2, 0, 7, 11, 18, 21, 28, 32,
   ];
 
   useEffect(() => {
@@ -290,7 +290,7 @@ export function VintageVuMeter({
     elements.push(
       <path
         key="main-arc"
-        d={createArc(arcRadius, -45, 45)}
+        d={createArc(arcRadius, -32, 32)}
         fill="none"
         stroke="#2a2015"
         strokeWidth="1.5"
@@ -301,7 +301,7 @@ export function VintageVuMeter({
     elements.push(
       <path
         key="red-arc"
-        d={createArc(arcRadius - 8, 20, 45)}
+        d={createArc(arcRadius - 8, 14, 32)}
         fill="none"
         stroke="#991b1b"
         strokeWidth="8"
@@ -353,7 +353,7 @@ export function VintageVuMeter({
     minorTicks.forEach((angle, i) => {
       const outer = angleToPoint(angle, tickOuter);
       const inner = angleToPoint(angle, tickInnerMinor);
-      const isRed = angle > 20;
+      const isRed = angle > 14;
 
       elements.push(
         <line

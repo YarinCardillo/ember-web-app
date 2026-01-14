@@ -57,11 +57,11 @@ export function InputStage({
     <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden relative">
       <Screws />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
           {isVintage && <PilotLight isActive={isRunning} />}
           <h3
-            className="text-lg font-semibold leading-none -mt-2"
+            className="text-lg font-semibold"
             style={
               isVintage
                 ? {
@@ -70,7 +70,7 @@ export function InputStage({
                     color: "#c9a66b",
                     fontWeight: 400,
                   }
-                : { lineHeight: "1.2", color: "#e8dccc" }
+                : { color: "#e8dccc" }
             }
           >
             INPUT
@@ -78,7 +78,7 @@ export function InputStage({
         </div>
         <div
           className="flex items-center gap-2 justify-end"
-          style={{ marginTop: "-12px", minWidth: "140px" }}
+          style={{ minWidth: "140px" }}
         >
           <VinylIntensitySlider
             value={vinylIntensity}
@@ -105,7 +105,10 @@ export function InputStage({
 
       <div className="flex flex-col gap-2 min-h-[60px]">
         <div className="flex items-center justify-between">
-          <label className="text-xs text-text-secondary">
+          <label
+            className="text-xs text-text-secondary"
+            style={isVintage ? { marginLeft: "16px" } : undefined}
+          >
             {isMobileMode ? "Preview Only" : "Device"}
           </label>
           <div style={{ minWidth: "140px" }} className="flex justify-end">
@@ -166,20 +169,25 @@ export function InputStage({
         )}
       </div>
 
-      <div className="flex items-center justify-center gap-4 sm:gap-10 min-w-0 py-2 flex-col-reverse sm:flex-row">
-        <VerticalSlider
-          label="Gain"
-          value={inputGain}
-          minDb={-36}
-          maxDb={36}
-          centerDb={0}
-          step={0.5}
-          height={120}
-          onChange={(value) => setParameter("inputGain", value)}
-          defaultValue={0}
-        />
-        <div className="w-full sm:w-auto flex justify-center overflow-hidden px-2">
-          <VintageVuMeter analyser={inputAnalyser} label="Input" width={280} />
+      <div className="flex items-center justify-between gap-4 sm:gap-10 min-w-0 py-2 flex-col-reverse sm:flex-row">
+        <div style={{ marginTop: "8px" }}>
+          <VerticalSlider
+            label=""
+            value={inputGain}
+            minDb={-36}
+            maxDb={36}
+            centerDb={0}
+            step={0.5}
+            height={170}
+            onChange={(value) => setParameter("inputGain", value)}
+            defaultValue={0}
+          />
+        </div>
+        <div
+          className="flex-1 flex justify-end"
+          style={{ marginRight: "20px" }}
+        >
+          <VintageVuMeter analyser={inputAnalyser} label="" width={350} />
         </div>
       </div>
     </div>

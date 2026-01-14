@@ -1,14 +1,15 @@
 /**
  * OutputNode - Final gain stage with hard clipper and analysers for metering
  *
- * Signal chain: preGain -> preClipperAnalyser -> clipper (0dB hard limit) -> gain (master volume) -> postGainAnalyser -> destination
+ * Signal chain: preGain -> preClipperAnalyser -> clipper (0dB hard limit) -> postGainAnalyser -> destination
  *
  * The preGain control affects levels entering the clipper (can cause clipping).
  * The preClipperAnalyser meters levels entering the clipper (shows when signal clips).
  * The clipper hard-clips at 0dB (±1.0), completely transparent below.
- * The gain control (master) is post-clipper, so it only affects volume to speakers (does not apply clipping).
- * The postGainAnalyser meters the final output level (post-clipper, post-gain).
+ * The postGainAnalyser meters the final output level (post-clipper).
  * Uses 4x oversampling for analog-like anti-aliasing to reduce harsh artifacts.
+ *
+ * Bypass mode: connects directly to gainNode (skipping preGain and clipper) for clean passthrough.
  */
 
 import { dbToLinear } from "../../utils/dsp-math";
@@ -95,19 +96,6 @@ export class OutputNode {
   }
 
   /**
-   * Set output gain (master volume) in dB
-   * This is post-clipper, affects only output volume
-   * @param db - Gain in decibels (-36 to +6)
-   */
-  setGain(db: number): void {
-    this.gainNode.gain.setTargetAtTime(
-      dbToLinear(db),
-      this.gainNode.context.currentTime,
-      0.01,
-    );
-  }
-
-  /**
    * Get analyser node for metering (pre-clipper)
    * Shows level entering clipper for clipping indication
    * @returns AnalyserNode positioned before the clipper
@@ -156,9 +144,9 @@ export class OutputNode {
   }
 
   /**
-   * Get the master gain node (post-clipper) for bypass routing
-   * In bypass mode, connect directly here to skip processing but keep volume control
-   * @returns GainNode for master volume
+   * Get the gain node (post-clipper) for bypass routing
+   * In bypass mode, connect directly here to skip clipper and go straight to output
+   * @returns GainNode for bypass connection
    */
   getMasterGainNode(): GainNode {
     return this.gainNode;

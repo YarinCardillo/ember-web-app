@@ -27,7 +27,6 @@ interface AudioState {
   harmonics: number; // 0-1
   saturationMix: number; // 0-1
   preGain: number; // Pre-clipper gain in dB
-  outputGain: number; // Master volume in dB
 
   // Transient shaper parameters (for debug)
   transientAttack: number; // -1.0 to +1.0
@@ -89,7 +88,6 @@ export const useAudioStore = create<AudioState>()(
       harmonics: STARTER_PRESET.harmonics ?? 0.4,
       saturationMix: STARTER_PRESET.saturationMix ?? 0.6,
       preGain: STARTER_PRESET.preGain ?? 0,
-      outputGain: 0, // Master volume starts at 0, not controlled by presets
       transientAttack: 0.75, // Default: 75% (optimal)
       transientSustain: 0.0, // Default: 0% (optimal)
       transientMix: 0.55, // Default: 55% (optimal)
@@ -122,7 +120,6 @@ export const useAudioStore = create<AudioState>()(
           saturationMix: preset.saturationMix ?? 1.0,
           inputGain: preset.inputGain ?? -6,
           preGain: preset.preGain ?? 0,
-          // outputGain is NOT modified by presets - user's master volume setting is preserved
           // Module activation (default to active if not specified)
           bypassTapeSim: preset.bypassTapeSim ?? true, // Default to inactive in presets
           bypassToneStack: preset.bypassToneStack ?? false,
@@ -186,7 +183,6 @@ export const useAudioStore = create<AudioState>()(
         drive: state.drive,
         harmonics: state.harmonics,
         saturationMix: state.saturationMix,
-        outputGain: state.outputGain,
         inputDeviceId: state.inputDeviceId,
         outputDeviceId: state.outputDeviceId,
         bypassAll: state.bypassAll,

@@ -16,6 +16,7 @@ interface MasterSliderProps {
   formatValue?: (value: number) => string;
   onChange: (value: number) => void;
   defaultValue?: number;
+  showValue?: boolean;
 }
 
 const ACCENT_COLOR = "#F59E0B";
@@ -31,6 +32,7 @@ export function MasterSlider({
   formatValue,
   onChange,
   defaultValue,
+  showValue = true,
 }: MasterSliderProps): JSX.Element {
   const dbToPosition = useCallback(
     (db: number): number => {
@@ -81,12 +83,16 @@ export function MasterSlider({
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      <div className="flex justify-between items-center">
-        <label className="text-xs text-text-secondary">{label}</label>
-        <span className="text-xs font-mono text-accent-primary">
-          {formatDisplayValue(value)}
-        </span>
-      </div>
+      {(label || showValue) && (
+        <div className="flex justify-between items-center">
+          <label className="text-xs text-text-secondary">{label}</label>
+          {showValue && (
+            <span className="text-xs font-mono text-accent-primary">
+              {formatDisplayValue(value)}
+            </span>
+          )}
+        </div>
+      )}
       <div className="relative">
         <input
           type="range"
