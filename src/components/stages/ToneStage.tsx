@@ -28,7 +28,7 @@ export function ToneStage(): JSX.Element {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {isVintage && <PilotLight active={isActive} />}
+          {isVintage && <PilotLight isActive={isActive} />}
           <h3
             className="text-lg font-semibold"
             style={

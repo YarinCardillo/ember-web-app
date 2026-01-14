@@ -59,7 +59,7 @@ export function InputStage({
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {isVintage && <PilotLight active={isRunning} />}
+          {isVintage && <PilotLight isActive={isRunning} />}
           <h3
             className="text-lg font-semibold leading-none -mt-2"
             style={

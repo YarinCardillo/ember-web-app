@@ -5,12 +5,12 @@
 import { useThemeStore } from "../../store/useThemeStore";
 
 interface PilotLightProps {
-  active: boolean;
+  isActive: boolean;
   className?: string;
 }
 
 export function PilotLight({
-  active,
+  isActive,
   className = "",
 }: PilotLightProps): JSX.Element | null {
   const theme = useThemeStore((state) => state.theme);
@@ -19,5 +19,5 @@ export function PilotLight({
     return null;
   }
 
-  return <div className={`pilot-light ${active ? "" : "off"} ${className}`} />;
+  return <div className={`pilot-light ${isActive ? "" : "off"} ${className}`} />;
 }
