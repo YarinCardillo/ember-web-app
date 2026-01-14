@@ -15,7 +15,7 @@ export function Credits(): JSX.Element {
       {isVintage && (
         <div className="text-center py-4">
           <div className="logo-embossed">EMBER</div>
-          <div className="tagline">ANALOG WARMTH SIMULATOR</div>
+          <div className="tagline">ANALOG WARMTH SIMULATION</div>
           <Ventilation slots={12} className="mt-6" />
         </div>
       )}
