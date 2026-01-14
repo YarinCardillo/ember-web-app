@@ -1,5 +1,6 @@
 /**
  * InputStage - Premium device selector, input gain knob, and input VU meter
+ * Supports both modern and vintage themes
  */
 
 import { VerticalSlider } from "../ui/VerticalSlider";
@@ -8,7 +9,10 @@ import { TapeButton } from "../ui/TapeButton";
 import { VinylButton } from "../ui/VinylButton";
 import { VinylIntensitySlider } from "../ui/VinylIntensitySlider";
 import { PreviewButton } from "../ui/PreviewButton";
+import { Screws } from "../ui/Screw";
+import { PilotLight } from "../ui/PilotLight";
 import { useAudioStore } from "../../store/useAudioStore";
+import { useThemeStore } from "../../store/useThemeStore";
 import type { AudioDeviceInfo } from "../../types/audio.types";
 
 interface InputStageProps {
@@ -46,15 +50,32 @@ export function InputStage({
   const vinylIntensity = useAudioStore((state) => state.vinylMode.intensity);
   const isRunning = useAudioStore((state) => state.isRunning);
 
+  const theme = useThemeStore((state) => state.theme);
+  const isVintage = theme === "vintage";
+
   return (
-    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden">
+    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden relative">
+      <Screws />
+
       <div className="flex items-center justify-between">
-        <h3
-          className="text-lg font-semibold leading-none -mt-2"
-          style={{ lineHeight: "1.2", color: "#e8dccc" }}
-        >
-          INPUT
-        </h3>
+        <div className="flex items-center gap-2">
+          {isVintage && <PilotLight isActive={isRunning} />}
+          <h3
+            className="text-lg font-semibold leading-none -mt-2"
+            style={
+              isVintage
+                ? {
+                    fontFamily: "'Instrument Serif', Georgia, serif",
+                    letterSpacing: "3px",
+                    color: "#c9a66b",
+                    fontWeight: 400,
+                  }
+                : { lineHeight: "1.2", color: "#e8dccc" }
+            }
+          >
+            INPUT
+          </h3>
+        </div>
         <div
           className="flex items-center gap-2 justify-end"
           style={{ marginTop: "-12px", minWidth: "140px" }}
@@ -122,7 +143,9 @@ export function InputStage({
               style={{
                 border: isDangerous
                   ? "1px solid rgba(248, 113, 113, 0.5)"
-                  : "1px solid rgba(255, 255, 255, 0.1)",
+                  : isVintage
+                    ? "1px solid #2a2520"
+                    : "1px solid rgba(255, 255, 255, 0.1)",
               }}
             >
               <option value="" disabled>
