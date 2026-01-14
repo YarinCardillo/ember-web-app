@@ -1,8 +1,10 @@
 /**
  * Knob - Premium rotary control with arc indicator and skeuomorphic styling
+ * Supports both modern and vintage themes
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useThemeStore } from "../../store/useThemeStore";
 
 interface KnobProps {
   label: string;
@@ -20,6 +22,7 @@ interface ArcIndicatorProps {
   normalizedValue: number;
   size: number;
   isActive: boolean;
+  isVintage: boolean;
 }
 
 const KNOB_SIZE = 56;
@@ -59,6 +62,7 @@ function ArcIndicator({
   normalizedValue,
   size,
   isActive,
+  isVintage,
 }: ArcIndicatorProps): JSX.Element {
   const center = size / 2;
   const valueAngle = START_ANGLE + normalizedValue * TOTAL_ARC;
@@ -75,6 +79,9 @@ function ArcIndicator({
       ? describeArc(center, center, ARC_RADIUS, START_ANGLE, valueAngle)
       : "";
 
+  const gradientId = isVintage ? "arcGradientVintage" : "arcGradient";
+  const filterId = isVintage ? "arcGlowVintage" : "arcGlow";
+
   return (
     <svg
       width={size}
@@ -83,11 +90,11 @@ function ArcIndicator({
       style={{ width: size, height: size }}
     >
       <defs>
-        <linearGradient id="arcGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#F59E0B" />
-          <stop offset="100%" stopColor="#FBBF24" />
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={isVintage ? "#F5A524" : "#F59E0B"} />
+          <stop offset="100%" stopColor={isVintage ? "#d4890a" : "#FBBF24"} />
         </linearGradient>
-        <filter id="arcGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="2" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -100,7 +107,7 @@ function ArcIndicator({
       <path
         d={backgroundPath}
         fill="none"
-        stroke="rgba(255, 255, 255, 0.08)"
+        stroke={isVintage ? "rgba(42, 37, 32, 0.8)" : "rgba(255, 255, 255, 0.08)"}
         strokeWidth={ARC_STROKE_WIDTH}
         strokeLinecap="round"
       />
@@ -110,10 +117,10 @@ function ArcIndicator({
         <path
           d={valuePath}
           fill="none"
-          stroke="url(#arcGradient)"
+          stroke={`url(#${gradientId})`}
           strokeWidth={ARC_STROKE_WIDTH}
           strokeLinecap="round"
-          filter={isActive ? "url(#arcGlow)" : undefined}
+          filter={isActive ? `url(#${filterId})` : undefined}
           style={{
             opacity: isActive ? 1 : 0.85,
             transition: "opacity 0.15s ease-out",
@@ -135,6 +142,9 @@ export function Knob({
   onChange,
   defaultValue,
 }: KnobProps): JSX.Element {
+  const theme = useThemeStore((state) => state.theme);
+  const isVintage = theme === "vintage";
+
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const knobRef = useRef<HTMLDivElement>(null);
@@ -264,6 +274,29 @@ export function Knob({
   const rotation = normalizedValue * 300 - 150;
   const isActive = isDragging || isHovered;
 
+  // Vintage theme knob styles
+  const vintageKnobStyle = {
+    width: KNOB_SIZE,
+    height: KNOB_SIZE,
+    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+    background: `conic-gradient(
+      from 0deg,
+      #252520 0deg, #353530 20deg,
+      #252520 40deg, #353530 60deg,
+      #252520 80deg, #353530 100deg,
+      #252520 120deg, #353530 140deg,
+      #252520 160deg, #353530 180deg,
+      #252520 200deg, #353530 220deg,
+      #252520 240deg, #353530 260deg,
+      #252520 280deg, #353530 300deg,
+      #252520 320deg, #353530 340deg,
+      #252520 360deg
+    )`,
+    boxShadow: isDragging
+      ? "0 4px 12px rgba(0,0,0,0.5), 0 0 12px rgba(245, 165, 36, 0.3), inset 0 1px 2px rgba(255,255,255,0.05), inset 0 -2px 4px rgba(0,0,0,0.2)"
+      : "0 4px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.05), inset 0 -2px 4px rgba(0,0,0,0.2)",
+  };
+
   return (
     <div className="flex flex-col items-center gap-2">
       {/* Arc indicator container */}
@@ -275,6 +308,7 @@ export function Knob({
           normalizedValue={normalizedValue}
           size={KNOB_SIZE + 24}
           isActive={isActive}
+          isVintage={isVintage}
         />
 
         {/* Knob */}
@@ -282,18 +316,21 @@ export function Knob({
           ref={knobRef}
           className={`
             absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-            rounded-full radial-gradient-knob
-            border border-white/10
+            rounded-full
             cursor-pointer select-none
-            ${isDragging ? "knob-glow-active" : "knob-glow"}
             focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary
             transition-transform duration-75 ease-out
+            ${!isVintage ? `radial-gradient-knob border border-white/10 ${isDragging ? "knob-glow-active" : "knob-glow"}` : ""}
           `}
-          style={{
-            width: KNOB_SIZE,
-            height: KNOB_SIZE,
-            transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-          }}
+          style={
+            isVintage
+              ? vintageKnobStyle
+              : {
+                  width: KNOB_SIZE,
+                  height: KNOB_SIZE,
+                  transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                }
+          }
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           onDoubleClick={handleDoubleClick}
@@ -307,21 +344,54 @@ export function Knob({
           aria-valuemax={max}
           aria-valuenow={value}
         >
-          {/* Inner ring for depth */}
-          <div
-            className="absolute inset-2 rounded-full pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle at 40% 40%, rgba(255,255,255,0.05), transparent 60%)",
-            }}
-          />
+          {isVintage ? (
+            <>
+              {/* Center cap with amber ring */}
+              <div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
+                style={{
+                  width: 18,
+                  height: 18,
+                  background:
+                    "radial-gradient(circle, #151510 0%, #0a0a08 100%)",
+                  border: "1px solid #F5A524",
+                  boxShadow: "0 0 8px rgba(245, 165, 36, 0.2)",
+                }}
+              />
+              {/* Indicator line */}
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  top: 5,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 3,
+                  height: 10,
+                  background: "#F5A524",
+                  borderRadius: 2,
+                  boxShadow: "0 0 6px rgba(245, 165, 36, 0.8)",
+                }}
+              />
+            </>
+          ) : (
+            /* Modern theme inner ring */
+            <div
+              className="absolute inset-2 rounded-full pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(circle at 40% 40%, rgba(255,255,255,0.05), transparent 60%)",
+              }}
+            />
+          )}
         </div>
       </div>
 
       {/* Labels */}
       <div className="text-center">
         <div className="text-xs text-text-secondary">{label}</div>
-        <div className="text-sm font-mono text-accent-primary min-w-[70px]">
+        <div
+          className={`text-sm font-mono min-w-[70px] ${isVintage ? "value-pill" : "text-accent-primary"}`}
+        >
           {formatDisplayValue(value)}
         </div>
       </div>

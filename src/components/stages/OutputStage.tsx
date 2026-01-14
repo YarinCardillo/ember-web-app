@@ -1,11 +1,18 @@
 /**
  * OutputStage - Premium output device selector, master gain slider, and LED meter
+ * Supports both modern and vintage themes with LCD display
  */
 
+import { useState, useEffect, useRef } from "react";
 import { MasterSlider } from "../ui/MasterSlider";
 import { StereoMeter } from "../ui/StereoMeter";
 import { OutputMeter } from "../ui/OutputMeter";
+import { Screws } from "../ui/Screw";
+import { JewelLed } from "../ui/JewelLed";
+import { Ventilation } from "../ui/Ventilation";
+import { SectionDivider } from "../ui/SectionDivider";
 import { useAudioStore } from "../../store/useAudioStore";
+import { useThemeStore } from "../../store/useThemeStore";
 import type { AudioDeviceInfo } from "../../types/audio.types";
 
 interface OutputStageProps {
@@ -29,6 +36,52 @@ export function OutputStage({
   const outputGain = useAudioStore((state) => state.outputGain);
   const outputDeviceId = useAudioStore((state) => state.outputDeviceId);
   const setParameter = useAudioStore((state) => state.setParameter);
+  const isRunning = useAudioStore((state) => state.isRunning);
+
+  const theme = useThemeStore((state) => state.theme);
+  const isVintage = theme === "vintage";
+
+  // State for LCD display level
+  const [outputLevel, setOutputLevel] = useState(-Infinity);
+  const [hasSignal, setHasSignal] = useState(false);
+  const [isClipping, setIsClipping] = useState(false);
+  const animationRef = useRef<number>();
+
+  // Update output level from analyser
+  useEffect(() => {
+    if (!postGainAnalyser || !isVintage) {
+      return;
+    }
+
+    const dataArray = new Float32Array(postGainAnalyser.fftSize);
+
+    const updateLevel = () => {
+      postGainAnalyser.getFloatTimeDomainData(dataArray);
+
+      let peak = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const abs = Math.abs(dataArray[i]);
+        if (abs > peak) {
+          peak = abs;
+        }
+      }
+
+      const dB = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
+      setOutputLevel(dB);
+      setHasSignal(dB > -60);
+      setIsClipping(dB > -0.1);
+
+      animationRef.current = requestAnimationFrame(updateLevel);
+    };
+
+    updateLevel();
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [postGainAnalyser, isVintage]);
 
   const formatGainValue = (value: number): string => {
     if (value <= -90) {
@@ -37,11 +90,34 @@ export function OutputStage({
     return `${value.toFixed(1)} dB`;
   };
 
+  const formatLcdValue = (dB: number): string => {
+    if (dB <= -60) {
+      return "-Inf";
+    }
+    return dB.toFixed(1);
+  };
+
   return (
-    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden">
-      <h3 className="text-lg font-semibold" style={{ color: "#e8dccc" }}>
-        OUTPUT
-      </h3>
+    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden relative">
+      <Screws />
+
+      {/* Vintage: Embossed logo and ventilation */}
+      {isVintage && (
+        <div className="text-center pt-2">
+          <div className="logo-embossed">EMBER</div>
+          <div className="tagline">ANALOG WARMTH SIMULATOR</div>
+          <Ventilation slots={8} className="mt-4" />
+        </div>
+      )}
+
+      {/* Modern: Simple title */}
+      {!isVintage && (
+        <h3 className="text-lg font-semibold" style={{ color: "#e8dccc" }}>
+          OUTPUT
+        </h3>
+      )}
+
+      {isVintage && <SectionDivider text="Master Section" />}
 
       {/* Output Device Selector */}
       <div className="flex flex-col gap-2 min-h-[60px]">
@@ -70,7 +146,9 @@ export function OutputStage({
               transition-colors duration-150 hover:bg-bg-hover
             "
             style={{
-              border: "1px solid rgba(255, 255, 255, 0.1)",
+              border: isVintage
+                ? "1px solid #2a2520"
+                : "1px solid rgba(255, 255, 255, 0.1)",
             }}
           >
             {outputDevices.map((device) => (
@@ -85,6 +163,26 @@ export function OutputStage({
           </p>
         )}
       </div>
+
+      {/* Vintage: LCD Display */}
+      {isVintage && (
+        <div className="lcd-display my-4">
+          <div className="lcd-label text-center">OUTPUT LEVEL</div>
+          <div className="lcd-value text-center mt-2">
+            {formatLcdValue(outputLevel)}
+            <span className="lcd-unit">dBFS</span>
+          </div>
+        </div>
+      )}
+
+      {/* Vintage: Jewel LEDs */}
+      {isVintage && (
+        <div className="flex justify-center gap-8 my-4">
+          <JewelLed color={hasSignal ? "green" : "off"} label="Signal" />
+          <JewelLed color={isRunning ? "amber" : "off"} label="Active" />
+          <JewelLed color={isClipping ? "red" : "off"} label="Clip" />
+        </div>
+      )}
 
       <div className="flex flex-col items-center justify-center gap-2 flex-1 my-auto pb-4 px-4 min-w-0">
         {/* Pre-clipper gain control, post-clipper metering */}

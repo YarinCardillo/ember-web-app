@@ -1,8 +1,10 @@
 /**
  * Toggle - Premium bypass switch with LED indicator and spring animation
+ * Supports both modern and vintage themes
  */
 
 import { motion } from "framer-motion";
+import { useThemeStore } from "../../store/useThemeStore";
 
 interface ToggleProps {
   label?: string;
@@ -11,6 +13,28 @@ interface ToggleProps {
 }
 
 export function Toggle({ label, checked, onChange }: ToggleProps): JSX.Element {
+  const theme = useThemeStore((state) => state.theme);
+  const isVintage = theme === "vintage";
+
+  if (isVintage) {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        {label && <div className="text-xs text-text-secondary">{label}</div>}
+        <button
+          type="button"
+          onClick={() => onChange(!checked)}
+          className={`toggle-3d ${checked ? "active" : ""}`}
+          role="switch"
+          aria-checked={checked}
+          aria-label={label || "Toggle"}
+        >
+          {/* CSS handles the thumb via ::before pseudo-element */}
+        </button>
+      </div>
+    );
+  }
+
+  // Modern theme
   return (
     <div className="flex flex-col items-center gap-2">
       {label && <div className="text-xs text-text-secondary">{label}</div>}
