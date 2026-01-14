@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { MasterSlider } from "../ui/MasterSlider";
 import { StereoMeter } from "../ui/StereoMeter";
-import { VintageStereoMeter } from "../ui/VintageStereoMeter";
+import { StereoMeterMinimal } from "../ui/StereoMeterMinimal";
 import { Screws } from "../ui/Screw";
 import { JewelLed } from "../ui/JewelLed";
 import { PilotLight } from "../ui/PilotLight";
@@ -197,7 +197,11 @@ export function OutputStage({
           />
         </div>
         {isVintage ? (
-          <VintageStereoMeter analyser={preClipperAnalyser} width={420} />
+          <StereoMeterMinimal
+            analyser={preClipperAnalyser}
+            label="Clipper"
+            mode="peak"
+          />
         ) : (
           <StereoMeter
             analyser={preClipperAnalyser}
