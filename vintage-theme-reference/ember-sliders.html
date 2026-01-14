@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ember Amp - Premium Sliders</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      padding: 40px;
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      color: #e8e0d0;
+    }
+    
+    h2 {
+      color: #F5A524;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      margin: 50px 0 24px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    
+    h2:first-of-type {
+      margin-top: 0;
+    }
+    
+    .row {
+      display: flex;
+      justify-content: center;
+      gap: 50px;
+      flex-wrap: wrap;
+    }
+    
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .slider-label {
+      font-size: 9px;
+      color: #4a4540;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    
+    .slider-value {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 11px;
+      color: #F5A524;
+      background: rgba(0,0,0,0.4);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(245, 165, 36, 0.2);
+    }
+
+    /* ========== STYLE 1: INSET VERTICAL ========== */
+    .slider-inset-v {
+      width: 10px;
+      height: 120px;
+      background: #0a0908;
+      border: 1px solid #1a1815;
+      border-radius: 5px;
+      position: relative;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.7);
+    }
+    
+    .slider-inset-v .track-fill {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 60%;
+      background: linear-gradient(to top, #F5A524, #b45309);
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(245, 165, 36, 0.4);
+    }
+    
+    .slider-inset-v .thumb {
+      position: absolute;
+      bottom: 55%;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      width: 22px;
+      height: 10px;
+      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+      border-radius: 3px;
+      border: 1px solid #555;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      cursor: pointer;
+    }
+    
+    .slider-inset-v .thumb::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px;
+      height: 2px;
+      background: #666;
+      border-radius: 1px;
+    }
+
+    /* ========== STYLE 2: BRUSHED METAL VERTICAL ========== */
+    .slider-brushed-v {
+      width: 12px;
+      height: 120px;
+      background: linear-gradient(90deg, #151510, #1a1815, #151510);
+      border: 1px solid #2a2520;
+      border-radius: 6px;
+      position: relative;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+    }
+    
+    .slider-brushed-v .track-fill {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 65%;
+      background: linear-gradient(to top, #22c55e 0%, #4ade80 60%, #facc15 85%, #ef4444 100%);
+      border-radius: 2px;
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+    }
+    
+    .slider-brushed-v .thumb {
+      position: absolute;
+      bottom: 60%;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      width: 26px;
+      height: 14px;
+      background: conic-gradient(
+        from 90deg,
+        #353530 0deg, #252520 30deg,
+        #353530 60deg, #252520 90deg,
+        #353530 120deg, #252520 150deg,
+        #353530 180deg, #252520 210deg,
+        #353530 240deg, #252520 270deg,
+        #353530 300deg, #252520 330deg,
+        #353530 360deg
+      );
+      border-radius: 4px;
+      border: 1px solid #3a3530;
+      box-shadow: 
+        0 3px 6px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      cursor: pointer;
+    }
+    
+    .slider-brushed-v .thumb::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 2px;
+      background: #F5A524;
+      border-radius: 1px;
+      box-shadow: 0 0 4px rgba(245, 165, 36, 0.6);
+    }
+
+    /* ========== STYLE 3: FADER CHANNEL STRIP ========== */
+    .slider-fader-v {
+      width: 28px;
+      height: 140px;
+      background: linear-gradient(180deg, #12100e 0%, #1a1815 50%, #12100e 100%);
+      border: 1px solid #2a2520;
+      border-radius: 4px;
+      position: relative;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+    
+    .slider-fader-v .track {
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      background: #0a0908;
+      border-radius: 2px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+    }
+    
+    .slider-fader-v .track-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70%;
+      background: linear-gradient(to top, #F5A524, #fbbf24);
+      border-radius: 2px;
+      box-shadow: 0 0 6px rgba(245, 165, 36, 0.5);
+    }
+    
+    .slider-fader-v .thumb {
+      position: absolute;
+      bottom: 65%;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      width: 24px;
+      height: 36px;
+      background: linear-gradient(180deg, #3a3a3a 0%, #252525 50%, #1a1a1a 100%);
+      border-radius: 3px;
+      border: 1px solid #4a4a4a;
+      box-shadow: 
+        0 4px 8px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+      cursor: pointer;
+    }
+    
+    .slider-fader-v .thumb::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      right: 4px;
+      height: 1px;
+      background: #F5A524;
+      box-shadow: 0 0 4px rgba(245, 165, 36, 0.8);
+    }
+    
+    .slider-fader-v .thumb::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      left: 4px;
+      right: 4px;
+      bottom: 8px;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        #2a2a2a 3px,
+        #2a2a2a 4px
+      );
+      border-radius: 2px;
+    }
+    
+    .slider-fader-v .scale {
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      right: -20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    .slider-fader-v .scale span {
+      font-size: 7px;
+      color: #3a3530;
+    }
+    
+    .slider-fader-v .scale span.zero {
+      color: #F5A524;
+    }
+
+    /* ========== STYLE 4: HORIZONTAL INSET ========== */
+    .slider-inset-h {
+      width: 200px;
+      height: 10px;
+      background: #0a0908;
+      border: 1px solid #1a1815;
+      border-radius: 5px;
+      position: relative;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.7);
+    }
+    
+    .slider-inset-h .track-fill {
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      transform: translateY(-50%);
+      width: 55%;
+      height: 4px;
+      background: linear-gradient(to right, #F5A524, #fbbf24);
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(245, 165, 36, 0.4);
+    }
+    
+    .slider-inset-h .thumb {
+      position: absolute;
+      top: 50%;
+      left: 55%;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 20px;
+      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+      border-radius: 3px;
+      border: 1px solid #555;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      cursor: pointer;
+    }
+    
+    .slider-inset-h .thumb::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 2px;
+      height: 10px;
+      background: #666;
+      border-radius: 1px;
+    }
+
+    /* ========== STYLE 5: HORIZONTAL BRUSHED ========== */
+    .slider-brushed-h {
+      width: 200px;
+      height: 12px;
+      background: linear-gradient(180deg, #151510, #1a1815, #151510);
+      border: 1px solid #2a2520;
+      border-radius: 6px;
+      position: relative;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+    }
+    
+    .slider-brushed-h .track-fill {
+      position: absolute;
+      top: 50%;
+      left: 6px;
+      transform: translateY(-50%);
+      width: 60%;
+      height: 4px;
+      background: linear-gradient(to right, #22c55e, #4ade80);
+      border-radius: 2px;
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+    }
+    
+    .slider-brushed-h .thumb {
+      position: absolute;
+      top: 50%;
+      left: 60%;
+      transform: translate(-50%, -50%);
+      width: 18px;
+      height: 24px;
+      background: conic-gradient(
+        from 0deg,
+        #353530 0deg, #252520 30deg,
+        #353530 60deg, #252520 90deg,
+        #353530 120deg, #252520 150deg,
+        #353530 180deg, #252520 210deg,
+        #353530 240deg, #252520 270deg,
+        #353530 300deg, #252520 330deg,
+        #353530 360deg
+      );
+      border-radius: 4px;
+      border: 1px solid #3a3530;
+      box-shadow: 
+        0 3px 6px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      cursor: pointer;
+    }
+    
+    .slider-brushed-h .thumb::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 2px;
+      height: 12px;
+      background: #F5A524;
+      border-radius: 1px;
+      box-shadow: 0 0 4px rgba(245, 165, 36, 0.6);
+    }
+
+    /* ========== STYLE 6: HORIZONTAL FLAT/MODERN ========== */
+    .slider-flat-h {
+      width: 200px;
+      height: 6px;
+      background: #151510;
+      border-radius: 3px;
+      position: relative;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+    }
+    
+    .slider-flat-h .track-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(to right, #F5A524, #fbbf24);
+      border-radius: 3px;
+      box-shadow: 0 0 8px rgba(245, 165, 36, 0.3);
+    }
+    
+    .slider-flat-h .thumb {
+      position: absolute;
+      top: 50%;
+      left: 45%;
+      transform: translate(-50%, -50%);
+      width: 16px;
+      height: 16px;
+      background: radial-gradient(circle at 30% 30%, #F5A524, #92400e);
+      border-radius: 50%;
+      border: 2px solid #2a2520;
+      box-shadow: 
+        0 0 8px rgba(245, 165, 36, 0.5),
+        0 2px 4px rgba(0,0,0,0.4);
+      cursor: pointer;
+    }
+    
+    .slider-flat-h .thumb::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 4px;
+      height: 4px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 50%;
+    }
+
+    /* ========== STYLE 7: MINIMAL VERTICAL (per intensity controls) ========== */
+    .slider-mini-v {
+      width: 6px;
+      height: 50px;
+      background: #0a0908;
+      border: 1px solid #1a1815;
+      border-radius: 3px;
+      position: relative;
+      box-shadow: inset 0 1px 4px rgba(0,0,0,0.7);
+    }
+    
+    .slider-mini-v .track-fill {
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 60%;
+      background: #F5A524;
+      border-radius: 1px;
+      box-shadow: 0 0 6px rgba(245, 165, 36, 0.5);
+    }
+    
+    .slider-mini-v .thumb {
+      position: absolute;
+      bottom: 55%;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      width: 12px;
+      height: 8px;
+      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+      border-radius: 2px;
+      border: 1px solid #555;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      cursor: pointer;
+    }
+
+    /* ========== DEMO CARD ========== */
+    .demo-card {
+      background: linear-gradient(180deg, #1a1815 0%, #12100e 100%);
+      border: 1px solid #2a2520;
+      border-radius: 12px;
+      padding: 30px;
+      margin: 30px auto;
+      max-width: 500px;
+      position: relative;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    
+    .screw {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: radial-gradient(circle at 30% 30%, #2a2520, #1a1815);
+      border-radius: 50%;
+      border: 1px solid #3a3530;
+    }
+    .screw::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(35deg);
+      width: 4px;
+      height: 1px;
+      background: #0a0a0a;
+    }
+    .screw.tl { top: 10px; left: 10px; }
+    .screw.tr { top: 10px; right: 10px; }
+    .screw.bl { bottom: 10px; left: 10px; }
+    .screw.br { bottom: 10px; right: 10px; }
+    
+    .demo-title {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 14px;
+      color: #c9a66b;
+      letter-spacing: 3px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Slider Verticali</h2>
+  <div class="row">
+    <div class="slider-group">
+      <span class="slider-label">Inset</span>
+      <div class="slider-inset-v">
+        <div class="track-fill"></div>
+        <div class="thumb"></div>
+      </div>
+      <span class="slider-value">-6 dB</span>
+    </div>
+    
+    <div class="slider-group">
+      <span class="slider-label">Brushed</span>
+      <div class="slider-brushed-v">
+        <div class="track-fill"></div>
+        <div class="thumb"></div>
+      </div>
+      <span class="slider-value">65%</span>
+    </div>
+    
+    <div class="slider-group">
+      <span class="slider-label">Fader</span>
+      <div class="slider-fader-v">
+        <div class="track">
+          <div class="track-fill"></div>
+        </div>
+        <div class="thumb"></div>
+        <div class="scale">
+          <span>+12</span>
+          <span>+6</span>
+          <span class="zero">0</span>
+          <span>-6</span>
+          <span>-12</span>
+          <span>-∞</span>
+        </div>
+      </div>
+      <span class="slider-value">+2.5 dB</span>
+    </div>
+    
+    <div class="slider-group">
+      <span class="slider-label">Mini</span>
+      <div class="slider-mini-v">
+        <div class="track-fill"></div>
+        <div class="thumb"></div>
+      </div>
+      <span class="slider-value">30%</span>
+    </div>
+  </div>
+
+  <h2>Slider Orizzontali</h2>
+  <div class="row" style="flex-direction: column; align-items: center; gap: 30px;">
+    <div class="slider-group" style="width: 100%; max-width: 280px;">
+      <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 8px;">
+        <span class="slider-label">Inset</span>
+        <span class="slider-value">-6 dB</span>
+      </div>
+      <div class="slider-inset-h">
+        <div class="track-fill"></div>
+        <div class="thumb"></div>
+      </div>
+    </div>
+    
+    <div class="slider-group" style="width: 100%; max-width: 280px;">
+      <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 8px;">
+        <span class="slider-label">Brushed</span>
+        <span class="slider-value">60%</span>
+      </div>
+      <div class="slider-brushed-h">
+        <div class="track-fill"></div>
+        <div class="thumb"></div>
+      </div>
+    </div>
+    
+    <div class="slider-group" style="width: 100%; max-width: 280px;">
+      <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 8px;">
+        <span class="slider-label">Flat/Modern</span>
+        <span class="slider-value">45%</span>
+      </div>
+      <div class="slider-flat-h">
+        <div class="track-fill"></div>
+        <div class="thumb"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>⭐ Demo: EQ con Fader</h2>
+  <div class="demo-card">
+    <div class="screw tl"></div>
+    <div class="screw tr"></div>
+    <div class="screw bl"></div>
+    <div class="screw br"></div>
+    
+    <div class="demo-title">TONE STACK</div>
+    
+    <div class="row" style="gap: 40px;">
+      <div class="slider-group">
+        <span class="slider-label">Bass</span>
+        <div class="slider-fader-v" style="height: 120px;">
+          <div class="track">
+            <div class="track-fill" style="height: 75%;"></div>
+          </div>
+          <div class="thumb" style="bottom: 70%;"></div>
+        </div>
+        <span class="slider-value">+6 dB</span>
+      </div>
+      
+      <div class="slider-group">
+        <span class="slider-label">Mid</span>
+        <div class="slider-fader-v" style="height: 120px;">
+          <div class="track">
+            <div class="track-fill" style="height: 45%;"></div>
+          </div>
+          <div class="thumb" style="bottom: 40%;"></div>
+        </div>
+        <span class="slider-value">-2 dB</span>
+      </div>
+      
+      <div class="slider-group">
+        <span class="slider-label">Treble</span>
+        <div class="slider-fader-v" style="height: 120px;">
+          <div class="track">
+            <div class="track-fill" style="height: 55%;"></div>
+          </div>
+          <div class="thumb" style="bottom: 50%;"></div>
+        </div>
+        <span class="slider-value">+1 dB</span>
+      </div>
+      
+      <div class="slider-group">
+        <span class="slider-label">Presence</span>
+        <div class="slider-fader-v" style="height: 120px;">
+          <div class="track">
+            <div class="track-fill" style="height: 65%;"></div>
+          </div>
+          <div class="thumb" style="bottom: 60%;"></div>
+        </div>
+        <span class="slider-value">+3 dB</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>⭐ Demo: Gain Slider Orizzontale</h2>
+  <div class="demo-card">
+    <div class="screw tl"></div>
+    <div class="screw tr"></div>
+    <div class="screw bl"></div>
+    <div class="screw br"></div>
+    
+    <div class="demo-title">OUTPUT</div>
+    
+    <div style="padding: 10px 20px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+        <span class="slider-label">Master Gain</span>
+        <span class="slider-value">0.0 dB</span>
+      </div>
+      <div class="slider-brushed-h" style="width: 100%;">
+        <div class="track-fill" style="width: 50%;"></div>
+        <div class="thumb" style="left: 50%;"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-top: 8px; padding: 0 4px;">
+        <span style="font-size: 8px; color: #3a3530;">-12</span>
+        <span style="font-size: 8px; color: #3a3530;">-6</span>
+        <span style="font-size: 8px; color: #F5A524;">0</span>
+        <span style="font-size: 8px; color: #3a3530;">+6</span>
+        <span style="font-size: 8px; color: #991b1b;">+12</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

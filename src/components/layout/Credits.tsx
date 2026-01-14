@@ -2,12 +2,23 @@
  * Credits - Premium project information, credits, and links
  */
 
+import { Ventilation } from "../ui/Ventilation";
+import { useThemeStore } from "../../store/useThemeStore";
+
 export function Credits(): JSX.Element {
+  const theme = useThemeStore((state) => state.theme);
+  const isVintage = theme === "vintage";
+
   return (
     <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full">
-      <h3 className="text-lg font-semibold" style={{ color: "#e8dccc" }}>
-        ABOUT
-      </h3>
+      {/* Vintage: Embossed logo and ventilation */}
+      {isVintage && (
+        <div className="text-center py-4">
+          <div className="logo-embossed">EMBER</div>
+          <div className="tagline">ANALOG WARMTH SIMULATION</div>
+          <Ventilation slots={12} className="mt-6" />
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 text-sm text-text-primary">
         <div>

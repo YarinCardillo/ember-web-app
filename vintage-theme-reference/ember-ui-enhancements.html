@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ember Amp - UI Enhancement Suggestions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      padding: 40px;
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      color: #e8e0d0;
+    }
+    
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      max-width: 1200px;
+      margin: 0 auto 60px;
+    }
+    
+    .panel {
+      background: #111;
+      border-radius: 16px;
+      padding: 24px;
+    }
+    
+    .panel-title {
+      font-size: 11px;
+      color: #666;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    
+    .panel-title.after {
+      color: #F5A524;
+    }
+    
+    h2 {
+      color: #F5A524;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      margin: 40px 0 20px;
+      text-align: center;
+    }
+
+    /* ========== CURRENT CARD STYLE ========== */
+    .card-current {
+      background: #151515;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    
+    .card-header-current {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .section-title-current {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: #e8e0d0;
+    }
+
+    /* ========== ENHANCED CARD STYLE ========== */
+    .card-enhanced {
+      background: linear-gradient(180deg, #1a1815 0%, #12100e 100%);
+      border: 1px solid #2a2520;
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      box-shadow: 
+        0 8px 32px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    
+    /* Screws */
+    .card-enhanced .screw {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: radial-gradient(circle at 30% 30%, #2a2520, #1a1815);
+      border-radius: 50%;
+      border: 1px solid #3a3530;
+    }
+    .card-enhanced .screw::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(45deg);
+      width: 4px;
+      height: 1px;
+      background: #0a0a0a;
+    }
+    .card-enhanced .screw.tl { top: 8px; left: 8px; }
+    .card-enhanced .screw.tr { top: 8px; right: 8px; }
+    .card-enhanced .screw.bl { bottom: 8px; left: 8px; }
+    .card-enhanced .screw.br { bottom: 8px; right: 8px; }
+    
+    .card-header-enhanced {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 0 16px;
+    }
+    
+    .section-title-enhanced {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 3px;
+      color: #c9a66b;
+    }
+    
+    .pilot-light {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 6px #22c55e, 0 0 12px rgba(34, 197, 94, 0.4);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* ========== KNOBS COMPARISON ========== */
+    .knobs-row {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+    }
+    
+    .knob-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    /* Current knob */
+    .knob-current {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+      border: 2px solid #3a3a3a;
+      position: relative;
+    }
+    
+    .knob-current .indicator {
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-30deg);
+      width: 2px;
+      height: 12px;
+      background: #F5A524;
+      border-radius: 1px;
+      transform-origin: bottom center;
+    }
+    
+    /* Enhanced knob */
+    .knob-enhanced {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 0deg,
+        #252520 0deg,
+        #353530 20deg,
+        #252520 40deg,
+        #353530 60deg,
+        #252520 80deg,
+        #353530 100deg,
+        #252520 120deg,
+        #353530 140deg,
+        #252520 160deg,
+        #353530 180deg,
+        #252520 200deg,
+        #353530 220deg,
+        #252520 240deg,
+        #353530 260deg,
+        #252520 280deg,
+        #353530 300deg,
+        #252520 320deg,
+        #353530 340deg,
+        #252520 360deg
+      );
+      position: relative;
+      box-shadow: 
+        0 4px 8px rgba(0,0,0,0.4),
+        inset 0 1px 2px rgba(255,255,255,0.05),
+        inset 0 -2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .knob-enhanced::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 18px;
+      height: 18px;
+      background: radial-gradient(circle, #151510 0%, #0a0a08 100%);
+      border-radius: 50%;
+      border: 1px solid #F5A524;
+      box-shadow: 0 0 8px rgba(245, 165, 36, 0.2);
+    }
+    
+    .knob-enhanced .indicator {
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 3px;
+      height: 10px;
+      background: #F5A524;
+      border-radius: 2px;
+      box-shadow: 0 0 6px rgba(245, 165, 36, 0.8);
+    }
+    
+    .knob-label {
+      font-size: 10px;
+      color: #666;
+      letter-spacing: 1px;
+    }
+    
+    .knob-value-current {
+      font-size: 11px;
+      color: #F5A524;
+    }
+    
+    .knob-value-enhanced {
+      font-size: 11px;
+      color: #F5A524;
+      background: rgba(0,0,0,0.4);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(245, 165, 36, 0.2);
+    }
+
+    /* ========== TOGGLE COMPARISON ========== */
+    .toggle-current {
+      width: 44px;
+      height: 24px;
+      background: #F5A524;
+      border-radius: 12px;
+      position: relative;
+    }
+    
+    .toggle-current::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+    }
+    
+    .toggle-enhanced {
+      width: 44px;
+      height: 24px;
+      background: linear-gradient(180deg, #1a1510 0%, #12100a 100%);
+      border: 1px solid rgba(245, 165, 36, 0.3);
+      border-radius: 12px;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    }
+    
+    .toggle-enhanced::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(180deg, #F5A524 0%, #b45309 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(245, 165, 36, 0.5), 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .toggle-enhanced::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(180deg, #3a3530 0%, #2a2520 100%);
+      border-radius: 50%;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* ========== HEADER COMPARISON ========== */
+    .header-demo {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 16px 24px;
+      border-radius: 8px;
+    }
+    
+    .header-current {
+      background: #0a0a0a;
+    }
+    
+    .header-enhanced {
+      background: linear-gradient(180deg, #12100e 0%, #0a0908 100%);
+      border: 1px solid #2a2520;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .logo-current {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: #e8e0d0;
+    }
+    
+    .logo-enhanced {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 26px;
+      font-weight: 400;
+      letter-spacing: 6px;
+      color: #c9a66b;
+      text-shadow: 0 0 20px rgba(245, 165, 36, 0.2);
+    }
+    
+    .badge-current {
+      background: #F5A524;
+      color: #000;
+      font-size: 9px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    
+    .badge-enhanced {
+      background: transparent;
+      color: #F5A524;
+      font-size: 8px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 1px solid #F5A524;
+      letter-spacing: 2px;
+      box-shadow: 0 0 8px rgba(245, 165, 36, 0.2);
+    }
+
+    /* ========== SECTION DIVIDER ========== */
+    .divider-demo {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 24px 0;
+    }
+    
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #2a2520, transparent);
+    }
+    
+    .divider-text {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 10px;
+      color: #4a4540;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* ========== JEWEL LED ========== */
+    .led-row {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    
+    .led-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .led-current {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+    
+    .led-jewel {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid #2a2520;
+      background: radial-gradient(circle at 30% 30%, #4ade80, #166534);
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+      position: relative;
+    }
+    
+    .led-jewel::before {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 3px;
+      height: 3px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 50%;
+    }
+    
+    .led-label {
+      font-size: 8px;
+      color: #555;
+      letter-spacing: 1px;
+    }
+
+    /* ========== POWER BUTTON ========== */
+    .power-btn-current {
+      background: transparent;
+      border: 1px solid #F5A524;
+      color: #F5A524;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .power-btn-enhanced {
+      background: linear-gradient(180deg, #1a1510 0%, #12100a 100%);
+      border: 1px solid #F5A524;
+      color: #F5A524;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 12px;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 
+        0 0 15px rgba(245, 165, 36, 0.15),
+        inset 0 1px 0 rgba(255,255,255,0.03);
+      position: relative;
+    }
+    
+    .power-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #F5A524;
+      box-shadow: 0 0 8px #F5A524;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    /* ========== OUTPUT LED METER ========== */
+    .meter-section {
+      margin-top: 20px;
+    }
+    
+    .led-meter {
+      display: flex;
+      gap: 2px;
+      padding: 8px;
+      background: #0a0a08;
+      border-radius: 6px;
+    }
+    
+    .led-meter-enhanced {
+      background: linear-gradient(180deg, #0a0908 0%, #12100e 100%);
+      border: 1px solid #1a1815;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+      padding: 10px 12px;
+    }
+    
+    .led-segment {
+      width: 14px;
+      height: 20px;
+      border-radius: 2px;
+      background: #1a1a1a;
+    }
+    
+    .led-segment.green.active {
+      background: #4ade80;
+      box-shadow: 0 0 6px #4ade80;
+    }
+    
+    .led-segment.yellow.active {
+      background: #facc15;
+      box-shadow: 0 0 6px #facc15;
+    }
+    
+    .led-segment.red.active {
+      background: #ef4444;
+      box-shadow: 0 0 6px #ef4444;
+    }
+    
+    .led-segment-enhanced {
+      width: 12px;
+      height: 24px;
+      border-radius: 2px;
+      background: #151510;
+      position: relative;
+    }
+    
+    .led-segment-enhanced.green.active {
+      background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+      box-shadow: 0 0 8px #4ade80, inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    
+    .led-segment-enhanced.yellow.active {
+      background: linear-gradient(180deg, #facc15 0%, #eab308 100%);
+      box-shadow: 0 0 8px #facc15, inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    
+    .led-segment-enhanced.red.active {
+      background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+      box-shadow: 0 0 8px #ef4444, inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+
+    /* ========== FULL SECTION MOCKUP ========== */
+    .full-mockup {
+      max-width: 500px;
+      margin: 40px auto;
+    }
+    
+    .mockup-card {
+      background: linear-gradient(180deg, #1a1815 0%, #12100e 100%);
+      border: 1px solid #2a2520;
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+      box-shadow: 
+        0 10px 40px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    
+    .mockup-card .screw {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: radial-gradient(circle at 30% 30%, #2a2520, #1a1815);
+      border-radius: 50%;
+      border: 1px solid #3a3530;
+    }
+    .mockup-card .screw::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(30deg);
+      width: 4px;
+      height: 1px;
+      background: #0a0a0a;
+    }
+    .mockup-card .screw.tl { top: 10px; left: 10px; }
+    .mockup-card .screw.tr { top: 10px; right: 10px; }
+    .mockup-card .screw.bl { bottom: 10px; left: 10px; }
+    .mockup-card .screw.br { bottom: 10px; right: 10px; }
+    
+    .mockup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 0 12px;
+    }
+    
+    .mockup-title {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 16px;
+      letter-spacing: 4px;
+      color: #c9a66b;
+    }
+    
+    .mockup-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🔧 CONFRONTO ELEMENTI UI</h2>
+
+  <!-- CARD STYLE -->
+  <div class="comparison">
+    <div class="panel">
+      <div class="panel-title">Prima (Attuale)</div>
+      <div class="card-current">
+        <div class="card-header-current">
+          <span class="section-title-current">EQUALIZER</span>
+          <div class="toggle-current"></div>
+        </div>
+        <div class="knobs-row">
+          <div class="knob-container">
+            <div class="knob-current"><div class="indicator"></div></div>
+            <span class="knob-label">Bass</span>
+            <span class="knob-value-current">5.0 dB</span>
+          </div>
+          <div class="knob-container">
+            <div class="knob-current"><div class="indicator" style="transform: translateX(-50%) rotate(20deg);"></div></div>
+            <span class="knob-label">Mid</span>
+            <span class="knob-value-current">-2.0 dB</span>
+          </div>
+          <div class="knob-container">
+            <div class="knob-current"><div class="indicator" style="transform: translateX(-50%) rotate(-10deg);"></div></div>
+            <span class="knob-label">Treble</span>
+            <span class="knob-value-current">-1.0 dB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-title after">Dopo (Premium)</div>
+      <div class="card-enhanced">
+        <div class="screw tl"></div>
+        <div class="screw tr"></div>
+        <div class="screw bl"></div>
+        <div class="screw br"></div>
+        <div class="card-header-enhanced">
+          <span class="section-title-enhanced">EQUALIZER</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="pilot-light"></div>
+            <div class="toggle-enhanced"></div>
+          </div>
+        </div>
+        <div class="knobs-row">
+          <div class="knob-container">
+            <div class="knob-enhanced"><div class="indicator"></div></div>
+            <span class="knob-label">Bass</span>
+            <span class="knob-value-enhanced">5.0 dB</span>
+          </div>
+          <div class="knob-container">
+            <div class="knob-enhanced" style="transform: rotate(40deg);"><div class="indicator"></div></div>
+            <span class="knob-label">Mid</span>
+            <span class="knob-value-enhanced">-2.0 dB</span>
+          </div>
+          <div class="knob-container">
+            <div class="knob-enhanced" style="transform: rotate(-20deg);"><div class="indicator"></div></div>
+            <span class="knob-label">Treble</span>
+            <span class="knob-value-enhanced">-1.0 dB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <h2>🎛️ HEADER & LOGO</h2>
+  <div class="comparison">
+    <div class="panel">
+      <div class="panel-title">Prima</div>
+      <div class="header-demo header-current">
+        <span class="logo-current">EMBER AMP</span>
+        <span class="badge-current">BETA</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title after">Dopo</div>
+      <div class="header-demo header-enhanced">
+        <span class="logo-enhanced">EMBER AMP</span>
+        <span class="badge-enhanced">BETA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- POWER BUTTON -->
+  <h2>⚡ POWER BUTTON</h2>
+  <div class="comparison">
+    <div class="panel">
+      <div class="panel-title">Prima</div>
+      <div style="display: flex; justify-content: center;">
+        <div class="power-btn-current">
+          <span style="color: #F5A524;">●</span>
+          Power On
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title after">Dopo</div>
+      <div style="display: flex; justify-content: center;">
+        <div class="power-btn-enhanced">
+          <div class="power-dot"></div>
+          POWER ON
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LED METER -->
+  <h2>📊 OUTPUT LED METER</h2>
+  <div class="comparison">
+    <div class="panel">
+      <div class="panel-title">Prima</div>
+      <div class="led-meter">
+        <div class="led-segment green active"></div>
+        <div class="led-segment green active"></div>
+        <div class="led-segment green active"></div>
+        <div class="led-segment green active"></div>
+        <div class="led-segment green active"></div>
+        <div class="led-segment green active"></div>
+        <div class="led-segment green active"></div>
+        <div class="led-segment green active"></div>
+        <div class="led-segment green active"></div>
+        <div class="led-segment green active"></div>
+        <div class="led-segment yellow active"></div>
+        <div class="led-segment yellow active"></div>
+        <div class="led-segment yellow active"></div>
+        <div class="led-segment red"></div>
+        <div class="led-segment red"></div>
+        <div class="led-segment red"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title after">Dopo</div>
+      <div class="led-meter led-meter-enhanced">
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced green active"></div>
+        <div class="led-segment-enhanced yellow active"></div>
+        <div class="led-segment-enhanced yellow active"></div>
+        <div class="led-segment-enhanced yellow active"></div>
+        <div class="led-segment-enhanced red"></div>
+        <div class="led-segment-enhanced red"></div>
+        <div class="led-segment-enhanced red"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INDICATORS -->
+  <h2>💡 INDICATOR LEDS</h2>
+  <div class="comparison">
+    <div class="panel">
+      <div class="panel-title">Prima (flat)</div>
+      <div class="led-row">
+        <div class="led-container">
+          <div class="led-current"></div>
+          <span class="led-label">ACTIVE</span>
+        </div>
+        <div class="led-container">
+          <div class="led-current" style="background: #F5A524;"></div>
+          <span class="led-label">SIGNAL</span>
+        </div>
+        <div class="led-container">
+          <div class="led-current" style="background: #333;"></div>
+          <span class="led-label">CLIP</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title after">Dopo (jewel)</div>
+      <div class="led-row">
+        <div class="led-container">
+          <div class="led-jewel"></div>
+          <span class="led-label">ACTIVE</span>
+        </div>
+        <div class="led-container">
+          <div class="led-jewel" style="background: radial-gradient(circle at 30% 30%, #fbbf24, #92400e); box-shadow: 0 0 8px rgba(245, 165, 36, 0.6);"></div>
+          <span class="led-label">SIGNAL</span>
+        </div>
+        <div class="led-container">
+          <div class="led-jewel" style="background: radial-gradient(circle at 30% 30%, #3a3530, #1a1815); box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);"></div>
+          <span class="led-label">CLIP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION DIVIDER -->
+  <h2>✨ NUOVO: Section Divider</h2>
+  <div class="panel" style="max-width: 600px; margin: 0 auto;">
+    <div class="divider-demo">
+      <div class="divider-line"></div>
+      <span class="divider-text">Signal Chain</span>
+      <div class="divider-line"></div>
+    </div>
+  </div>
+
+  <!-- FULL MOCKUP -->
+  <h2>🎚️ MOCKUP COMPLETO - TUBES SECTION</h2>
+  <div class="full-mockup">
+    <div class="mockup-card">
+      <div class="screw tl"></div>
+      <div class="screw tr"></div>
+      <div class="screw bl"></div>
+      <div class="screw br"></div>
+      
+      <div class="mockup-header">
+        <span class="mockup-title">TUBES</span>
+        <div class="mockup-controls">
+          <div class="pilot-light"></div>
+          <div class="toggle-enhanced"></div>
+        </div>
+      </div>
+      
+      <div class="knobs-row">
+        <div class="knob-container">
+          <div class="knob-enhanced" style="transform: rotate(-50deg);"><div class="indicator"></div></div>
+          <span class="knob-label">Drive</span>
+          <span class="knob-value-enhanced">15%</span>
+        </div>
+        <div class="knob-container">
+          <div class="knob-enhanced" style="transform: rotate(60deg);"><div class="indicator"></div></div>
+          <span class="knob-label">Harmonics</span>
+          <span class="knob-value-enhanced">75%</span>
+        </div>
+        <div class="knob-container">
+          <div class="knob-enhanced" style="transform: rotate(20deg);"><div class="indicator"></div></div>
+          <span class="knob-label">Mix</span>
+          <span class="knob-value-enhanced">60%</span>
+        </div>
+      </div>
+      
+      <div class="divider-demo" style="margin: 24px 0 16px;">
+        <div class="divider-line"></div>
+        <span class="divider-text">Bias</span>
+        <div class="divider-line"></div>
+      </div>
+      
+      <div class="led-row" style="margin-top: 0;">
+        <div class="led-container">
+          <div class="led-jewel"></div>
+          <span class="led-label">WARM</span>
+        </div>
+        <div class="led-container">
+          <div class="led-jewel" style="background: radial-gradient(circle at 30% 30%, #fbbf24, #92400e); box-shadow: 0 0 8px rgba(245, 165, 36, 0.6);"></div>
+          <span class="led-label">HOT</span>
+        </div>
+        <div class="led-container">
+          <div class="led-jewel" style="background: radial-gradient(circle at 30% 30%, #3a3530, #1a1815); box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);"></div>
+          <span class="led-label">CLIP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 60px; color: #666;">📝 RIEPILOGO MODIFICHE</h2>
+  <div class="panel" style="max-width: 700px; margin: 20px auto; font-size: 14px; line-height: 1.8;">
+    <ol style="padding-left: 20px; color: #888;">
+      <li><strong style="color: #F5A524;">Viti decorative</strong> — agli angoli delle card (instant hardware feel)</li>
+      <li><strong style="color: #F5A524;">Knob brushed metal</strong> — conic-gradient per effetto metallo spazzolato</li>
+      <li><strong style="color: #F5A524;">Toggle switch 3D</strong> — con ombre e highlight realistici</li>
+      <li><strong style="color: #F5A524;">Pilot light</strong> — LED verde che pulsa quando la sezione è attiva</li>
+      <li><strong style="color: #F5A524;">Font serif per titoli</strong> — "Instrument Serif" per i nomi sezione</li>
+      <li><strong style="color: #F5A524;">LED meter inset</strong> — bordo e ombra interna più profondi</li>
+      <li><strong style="color: #F5A524;">Jewel LED indicators</strong> — effetto gemma con highlight</li>
+      <li><strong style="color: #F5A524;">Valori in pill</strong> — i dB values con sfondo e bordo sottile</li>
+      <li><strong style="color: #F5A524;">Section dividers</strong> — linee con testo per separare sotto-sezioni</li>
+      <li><strong style="color: #F5A524;">Colori più caldi</strong> — sfumature marroni invece di grigi puri</li>
+    </ol>
+  </div>
+
+</body>
+</html>
