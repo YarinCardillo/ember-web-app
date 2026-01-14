@@ -3,7 +3,7 @@
  * Used for input metering with warm analog appearance
  */
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import { linearToDb } from "../../utils/dsp-math";
 
 interface VintageVuMeterProps {
@@ -19,11 +19,42 @@ export function VintageVuMeter({
 }: VintageVuMeterProps): JSX.Element {
   const needleRef = useRef<HTMLDivElement>(null);
   const peakLedRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number>();
   const currentAngleRef = useRef(-45);
   const lastUpdateTimeRef = useRef(Date.now());
   const peakBrightnessRef = useRef(0);
   const peakHoldTimeRef = useRef(0);
+
+  // Dynamic scale based on container width for responsive sizing
+  const [containerScale, setContainerScale] = useState(1);
+
+  const updateScale = useCallback(() => {
+    if (wrapperRef.current) {
+      const containerWidth = wrapperRef.current.offsetWidth;
+      const newScale = containerWidth / width;
+      setContainerScale(newScale);
+    }
+  }, [width]);
+
+  // Observe container size changes
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    // Initial scale calculation
+    updateScale();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScale();
+    });
+
+    resizeObserver.observe(wrapper);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [updateScale]);
 
   const scale = width / 360;
   const height = 180 * scale;
@@ -37,13 +68,28 @@ export function VintageVuMeter({
   // Memoize scale-dependent styles to avoid object recreation on each render
   const meterStyles = useMemo(
     () => ({
+      // Outer wrapper - responsive container that maintains aspect ratio
+      outerWrapper: {
+        width: "100%",
+        maxWidth: width,
+      },
+      // Inner wrapper - maintains aspect ratio and clips overflow
+      innerWrapper: {
+        width: "100%",
+        aspectRatio: `${width} / ${height}`,
+        position: "relative" as const,
+        overflow: "hidden" as const,
+      },
       container: {
         width,
         height,
         background: "linear-gradient(180deg, #1a1612 0%, #e1cf95 100%)",
         border: "2px solid #3d3022",
         borderRadius: 8 * scale,
-        position: "relative" as const,
+        position: "absolute" as const,
+        top: 0,
+        left: 0,
+        transformOrigin: "top left",
         overflow: "hidden" as const,
         boxShadow:
           "inset 0 0 80px rgba(245, 165, 36, 0.08), inset 0 -20px 40px rgba(0,0,0,0.3)",
@@ -390,7 +436,7 @@ export function VintageVuMeter({
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 w-full">
       {label && (
         <div
           className="text-xs text-text-secondary"
@@ -399,44 +445,54 @@ export function VintageVuMeter({
           {label}
         </div>
       )}
-      <div
-        style={meterStyles.container}
-        role="meter"
-        aria-label={`${label} VU meter`}
-        aria-labelledby={label ? `vu-meter-label-${label}` : undefined}
-        aria-valuemin={minDb}
-        aria-valuemax={maxDb}
-        aria-valuenow={0}
-        aria-valuetext="Audio level meter"
-      >
-        {/* Scale SVG */}
-        <svg
-          width={svgWidth * scale}
-          height={svgHeight * scale}
-          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          style={meterStyles.svg}
-        >
-          {svgContent}
-        </svg>
+      {/* Outer responsive wrapper */}
+      <div style={meterStyles.outerWrapper} ref={wrapperRef}>
+        {/* Inner wrapper maintains aspect ratio */}
+        <div style={meterStyles.innerWrapper}>
+          {/* Actual meter container - scales to fit */}
+          <div
+            style={{
+              ...meterStyles.container,
+              transform: `scale(${containerScale})`,
+            }}
+            role="meter"
+            aria-label={`${label} VU meter`}
+            aria-labelledby={label ? `vu-meter-label-${label}` : undefined}
+            aria-valuemin={minDb}
+            aria-valuemax={maxDb}
+            aria-valuenow={0}
+            aria-valuetext="Audio level meter"
+          >
+            {/* Scale SVG */}
+            <svg
+              width={svgWidth * scale}
+              height={svgHeight * scale}
+              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+              style={meterStyles.svg}
+            >
+              {svgContent}
+            </svg>
 
-        {/* Peak indicator section (+ sign and LED) */}
-        <div style={meterStyles.peakSection}>
-          {/* + sign */}
-          <span style={meterStyles.plusSign}>+</span>
-          {/* Peak LED */}
-          <div ref={peakLedRef} style={meterStyles.peakLed} />
-          {/* PEAK label */}
-          <span style={meterStyles.peakLabel}>PEAK</span>
+            {/* Peak indicator section (+ sign and LED) */}
+            <div style={meterStyles.peakSection}>
+              {/* + sign */}
+              <span style={meterStyles.plusSign}>+</span>
+              {/* Peak LED */}
+              <div ref={peakLedRef} style={meterStyles.peakLed} />
+              {/* PEAK label */}
+              <span style={meterStyles.peakLabel}>PEAK</span>
+            </div>
+
+            {/* Needle slot - dark opening where needle emerges */}
+            <div style={meterStyles.needleSlot} />
+
+            {/* Glowing White Needle with Red Base */}
+            <div ref={needleRef} style={meterStyles.needle} />
+
+            {/* Pivot */}
+            <div style={meterStyles.pivot} />
+          </div>
         </div>
-
-        {/* Needle slot - dark opening where needle emerges */}
-        <div style={meterStyles.needleSlot} />
-
-        {/* Glowing White Needle with Red Base */}
-        <div ref={needleRef} style={meterStyles.needle} />
-
-        {/* Pivot */}
-        <div style={meterStyles.pivot} />
       </div>
     </div>
   );

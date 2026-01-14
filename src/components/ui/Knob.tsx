@@ -264,12 +264,18 @@ export function Knob({
   const rotation = normalizedValue * 300 - 150;
   const isActive = isDragging || isHovered;
 
+  // Fixed width for the entire knob component to prevent layout shifts
+  const KNOB_CONTAINER_WIDTH = KNOB_SIZE + 24;
+
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div
+      className="flex flex-col items-center gap-2"
+      style={{ width: KNOB_CONTAINER_WIDTH }}
+    >
       {/* Arc indicator container */}
       <div
-        className="relative"
-        style={{ width: KNOB_SIZE + 24, height: KNOB_SIZE + 24 }}
+        className="relative flex-shrink-0"
+        style={{ width: KNOB_CONTAINER_WIDTH, height: KNOB_CONTAINER_WIDTH }}
       >
         <ArcIndicator
           normalizedValue={normalizedValue}
@@ -319,9 +325,9 @@ export function Knob({
       </div>
 
       {/* Labels */}
-      <div className="text-center">
-        <div className="text-xs text-text-secondary">{label}</div>
-        <div className="text-sm font-mono text-accent-primary min-w-[70px]">
+      <div className="text-center w-full">
+        <div className="text-xs text-text-secondary truncate">{label}</div>
+        <div className="text-sm font-mono text-accent-primary">
           {formatDisplayValue(value)}
         </div>
       </div>
