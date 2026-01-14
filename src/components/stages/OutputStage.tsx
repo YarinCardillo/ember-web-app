@@ -12,7 +12,11 @@ import { JewelLed } from "../ui/JewelLed";
 import { PilotLight } from "../ui/PilotLight";
 import { useAudioStore } from "../../store/useAudioStore";
 import { useThemeStore } from "../../store/useThemeStore";
-import { createLufsState, calculateShortTermLufs, formatLufs } from "../../utils/lufs-meter";
+import {
+  createLufsState,
+  calculateShortTermLufs,
+  formatLufs,
+} from "../../utils/lufs-meter";
 import type { AudioDeviceInfo } from "../../types/audio.types";
 import type { LufsState } from "../../utils/lufs-meter";
 
@@ -56,14 +60,19 @@ export function OutputStage({
 
     // Initialize LUFS state if needed
     if (!lufsStateRef.current) {
-      lufsStateRef.current = createLufsState(postGainAnalyser.context.sampleRate);
+      lufsStateRef.current = createLufsState(
+        postGainAnalyser.context.sampleRate,
+      );
     }
 
     const dataArray = new Float32Array(postGainAnalyser.fftSize);
 
     const updateLevel = () => {
       // Calculate LUFS short-term
-      const lufs = calculateShortTermLufs(postGainAnalyser, lufsStateRef.current!);
+      const lufs = calculateShortTermLufs(
+        postGainAnalyser,
+        lufsStateRef.current!,
+      );
       setOutputLufs(lufs);
       setHasSignal(lufs > -60);
       setIsClipping(lufs > -1);
@@ -199,7 +208,7 @@ export function OutputStage({
         {isVintage ? (
           <StereoMeterMinimal
             analyser={preClipperAnalyser}
-            label="Clipper"
+            label=""
             mode="peak"
           />
         ) : (
@@ -292,7 +301,7 @@ export function OutputStage({
         {/* Vintage: LCD Display */}
         {isVintage && (
           <div
-            className="lcd-display flex-1 flex flex-col justify-center"
+            className="lcd-display flex-1 flex flex-col justify-center self-start"
             style={{ width: 420, minHeight: 180 }}
           >
             <div className="lcd-label text-center" style={{ fontSize: 14 }}>

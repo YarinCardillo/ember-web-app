@@ -53,7 +53,7 @@ export function StereoMeterMinimal({
     const smoothLevel = (
       current: number,
       target: number,
-      deltaTime: number
+      deltaTime: number,
     ): number => {
       const timeConstant = target > current ? ATTACK_TIME : RELEASE_TIME;
       const factor = 1 - Math.exp(-deltaTime / timeConstant);
@@ -64,7 +64,7 @@ export function StereoMeterMinimal({
       currentPeak: number,
       newLevel: number,
       holdTime: number,
-      deltaTime: number
+      deltaTime: number,
     ): { peak: number; holdTime: number } => {
       if (newLevel > currentPeak) {
         return { peak: newLevel, holdTime: PEAK_HOLD_TIME };
@@ -128,15 +128,33 @@ export function StereoMeterMinimal({
       }
 
       // Apply smoothing
-      smoothedLevelL.current = smoothLevel(smoothedLevelL.current, targetDbL, deltaTime);
-      smoothedLevelR.current = smoothLevel(smoothedLevelR.current, targetDbR, deltaTime);
+      smoothedLevelL.current = smoothLevel(
+        smoothedLevelL.current,
+        targetDbL,
+        deltaTime,
+      );
+      smoothedLevelR.current = smoothLevel(
+        smoothedLevelR.current,
+        targetDbR,
+        deltaTime,
+      );
 
       // Update peaks
-      const peakResultL = updatePeak(peakLevelL.current, smoothedLevelL.current, peakHoldTimeL.current, deltaTime);
+      const peakResultL = updatePeak(
+        peakLevelL.current,
+        smoothedLevelL.current,
+        peakHoldTimeL.current,
+        deltaTime,
+      );
       peakLevelL.current = peakResultL.peak;
       peakHoldTimeL.current = peakResultL.holdTime;
 
-      const peakResultR = updatePeak(peakLevelR.current, smoothedLevelR.current, peakHoldTimeR.current, deltaTime);
+      const peakResultR = updatePeak(
+        peakLevelR.current,
+        smoothedLevelR.current,
+        peakHoldTimeR.current,
+        deltaTime,
+      );
       peakLevelR.current = peakResultR.peak;
       peakHoldTimeR.current = peakResultR.holdTime;
 
@@ -167,7 +185,10 @@ export function StereoMeterMinimal({
         </div>
         <div className="hybrid-ticks">
           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-            <div key={i} className={`hybrid-tick ${i % 2 === 0 ? "major" : ""}`} />
+            <div
+              key={i}
+              className={`hybrid-tick ${i % 2 === 0 ? "major" : ""}`}
+            />
           ))}
         </div>
         <div className="hybrid-needle" style={{ left: `${level}%` }} />
@@ -176,7 +197,7 @@ export function StereoMeterMinimal({
             className="hybrid-peak"
             style={{
               left: `${peak}%`,
-              opacity: peak > level + 2 ? 0.9 : 0.6
+              opacity: peak > level + 2 ? 0.9 : 0.6,
             }}
           />
         )}
@@ -194,7 +215,6 @@ export function StereoMeterMinimal({
           padding: 14px 16px;
           box-shadow: inset 0 3px 10px rgba(0,0,0,0.7);
           width: 100%;
-          max-width: 320px;
         }
 
         .stereo-channel {

@@ -105,30 +105,18 @@ export function InputStage({
       </div>
 
       <div className="flex flex-col gap-2 min-h-[60px]">
-        <div className="flex items-center justify-between">
-          <label
-            className="text-xs text-text-secondary"
-            style={isVintage ? { marginLeft: "16px" } : undefined}
-          >
-            {isMobileMode ? "Preview Only" : "Device"}
-          </label>
-          <div style={{ minWidth: "140px" }} className="flex justify-end">
-            {onPreviewToggle && (
-              <PreviewButton
-                isPlaying={isPreviewPlaying}
-                isLoading={isPreviewLoading}
-                disabled={!isRunning}
-                onToggle={onPreviewToggle}
-              />
-            )}
-          </div>
-        </div>
+        <label
+          className="text-xs text-text-secondary"
+          style={isVintage ? { marginLeft: "16px" } : undefined}
+        >
+          {isMobileMode ? "Preview Only" : "Device"}
+        </label>
         {isMobileMode ? (
           <div className="bg-bg-tertiary/50 border border-white/5 rounded-lg px-3 py-2 text-text-tertiary text-sm">
             Mic input disabled on mobile
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative flex items-center gap-2">
             <select
               value={inputDeviceId || ""}
               onChange={(e) => {
@@ -165,6 +153,14 @@ export function InputStage({
               <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none flex items-center gap-1.5 bg-meter-red/20 px-2 py-0.5 rounded text-xs text-meter-red border border-meter-red/30 backdrop-blur-sm">
                 <span>Warning</span>
               </div>
+            )}
+            {onPreviewToggle && (
+              <PreviewButton
+                isPlaying={isPreviewPlaying}
+                isLoading={isPreviewLoading}
+                disabled={!isRunning}
+                onToggle={onPreviewToggle}
+              />
             )}
           </div>
         )}
