@@ -57,7 +57,7 @@ export function InputStage({
     <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden relative">
       <Screws />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
           {isVintage && <PilotLight isActive={isRunning} />}
           <h3
