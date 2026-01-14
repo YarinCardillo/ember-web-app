@@ -95,11 +95,18 @@ export function MasterSlider({
           <label className="slider-label-vintage">{label}</label>
           <span className="slider-value-vintage">{formatDisplayValue(value)}</span>
         </div>
-        <div className="slider-brushed-h">
+        <div
+          className="slider-brushed-h"
+          style={{ "--slider-pos": `${currentPosition}%` } as React.CSSProperties}
+        >
           <div
             className="track-fill"
             style={{ width: `${currentPosition}%` }}
           />
+          {/* Thumb indicator - using a real element instead of ::after */}
+          <div className="slider-thumb-vintage" />
+          {/* Thumb line */}
+          <div className="slider-thumb-line" />
           <input
             type="range"
             min={0}
@@ -157,13 +164,13 @@ export function MasterSlider({
             cursor: pointer;
             -webkit-appearance: none;
             appearance: none;
+            z-index: 2;
           }
-          .slider-brushed-h::after {
-            content: '';
+          .slider-thumb-vintage {
             position: absolute;
             top: 50%;
-            left: calc(${currentPosition}% - 9px);
-            transform: translateY(-50%);
+            left: var(--slider-pos);
+            transform: translate(-50%, -50%);
             width: 18px;
             height: 24px;
             background: conic-gradient(
@@ -183,12 +190,11 @@ export function MasterSlider({
               inset 0 1px 0 rgba(255,255,255,0.05);
             pointer-events: none;
           }
-          .slider-brushed-h::before {
-            content: '';
+          .slider-thumb-line {
             position: absolute;
             top: 50%;
-            left: calc(${currentPosition}% - 1px);
-            transform: translateY(-50%);
+            left: var(--slider-pos);
+            transform: translate(-50%, -50%);
             width: 2px;
             height: 12px;
             background: #F5A524;
