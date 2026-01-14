@@ -112,8 +112,18 @@ export function InputStage({
           {isMobileMode ? "Preview Only" : "Device"}
         </label>
         {isMobileMode ? (
-          <div className="bg-bg-tertiary/50 border border-white/5 rounded-lg px-3 py-2 text-text-tertiary text-sm">
-            Mic input disabled on mobile
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-bg-tertiary/50 border border-white/5 rounded-lg px-3 py-2 text-text-tertiary text-sm">
+              Mic input disabled on mobile
+            </div>
+            {onPreviewToggle && (
+              <PreviewButton
+                isPlaying={isPreviewPlaying}
+                isLoading={isPreviewLoading}
+                disabled={!isRunning}
+                onToggle={onPreviewToggle}
+              />
+            )}
           </div>
         ) : (
           <div className="relative flex items-center gap-2">
