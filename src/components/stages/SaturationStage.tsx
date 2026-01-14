@@ -29,16 +29,17 @@ export function SaturationStage(): JSX.Element {
         <div className="flex items-center gap-2">
           {isVintage && <PilotLight isActive={isActive} />}
           <h3
-            className="text-lg font-semibold"
+            className="font-semibold"
             style={
               isVintage
                 ? {
                     fontFamily: "'Instrument Serif', Georgia, serif",
-                    letterSpacing: "3px",
+                    fontSize: "20px",
+                    letterSpacing: "4px",
                     color: "#c9a66b",
                     fontWeight: 400,
                   }
-                : { color: "#e8dccc" }
+                : { fontSize: "18px", color: "#e8dccc" }
             }
           >
             TUBES

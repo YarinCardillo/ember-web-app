@@ -1,6 +1,6 @@
 /**
  * OutputStage - Premium output device selector, master gain slider, and LED meter
- * Supports both modern and vintage themes with LCD display
+ * Supports both modern and vintage themes with LCD display and LUFS metering
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -12,7 +12,9 @@ import { JewelLed } from "../ui/JewelLed";
 import { PilotLight } from "../ui/PilotLight";
 import { useAudioStore } from "../../store/useAudioStore";
 import { useThemeStore } from "../../store/useThemeStore";
+import { createLufsState, calculateShortTermLufs, formatLufs } from "../../utils/lufs-meter";
 import type { AudioDeviceInfo } from "../../types/audio.types";
+import type { LufsState } from "../../utils/lufs-meter";
 
 interface OutputStageProps {
   preClipperAnalyser: AnalyserNode | null;
@@ -39,23 +41,35 @@ export function OutputStage({
   const theme = useThemeStore((state) => state.theme);
   const isVintage = theme === "vintage";
 
-  // State for LCD display level
-  const [outputLevel, setOutputLevel] = useState(-Infinity);
+  // State for LCD display LUFS level
+  const [outputLufs, setOutputLufs] = useState(-Infinity);
   const [hasSignal, setHasSignal] = useState(false);
   const [isClipping, setIsClipping] = useState(false);
   const animationRef = useRef<number>();
+  const lufsStateRef = useRef<LufsState | null>(null);
 
-  // Update output level from analyser
+  // Update output LUFS level from analyser
   useEffect(() => {
     if (!postGainAnalyser) {
       return;
     }
 
+    // Initialize LUFS state if needed
+    if (!lufsStateRef.current) {
+      lufsStateRef.current = createLufsState(postGainAnalyser.context.sampleRate);
+    }
+
     const dataArray = new Float32Array(postGainAnalyser.fftSize);
 
     const updateLevel = () => {
-      postGainAnalyser.getFloatTimeDomainData(dataArray);
+      // Calculate LUFS short-term
+      const lufs = calculateShortTermLufs(postGainAnalyser, lufsStateRef.current!);
+      setOutputLufs(lufs);
+      setHasSignal(lufs > -60);
+      setIsClipping(lufs > -1);
 
+      // Also check for peak clipping
+      postGainAnalyser.getFloatTimeDomainData(dataArray);
       let peak = 0;
       for (let i = 0; i < dataArray.length; i++) {
         const abs = Math.abs(dataArray[i]);
@@ -63,11 +77,10 @@ export function OutputStage({
           peak = abs;
         }
       }
-
-      const dB = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
-      setOutputLevel(dB);
-      setHasSignal(dB > -60);
-      setIsClipping(dB > -0.1);
+      const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
+      if (peakDb > -0.1) {
+        setIsClipping(true);
+      }
 
       animationRef.current = requestAnimationFrame(updateLevel);
     };
@@ -88,11 +101,8 @@ export function OutputStage({
     return `${value.toFixed(1)} dB`;
   };
 
-  const formatLcdValue = (dB: number): string => {
-    if (dB <= -60) {
-      return "-Inf";
-    }
-    return dB.toFixed(1);
+  const formatLcdValue = (lufs: number): string => {
+    return formatLufs(lufs);
   };
 
   return (
@@ -103,16 +113,17 @@ export function OutputStage({
       <div className="flex items-center gap-2">
         {isVintage && <PilotLight isActive={isRunning} />}
         <h3
-          className="text-lg font-semibold"
+          className="font-semibold"
           style={
             isVintage
               ? {
                   fontFamily: "'Instrument Serif', Georgia, serif",
-                  letterSpacing: "3px",
+                  fontSize: "20px",
+                  letterSpacing: "4px",
                   color: "#c9a66b",
                   fontWeight: 400,
                 }
-              : { color: "#e8dccc" }
+              : { fontSize: "18px", color: "#e8dccc" }
           }
         >
           OUTPUT
@@ -281,15 +292,15 @@ export function OutputStage({
             style={{ width: 420, minHeight: 180 }}
           >
             <div className="lcd-label text-center" style={{ fontSize: 14 }}>
-              LUFs SHORT
+              LUFS SHORT
             </div>
             <div
               className="lcd-value text-center mt-2"
               style={{ fontSize: 48, minWidth: 200 }}
             >
-              {formatLcdValue(outputLevel)}
+              {formatLcdValue(outputLufs)}
               <span className="lcd-unit" style={{ fontSize: 18 }}>
-                LUFs
+                LUFS
               </span>
             </div>
           </div>

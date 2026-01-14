@@ -61,16 +61,17 @@ export function InputStage({
         <div className="flex items-center gap-2">
           {isVintage && <PilotLight isActive={isRunning} />}
           <h3
-            className="text-lg font-semibold"
+            className="font-semibold leading-none -mt-2"
             style={
               isVintage
                 ? {
                     fontFamily: "'Instrument Serif', Georgia, serif",
-                    letterSpacing: "3px",
+                    fontSize: "20px",
+                    letterSpacing: "4px",
                     color: "#c9a66b",
                     fontWeight: 400,
                   }
-                : { color: "#e8dccc" }
+                : { fontSize: "18px", lineHeight: "1.2", color: "#e8dccc" }
             }
           >
             INPUT
