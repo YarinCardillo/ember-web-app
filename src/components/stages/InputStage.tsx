@@ -167,7 +167,7 @@ export function InputStage({
       </div>
 
       <div className="flex items-center justify-between gap-4 sm:gap-10 min-w-0 py-2 flex-col-reverse sm:flex-row">
-        <div style={{ marginTop: "8px" }}>
+        <div style={{ marginTop: "8px" }} className="flex-shrink-0">
           <VerticalSlider
             label=""
             value={inputGain}
@@ -180,10 +180,7 @@ export function InputStage({
             defaultValue={0}
           />
         </div>
-        <div
-          className="flex-1 flex justify-end"
-          style={{ marginRight: "20px" }}
-        >
+        <div className="w-full sm:flex-1 flex justify-center sm:justify-end px-2 sm:px-0 sm:mr-5">
           <VintageVuMeter analyser={inputAnalyser} label="" width={350} />
         </div>
       </div>

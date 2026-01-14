@@ -222,10 +222,7 @@ export function OutputStage({
 
         {/* Status LEDs */}
         {isVintage ? (
-          <div
-            className="flex justify-between mt-6 mb-4"
-            style={{ width: 400 }}
-          >
+          <div className="flex justify-between mt-6 mb-4 w-full max-w-[400px]">
             <JewelLed
               color={hasSignal ? "green" : "off"}
               label="Signal"
@@ -243,10 +240,7 @@ export function OutputStage({
             />
           </div>
         ) : (
-          <div
-            className="flex justify-between mt-6 mb-4"
-            style={{ width: 400 }}
-          >
+          <div className="flex justify-between mt-6 mb-4 w-full max-w-[400px]">
             <div className="flex flex-col items-center gap-1">
               <div
                 className="rounded-full transition-all duration-150"
@@ -301,8 +295,8 @@ export function OutputStage({
         {/* Vintage: LCD Display */}
         {isVintage && (
           <div
-            className="lcd-display flex-1 flex flex-col justify-center self-start"
-            style={{ width: 420, minHeight: 180 }}
+            className="lcd-display flex-1 flex flex-col justify-center w-full max-w-[420px]"
+            style={{ minHeight: 180 }}
           >
             <div className="lcd-label text-center" style={{ fontSize: 14 }}>
               LUFS SHORT
