@@ -112,8 +112,18 @@ export function InputStage({
           {isMobileMode ? "Preview Only" : "Device"}
         </label>
         {isMobileMode ? (
-          <div className="bg-bg-tertiary/50 border border-white/5 rounded-lg px-3 py-2 text-text-tertiary text-sm">
-            Mic input disabled on mobile
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-bg-tertiary/50 border border-white/5 rounded-lg px-3 py-2 text-text-tertiary text-sm">
+              Mic input disabled on mobile
+            </div>
+            {onPreviewToggle && (
+              <PreviewButton
+                isPlaying={isPreviewPlaying}
+                isLoading={isPreviewLoading}
+                disabled={!isRunning}
+                onToggle={onPreviewToggle}
+              />
+            )}
           </div>
         ) : (
           <div className="relative flex items-center gap-2">
@@ -167,7 +177,7 @@ export function InputStage({
       </div>
 
       <div className="flex items-center justify-between gap-4 sm:gap-10 min-w-0 py-2 flex-col-reverse sm:flex-row">
-        <div style={{ marginTop: "8px" }}>
+        <div style={{ marginTop: "8px" }} className="flex-shrink-0">
           <VerticalSlider
             label=""
             value={inputGain}
@@ -180,10 +190,7 @@ export function InputStage({
             defaultValue={0}
           />
         </div>
-        <div
-          className="flex-1 flex justify-end"
-          style={{ marginRight: "20px" }}
-        >
+        <div className="w-full sm:flex-1 flex justify-center sm:justify-end px-2 sm:px-0 sm:mr-5">
           <VintageVuMeter analyser={inputAnalyser} label="" width={350} />
         </div>
       </div>
