@@ -78,7 +78,62 @@ This threshold is intentional. In Ember Amp's signal chain, the tape machine and
 
 The peak LED is therefore an **analog saturation indicator**, not a digital clipping warning. It tells the user: "You're now driving the virtual analog stages into their sweet spot."
 
+## Dual-Needle Stereo Display
+
+The VintageVuMeter features two needles for true stereo channel visualization:
+
+| Needle | Color | Channel | Z-Index |
+|--------|-------|---------|---------|
+| Left   | White (with glow) | L | 6 (front) |
+| Right  | Red (with glow) | R | 5 (behind) |
+
+### Why Dual Needles?
+
+Traditional stereo VU meters require two separate meter units. The dual-needle design provides stereo visualization in a single compact meter:
+
+- **Balanced signal**: Both needles move together, aligned
+- **Unbalanced signal**: Needles diverge, showing L/R difference
+- **Mono signal**: Both needles track identically
+
+### Technical Implementation
+
+The stereo separation is achieved using Web Audio's `ChannelSplitterNode`:
+
+```
+InputNode: gain → ChannelSplitter → AnalyserL (channel 0)
+                                 → AnalyserR (channel 1)
+                                 → ChannelMerger → output
+```
+
+**Why not interleaved sampling?**
+
+Earlier implementations attempted to separate stereo channels by sampling even/odd indices from a single `AnalyserNode`. This approach is **incorrect** because:
+
+1. `AnalyserNode.getFloatTimeDomainData()` returns consecutive time-domain samples, not interleaved L/R data
+2. The `AnalyserNode` internally downmixes stereo to mono before analysis
+3. True stereo separation requires physically splitting channels before analysis
+
+The correct approach uses `ChannelSplitterNode` to create separate signal paths, each with its own `AnalyserNode`.
+
+### Visual Design
+
+Both needles share the same pivot point and scale, with the white (L) needle rendered on top:
+
+```jsx
+{/* Right channel needle (red) - rendered first so it's behind */}
+<div ref={needleRightRef} style={meterStyles.needleRight} />
+
+{/* Left channel needle (white) - rendered on top */}
+<div ref={needleLeftRef} style={meterStyles.needleLeft} />
+```
+
+Each needle has matching CSS effects:
+- Gradient from dark red base to colored tip
+- Box-shadow glow effect matching needle color
+- Independent ballistics (separate angle tracking)
+
 ## Files
 
-- `src/components/ui/VintageVuMeter.tsx` - Main component implementation
+- `src/components/ui/VintageVuMeter.tsx` - Dual-needle VU meter component
+- `src/audio/nodes/InputNode.ts` - Stereo analyser routing with ChannelSplitterNode
 - `src/utils/dsp-math.ts` - Contains `linearToDb()` conversion function
