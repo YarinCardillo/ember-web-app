@@ -57,6 +57,20 @@ function setupPWAUpdatePrompt(): void {
       console.log("App ready for offline use");
     },
   });
+
+  // Check for updates every 5 minutes while app is open
+  // This is a lightweight fetch that doesn't affect audio or auto-refresh
+  setInterval(
+    () => {
+      navigator.serviceWorker
+        .getRegistration()
+        .then((reg) => reg?.update())
+        .catch(() => {
+          // Silently ignore - network might be unavailable
+        });
+    },
+    5 * 60 * 1000,
+  ); // 5 minutes
 }
 
 // Show update toast notification
