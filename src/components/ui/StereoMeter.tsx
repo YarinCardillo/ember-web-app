@@ -7,7 +7,8 @@ import { useEffect, useRef } from "react";
 import { linearToDb } from "../../utils/dsp-math";
 
 interface StereoMeterProps {
-  analyser: AnalyserNode | null;
+  analyserLeft: AnalyserNode | null;
+  analyserRight: AnalyserNode | null;
   label?: string;
   mode?: "rms" | "peak";
   width?: number;
@@ -48,7 +49,8 @@ const COLORS_VINTAGE = {
 };
 
 export function StereoMeter({
-  analyser,
+  analyserLeft,
+  analyserRight,
   label = "Clipper",
   mode = "peak",
   width = 280,
@@ -215,44 +217,51 @@ export function StereoMeter({
       let targetDbL = MIN_DB;
       let targetDbR = MIN_DB;
 
-      if (analyser) {
-        const bufferLength = analyser.fftSize;
-        const dataArray = new Float32Array(bufferLength);
-        analyser.getFloatTimeDomainData(dataArray);
-
-        const halfLength = Math.floor(bufferLength / 2);
+      // Process left channel
+      if (analyserLeft) {
+        const bufferLengthL = analyserLeft.fftSize;
+        const dataArrayL = new Float32Array(bufferLengthL);
+        analyserLeft.getFloatTimeDomainData(dataArrayL);
 
         if (mode === "peak") {
           let peakL = 0;
-          let peakR = 0;
-          for (let i = 0; i < bufferLength; i++) {
-            const abs = Math.abs(dataArray[i]);
-            if (i % 2 === 0) {
-              if (abs > peakL) peakL = abs;
-            } else {
-              if (abs > peakR) peakR = abs;
-            }
+          for (let i = 0; i < bufferLengthL; i++) {
+            const abs = Math.abs(dataArrayL[i]);
+            if (abs > peakL) peakL = abs;
           }
           targetDbL = linearToDb(peakL);
-          targetDbR = linearToDb(peakR);
         } else {
           let sumL = 0;
-          let sumR = 0;
-          for (let i = 0; i < bufferLength; i++) {
-            const val = dataArray[i] * dataArray[i];
-            if (i % 2 === 0) {
-              sumL += val;
-            } else {
-              sumR += val;
-            }
+          for (let i = 0; i < bufferLengthL; i++) {
+            sumL += dataArrayL[i] * dataArrayL[i];
           }
-          const rmsL = Math.sqrt(sumL / halfLength);
-          const rmsR = Math.sqrt(sumR / halfLength);
+          const rmsL = Math.sqrt(sumL / bufferLengthL);
           targetDbL = linearToDb(rmsL);
+        }
+        targetDbL = Math.max(MIN_DB, Math.min(MAX_DB, targetDbL));
+      }
+
+      // Process right channel
+      if (analyserRight) {
+        const bufferLengthR = analyserRight.fftSize;
+        const dataArrayR = new Float32Array(bufferLengthR);
+        analyserRight.getFloatTimeDomainData(dataArrayR);
+
+        if (mode === "peak") {
+          let peakR = 0;
+          for (let i = 0; i < bufferLengthR; i++) {
+            const abs = Math.abs(dataArrayR[i]);
+            if (abs > peakR) peakR = abs;
+          }
+          targetDbR = linearToDb(peakR);
+        } else {
+          let sumR = 0;
+          for (let i = 0; i < bufferLengthR; i++) {
+            sumR += dataArrayR[i] * dataArrayR[i];
+          }
+          const rmsR = Math.sqrt(sumR / bufferLengthR);
           targetDbR = linearToDb(rmsR);
         }
-
-        targetDbL = Math.max(MIN_DB, Math.min(MAX_DB, targetDbL));
         targetDbR = Math.max(MIN_DB, Math.min(MAX_DB, targetDbR));
       }
 
@@ -288,7 +297,8 @@ export function StereoMeter({
       }
     };
   }, [
-    analyser,
+    analyserLeft,
+    analyserRight,
     mode,
     width,
     scale,

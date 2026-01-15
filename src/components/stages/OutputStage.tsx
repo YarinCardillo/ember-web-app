@@ -21,8 +21,10 @@ import type { AudioDeviceInfo } from "../../types/audio.types";
 import type { LufsState } from "../../utils/lufs-meter";
 
 interface OutputStageProps {
-  preClipperAnalyser: AnalyserNode | null;
-  postGainAnalyser: AnalyserNode | null;
+  preClipperAnalyserLeft: AnalyserNode | null;
+  preClipperAnalyserRight: AnalyserNode | null;
+  postGainAnalyserLeft: AnalyserNode | null;
+  postGainAnalyserRight: AnalyserNode | null;
   outputDevices: AudioDeviceInfo[];
   onOutputDeviceChange: (deviceId: string) => void;
   isOutputDeviceSupported: boolean;
@@ -30,8 +32,10 @@ interface OutputStageProps {
 }
 
 export function OutputStage({
-  preClipperAnalyser,
-  postGainAnalyser,
+  preClipperAnalyserLeft,
+  preClipperAnalyserRight,
+  postGainAnalyserLeft,
+  postGainAnalyserRight: _postGainAnalyserRight,
   outputDevices,
   onOutputDeviceChange,
   isOutputDeviceSupported,
@@ -53,22 +57,23 @@ export function OutputStage({
   const lufsStateRef = useRef<LufsState | null>(null);
 
   // Update output LUFS level from analyser (for LCD display only)
+  // Uses left channel for LUFS calculation (mono-compatible)
   useEffect(() => {
-    if (!postGainAnalyser) {
+    if (!postGainAnalyserLeft) {
       return;
     }
 
     // Initialize LUFS state if needed
     if (!lufsStateRef.current) {
       lufsStateRef.current = createLufsState(
-        postGainAnalyser.context.sampleRate,
+        postGainAnalyserLeft.context.sampleRate,
       );
     }
 
     const updateLevel = () => {
       // Calculate LUFS short-term (for display only)
       const lufs = calculateShortTermLufs(
-        postGainAnalyser,
+        postGainAnalyserLeft,
         lufsStateRef.current!,
       );
       setOutputLufs(lufs);
@@ -84,26 +89,44 @@ export function OutputStage({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [postGainAnalyser]);
+  }, [postGainAnalyserLeft]);
 
   // Clip detection from pre-clipper signal (peak > 0dB)
+  // Uses left channel for clip detection (either channel clipping triggers LED)
   const clipAnimationRef = useRef<number>();
   useEffect(() => {
-    if (!preClipperAnalyser) {
+    if (!preClipperAnalyserLeft) {
       return;
     }
 
-    const dataArray = new Float32Array(preClipperAnalyser.fftSize);
+    const dataArrayL = new Float32Array(preClipperAnalyserLeft.fftSize);
+    const dataArrayR = preClipperAnalyserRight
+      ? new Float32Array(preClipperAnalyserRight.fftSize)
+      : null;
 
     const checkClipping = () => {
-      preClipperAnalyser.getFloatTimeDomainData(dataArray);
-      let peak = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        const abs = Math.abs(dataArray[i]);
-        if (abs > peak) {
-          peak = abs;
+      preClipperAnalyserLeft.getFloatTimeDomainData(dataArrayL);
+      if (preClipperAnalyserRight && dataArrayR) {
+        preClipperAnalyserRight.getFloatTimeDomainData(dataArrayR);
+      }
+
+      // Check peak on left channel
+      let peakL = 0;
+      for (let i = 0; i < dataArrayL.length; i++) {
+        const abs = Math.abs(dataArrayL[i]);
+        if (abs > peakL) peakL = abs;
+      }
+
+      // Check peak on right channel
+      let peakR = 0;
+      if (dataArrayR) {
+        for (let i = 0; i < dataArrayR.length; i++) {
+          const abs = Math.abs(dataArrayR[i]);
+          if (abs > peakR) peakR = abs;
         }
       }
+
+      const peak = Math.max(peakL, peakR);
       const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
       setIsClipping(peakDb > 0);
 
@@ -117,7 +140,7 @@ export function OutputStage({
         cancelAnimationFrame(clipAnimationRef.current);
       }
     };
-  }, [preClipperAnalyser]);
+  }, [preClipperAnalyserLeft, preClipperAnalyserRight]);
 
   const formatGainValue = (value: number): string => {
     if (value <= -90) {
@@ -223,13 +246,15 @@ export function OutputStage({
         </div>
         {isVintage ? (
           <StereoMeterMinimal
-            analyser={preClipperAnalyser}
+            analyserLeft={preClipperAnalyserLeft}
+            analyserRight={preClipperAnalyserRight}
             label=""
             mode="peak"
           />
         ) : (
           <StereoMeter
-            analyser={preClipperAnalyser}
+            analyserLeft={preClipperAnalyserLeft}
+            analyserRight={preClipperAnalyserRight}
             label=""
             mode="peak"
             width={420}
