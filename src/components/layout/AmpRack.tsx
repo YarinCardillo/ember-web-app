@@ -442,13 +442,13 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.transient?.disconnect();
       nodes.speakerSim?.disconnect();
 
-      // BYPASS: Connect input directly to master gain (skip all processing but keep volume control)
-      // Signal path in bypass: MediaStream -> VinylMode (bypassed) -> Input Gain -> Master Gain
+      // BYPASS: Connect input directly to output stage (skip all processing but keep clipper active)
+      // Signal path in bypass: MediaStream -> VinylMode (bypassed) -> Input Gain -> Output (with clipper)
       // We keep vinyl mode in the chain but bypassed so we don't break connections
       nodes.vinylMode.connect(nodes.input.getGainInput());
-      nodes.input.getOutput().connect(nodes.output.getMasterGainNode());
+      nodes.input.getOutput().connect(nodes.output.getInput());
 
-      console.log("Master bypass ENABLED - dry signal through master gain");
+      console.log("Master bypass ENABLED - dry signal through clipper");
     } else {
       // Disconnect bypass route
       nodes.input.getOutput().disconnect();
@@ -889,7 +889,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
             <InputStage
               devices={inputDevices}
               inputAnalyserLeft={audioNodes.input?.getAnalysers().left || null}
-              inputAnalyserRight={audioNodes.input?.getAnalysers().right || null}
+              inputAnalyserRight={
+                audioNodes.input?.getAnalysers().right || null
+              }
               onDeviceChange={handleInputDeviceChange}
               onVinylModeActivate={handleVinylModeActivate}
               onVinylModeDeactivate={handleVinylModeDeactivate}

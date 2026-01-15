@@ -711,8 +711,8 @@ User Drags Knob
 
 ```
 When bypassAll = true:
-  InputNode.getOutput() ──────────────────▶ AudioContext.destination
-  (all processing nodes disconnected)
+  MediaStream → VinylModeNode (bypassed) → InputNode → OutputNode (clipper active) → destination
+  (all processing nodes disconnected, but clipper remains active for protection)
 
 When bypassAll = false:
   MediaStream → VinylModeNode → InputNode → TapeSim → ToneStack → Saturation → Transient → SpeakerSim → OutputNode → destination
