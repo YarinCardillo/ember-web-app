@@ -22,7 +22,6 @@ import { TransientNode } from "../../audio/nodes/TransientNode";
 import { SpeakerSimNode } from "../../audio/nodes/SpeakerSimNode";
 import { OutputNode } from "../../audio/nodes/OutputNode";
 import { useVinylMode } from "../../hooks/useVinylMode";
-import { TransientDebug } from "../ui/TransientDebug";
 import { isMobileDevice } from "../../utils/device-detection";
 import presetsData from "../../audio/presets/amp-presets.json";
 import type { PresetCollection } from "../../types/audio.types";
