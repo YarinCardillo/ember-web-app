@@ -396,17 +396,38 @@
         margin-left: 4px;
     }
 
-    /* Embossed logo */
+    /* Embossed logo with ember glow effect */
     .logo-embossed {
         font-family: "Instrument Serif", Georgia, serif;
         font-size: 64px;
         font-weight: 400;
         letter-spacing: 20px;
-        color: #2a2520;
-        text-shadow:
-            0 1px 0 rgba(255, 255, 255, 0.05),
-            0 -1px 0 rgba(0, 0, 0, 0.3);
         text-align: center;
+
+        /* Base ember color */
+        color: #ff6a00;
+
+        /* Static layered glow */
+        text-shadow:
+            0 0 4px #fff8e0,
+            0 0 10px #ffcc00,
+            0 0 20px #ff9500,
+            0 0 40px #ff4500,
+            0 0 60px rgba(255, 69, 0, 0.5);
+
+        /* Single GPU-friendly animation using filter */
+        animation: ember-glow 3s ease-in-out infinite;
+        will-change: filter;
+    }
+
+    @keyframes ember-glow {
+        0%,
+        100% {
+            filter: brightness(1) saturate(1);
+        }
+        50% {
+            filter: brightness(1.25) saturate(1.2);
+        }
     }
 
     .tagline {
