@@ -46,11 +46,15 @@ async function clearStaleCaches(): Promise<void> {
   }
 }
 
+// Track pending update state
+let pendingUpdateSW: ((reloadPage?: boolean) => Promise<void>) | null = null;
+
 // Setup PWA update prompt
 function setupPWAUpdatePrompt(): void {
   const updateSW = registerSW({
     onNeedRefresh() {
-      // Show update prompt to user
+      // Store the update function for later re-prompts
+      pendingUpdateSW = updateSW;
       showUpdateToast(updateSW);
     },
     onOfflineReady() {
@@ -59,7 +63,7 @@ function setupPWAUpdatePrompt(): void {
   });
 
   // Check for updates every 5 minutes while app is open
-  // This is a lightweight fetch that doesn't affect audio or auto-refresh
+  // Also re-show toast if user dismissed but update is still pending
   setInterval(
     () => {
       navigator.serviceWorker
@@ -68,6 +72,11 @@ function setupPWAUpdatePrompt(): void {
         .catch(() => {
           // Silently ignore - network might be unavailable
         });
+
+      // Re-show toast if there's a pending update and toast was dismissed
+      if (pendingUpdateSW && !document.getElementById("pwa-update-toast")) {
+        showUpdateToast(pendingUpdateSW);
+      }
     },
     5 * 60 * 1000,
   ); // 5 minutes
@@ -124,6 +133,7 @@ function showUpdateToast(
     cursor: "pointer",
   });
   refreshBtn.onclick = () => {
+    pendingUpdateSW = null; // Clear pending state
     updateSW(true);
   };
 
