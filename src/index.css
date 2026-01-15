@@ -402,6 +402,7 @@
         font-size: 64px;
         font-weight: 400;
         letter-spacing: 20px;
+        text-indent: 20px; /* Compensate for letter-spacing on last character */
         text-align: center;
 
         /* Base ember color */
