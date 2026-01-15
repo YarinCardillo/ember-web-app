@@ -17,8 +17,8 @@ const MIN_DB = -48;
 const MAX_DB = 6;
 const DB_RANGE = MAX_DB - MIN_DB;
 
-// Attack/release times in ms
-const ATTACK_TIME = 10;
+// Attack/release times in ms - vintage meter is slightly slower
+const ATTACK_TIME = 15;
 const RELEASE_TIME = 150;
 
 // Peak hold time in ms
