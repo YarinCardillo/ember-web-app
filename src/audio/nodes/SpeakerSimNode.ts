@@ -1,31 +1,56 @@
 /**
  * SpeakerSimNode - ConvolverNode for speaker cabinet simulation
  * Deferred implementation - requires impulse response files
+ *
+ * Signal chain:
+ *   inputGain → convolver → bypassGain (when active)
+ *   inputGain → bypassGain (when bypassed)
  */
 
 export class SpeakerSimNode {
+  private inputGain: GainNode; // Common entry point
   private convolver: ConvolverNode;
-  private bypassGain: GainNode;
+  private bypassGain: GainNode; // Common output
   private ctx: AudioContext;
   private isBypassed: boolean = true; // Bypassed by default (no IR loaded)
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
+    this.inputGain = ctx.createGain();
+    this.inputGain.gain.value = 1.0;
     this.convolver = ctx.createConvolver();
     this.bypassGain = ctx.createGain();
+    this.bypassGain.gain.value = 1.0;
 
-    // Default: bypass (no IR loaded)
-    // When bypassed, signal goes through bypassGain
-    // When active, signal goes through convolver
+    // Connect convolver output to bypassGain (common output)
+    this.convolver.connect(this.bypassGain);
+
+    // Initial routing: bypass (input → bypassGain)
+    this.inputGain.connect(this.bypassGain);
+  }
+
+  /**
+   * Update internal routing based on bypass state
+   */
+  private updateRouting(): void {
+    // Disconnect input from everything
+    this.inputGain.disconnect();
+
+    if (this.isBypassed) {
+      // Bypass: connect input directly to bypassGain (skip convolver)
+      this.inputGain.connect(this.bypassGain);
+    } else {
+      // Process: connect input to convolver
+      this.inputGain.connect(this.convolver);
+    }
   }
 
   /**
    * Get input node for connection
-   * @returns ConvolverNode when active, GainNode when bypassed
+   * @returns GainNode (inputGain) as common entry point
    */
   getInput(): AudioNode {
-    // When bypassed, return bypassGain; when active, return convolver
-    return this.isBypassed ? this.bypassGain : this.convolver;
+    return this.inputGain;
   }
 
   /**
@@ -39,6 +64,7 @@ export class SpeakerSimNode {
       const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
       this.convolver.buffer = audioBuffer;
       this.isBypassed = false;
+      this.updateRouting();
     } catch (error) {
       console.error("Failed to load impulse response:", error);
     }
@@ -50,6 +76,7 @@ export class SpeakerSimNode {
    */
   setBypass(bypassed: boolean): void {
     this.isBypassed = bypassed;
+    this.updateRouting();
   }
 
   /**
@@ -65,18 +92,15 @@ export class SpeakerSimNode {
    * @param destination - AudioNode to connect output to
    */
   connect(destination: AudioNode): void {
-    if (this.isBypassed) {
-      this.bypassGain.connect(destination);
-    } else {
-      this.convolver.connect(destination);
-    }
+    // Always connect bypassGain (common output) to destination
+    this.bypassGain.connect(destination);
   }
 
   /**
    * Disconnect from destination
    */
   disconnect(): void {
+    // Only disconnect output (bypassGain), preserve internal routing
     this.bypassGain.disconnect();
-    this.convolver.disconnect();
   }
 }

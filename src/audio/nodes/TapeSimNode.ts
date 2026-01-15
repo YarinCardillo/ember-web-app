@@ -15,6 +15,7 @@ const PRE_SAT_GAIN = 4.0;
 const POST_SAT_GAIN = 1.0 / PRE_SAT_GAIN; // Compensate
 
 export class TapeSimNode {
+  private inputGain: GainNode; // Common entry point
   private headBumpFilter: BiquadFilterNode;
   private hfRolloffFilter: BiquadFilterNode;
   private wobbleWorklet: AudioWorkletNode | null = null;
@@ -29,6 +30,10 @@ export class TapeSimNode {
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
+
+    // Common input gain node (entry point for all routing)
+    this.inputGain = ctx.createGain();
+    this.inputGain.gain.value = 1.0;
 
     // Head bump filter: subtle low-frequency boost (tape head resonance)
     this.headBumpFilter = ctx.createBiquadFilter();
@@ -62,12 +67,15 @@ export class TapeSimNode {
     this.outputGain = ctx.createGain();
     this.outputGain.gain.value = 1.0;
 
-    // Bypass gain
+    // Bypass gain (common output for bypass routing)
     this.bypassGain = ctx.createGain();
     this.bypassGain.gain.value = 1.0;
 
     // Connect processing chain (will be completed after worklet initialization)
     this.headBumpFilter.connect(this.hfRolloffFilter);
+
+    // Initial routing: bypass (input → bypass)
+    this.inputGain.connect(this.bypassGain);
   }
 
   /**
@@ -87,8 +95,12 @@ export class TapeSimNode {
       this.preSatGain.connect(this.oddHarmonicSaturator);
       this.oddHarmonicSaturator.connect(this.postSatGain);
       this.postSatGain.connect(this.outputGain);
+      // Connect output to bypassGain (common output node)
+      this.outputGain.connect(this.bypassGain);
 
       this.isInitialized = true;
+      // Set initial routing based on bypass state
+      this.updateRouting();
       console.log("TapeSimNode initialized successfully with wow/flutter");
     } catch (error) {
       console.error("Failed to create TapeWobble AudioWorkletNode:", error);
@@ -97,18 +109,38 @@ export class TapeSimNode {
       this.preSatGain.connect(this.oddHarmonicSaturator);
       this.oddHarmonicSaturator.connect(this.postSatGain);
       this.postSatGain.connect(this.outputGain);
+      // Connect output to bypassGain (common output node)
+      this.outputGain.connect(this.bypassGain);
+
       this.isInitialized = true;
+      // Set initial routing based on bypass state
+      this.updateRouting();
       console.log("TapeSimNode initialized with fallback (filters only)");
     }
   }
 
   /**
+   * Update internal routing based on bypass state
+   */
+  private updateRouting(): void {
+    // Disconnect input from everything
+    this.inputGain.disconnect();
+
+    if (this.isBypassed || !this.isInitialized) {
+      // Bypass: connect input directly to bypassGain (skip all processing)
+      this.inputGain.connect(this.bypassGain);
+    } else {
+      // Process: connect input to processing chain
+      this.inputGain.connect(this.headBumpFilter);
+    }
+  }
+
+  /**
    * Get input node for connection
-   * @returns HeadBumpFilter when active, GainNode when bypassed
+   * @returns GainNode (inputGain) as common entry point
    */
   getInput(): AudioNode {
-    // When bypassed, return bypassGain; when active, return headBumpFilter
-    return this.isBypassed ? this.bypassGain : this.headBumpFilter;
+    return this.inputGain;
   }
 
   /**
@@ -117,6 +149,7 @@ export class TapeSimNode {
    */
   setBypass(bypassed: boolean): void {
     this.isBypassed = bypassed;
+    this.updateRouting();
   }
 
   /**
@@ -132,19 +165,16 @@ export class TapeSimNode {
    * @param destination - AudioNode to connect output to
    */
   connect(destination: AudioNode): void {
-    if (this.isBypassed) {
-      this.bypassGain.connect(destination);
-    } else {
-      this.outputGain.connect(destination);
-    }
+    // Always connect bypassGain (common output) to destination
+    this.bypassGain.connect(destination);
   }
 
   /**
    * Disconnect from destination
    */
   disconnect(): void {
+    // Only disconnect output (bypassGain), preserve internal routing
     this.bypassGain.disconnect();
-    this.outputGain.disconnect();
   }
 
   /**
