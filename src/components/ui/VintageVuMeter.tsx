@@ -17,11 +17,13 @@ export function VintageVuMeter({
   label = "Input",
   width = 360,
 }: VintageVuMeterProps): JSX.Element {
-  const needleRef = useRef<HTMLDivElement>(null);
+  const needleLeftRef = useRef<HTMLDivElement>(null);
+  const needleRightRef = useRef<HTMLDivElement>(null);
   const peakLedRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number>();
-  const currentAngleRef = useRef(-45);
+  const currentAngleLeftRef = useRef(-45);
+  const currentAngleRightRef = useRef(-45);
   const lastUpdateTimeRef = useRef(Date.now());
   const peakBrightnessRef = useRef(0);
   const peakHoldTimeRef = useRef(0);
@@ -141,7 +143,7 @@ export function VintageVuMeter({
         boxShadow: "inset 0 2px 6px rgba(0,0,0,0.8)",
         zIndex: 5,
       },
-      needle: {
+      needleLeft: {
         position: "absolute" as const,
         bottom: -160 * scale,
         left: "50%",
@@ -155,6 +157,21 @@ export function VintageVuMeter({
         boxShadow:
           "0 0 8px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3)",
         zIndex: 6,
+      },
+      needleRight: {
+        position: "absolute" as const,
+        bottom: -160 * scale,
+        left: "50%",
+        width: 2 * scale,
+        height: 300 * scale,
+        background:
+          "linear-gradient(to top, #8b0000 0%, #dc2626 8%, #ff3333 10%, #ff3333 100%)",
+        transformOrigin: "bottom center",
+        transform: `translateX(-50%) rotate(${minAngle}deg)`,
+        borderRadius: 1,
+        boxShadow:
+          "0 0 8px rgba(255, 51, 51, 0.9), 0 0 20px rgba(255, 51, 51, 0.6), 0 0 40px rgba(255, 51, 51, 0.3)",
+        zIndex: 5,
       },
       pivot: {
         position: "absolute" as const,
@@ -228,9 +245,12 @@ export function VintageVuMeter({
   ];
 
   useEffect(() => {
-    if (!analyser || !needleRef.current) {
-      if (needleRef.current) {
-        needleRef.current.style.transform = `translateX(-50%) rotate(${minAngle}deg)`;
+    if (!analyser || !needleLeftRef.current || !needleRightRef.current) {
+      if (needleLeftRef.current) {
+        needleLeftRef.current.style.transform = `translateX(-50%) rotate(${minAngle}deg)`;
+      }
+      if (needleRightRef.current) {
+        needleRightRef.current.style.transform = `translateX(-50%) rotate(${minAngle}deg)`;
       }
       if (peakLedRef.current) {
         peakLedRef.current.style.background = "#3d1a1a";
@@ -251,36 +271,67 @@ export function VintageVuMeter({
 
       analyser.getFloatTimeDomainData(dataArray);
 
-      // RMS measurement for VU meter behavior
-      let sum = 0;
-      let peak = 0;
+      // RMS measurement per channel (interleaved stereo: L, R, L, R, ...)
+      let sumL = 0;
+      let sumR = 0;
+      let peakL = 0;
+      let peakR = 0;
+      const halfLength = bufferLength / 2;
+
       for (let i = 0; i < bufferLength; i++) {
-        sum += dataArray[i] * dataArray[i];
-        const abs = Math.abs(dataArray[i]);
-        if (abs > peak) peak = abs;
+        const sample = dataArray[i];
+        const abs = Math.abs(sample);
+        if (i % 2 === 0) {
+          // Left channel (even indices)
+          sumL += sample * sample;
+          if (abs > peakL) peakL = abs;
+        } else {
+          // Right channel (odd indices)
+          sumR += sample * sample;
+          if (abs > peakR) peakR = abs;
+        }
       }
-      const rmsLevel = Math.sqrt(sum / bufferLength);
-      const rmsDbfs = linearToDb(rmsLevel);
-      const peakDbfs = linearToDb(peak);
+
+      const rmsLevelL = Math.sqrt(sumL / halfLength);
+      const rmsLevelR = Math.sqrt(sumR / halfLength);
+      const rmsDbfsL = linearToDb(rmsLevelL);
+      const rmsDbfsR = linearToDb(rmsLevelR);
+      const peakDbfs = linearToDb(Math.max(peakL, peakR));
 
       // Convert dBFS to VU scale (0 VU = -18 dBFS)
-      const rmsVu = rmsDbfs - VU_REFERENCE_DBFS;
+      const rmsVuL = rmsDbfsL - VU_REFERENCE_DBFS;
+      const rmsVuR = rmsDbfsR - VU_REFERENCE_DBFS;
       const peakVu = peakDbfs - VU_REFERENCE_DBFS;
 
-      // Map to VU scale (-20 to +3)
-      const clampedLevel = Math.max(minDb, Math.min(maxDb, rmsVu));
-      const normalizedLevel = (clampedLevel - minDb) / (maxDb - minDb);
-      const targetAngle = minAngle + normalizedLevel * (maxAngle - minAngle);
+      // Map to VU scale (-20 to +3) - Left channel
+      const clampedLevelL = Math.max(minDb, Math.min(maxDb, rmsVuL));
+      const normalizedLevelL = (clampedLevelL - minDb) / (maxDb - minDb);
+      const targetAngleL = minAngle + normalizedLevelL * (maxAngle - minAngle);
 
-      // Apply VU meter ballistics
-      const currentAngle = currentAngleRef.current;
-      const angleDiff = targetAngle - currentAngle;
-      const timeConstant = angleDiff > 0 ? attackTime : releaseTime;
-      const smoothingFactor = 1 - Math.exp(-deltaTime / timeConstant);
-      currentAngleRef.current = currentAngle + angleDiff * smoothingFactor;
+      // Map to VU scale (-20 to +3) - Right channel
+      const clampedLevelR = Math.max(minDb, Math.min(maxDb, rmsVuR));
+      const normalizedLevelR = (clampedLevelR - minDb) / (maxDb - minDb);
+      const targetAngleR = minAngle + normalizedLevelR * (maxAngle - minAngle);
 
-      if (needleRef.current) {
-        needleRef.current.style.transform = `translateX(-50%) rotate(${currentAngleRef.current}deg)`;
+      // Apply VU meter ballistics - Left needle
+      const currentAngleL = currentAngleLeftRef.current;
+      const angleDiffL = targetAngleL - currentAngleL;
+      const timeConstantL = angleDiffL > 0 ? attackTime : releaseTime;
+      const smoothingFactorL = 1 - Math.exp(-deltaTime / timeConstantL);
+      currentAngleLeftRef.current = currentAngleL + angleDiffL * smoothingFactorL;
+
+      // Apply VU meter ballistics - Right needle
+      const currentAngleR = currentAngleRightRef.current;
+      const angleDiffR = targetAngleR - currentAngleR;
+      const timeConstantR = angleDiffR > 0 ? attackTime : releaseTime;
+      const smoothingFactorR = 1 - Math.exp(-deltaTime / timeConstantR);
+      currentAngleRightRef.current = currentAngleR + angleDiffR * smoothingFactorR;
+
+      if (needleLeftRef.current) {
+        needleLeftRef.current.style.transform = `translateX(-50%) rotate(${currentAngleLeftRef.current}deg)`;
+      }
+      if (needleRightRef.current) {
+        needleRightRef.current.style.transform = `translateX(-50%) rotate(${currentAngleRightRef.current}deg)`;
       }
 
       // Peak LED logic with hold and fade
@@ -323,7 +374,8 @@ export function VintageVuMeter({
         cancelAnimationFrame(animationFrameRef.current);
       }
       // Reset refs to prevent visual jumps when analyser changes
-      currentAngleRef.current = minAngle;
+      currentAngleLeftRef.current = minAngle;
+      currentAngleRightRef.current = minAngle;
       peakBrightnessRef.current = 0;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -486,8 +538,11 @@ export function VintageVuMeter({
             {/* Needle slot - dark opening where needle emerges */}
             <div style={meterStyles.needleSlot} />
 
-            {/* Glowing White Needle with Red Base */}
-            <div ref={needleRef} style={meterStyles.needle} />
+            {/* Right channel needle (red) - rendered first so it's behind */}
+            <div ref={needleRightRef} style={meterStyles.needleRight} />
+
+            {/* Left channel needle (white) - rendered on top */}
+            <div ref={needleLeftRef} style={meterStyles.needleLeft} />
 
             {/* Pivot */}
             <div style={meterStyles.pivot} />
