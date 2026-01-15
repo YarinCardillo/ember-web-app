@@ -206,12 +206,11 @@ export function StereoMeterMinimal({
           <div className="hybrid-zone red" />
         </div>
         <div className="hybrid-ticks">
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-            <div
-              key={i}
-              className={`hybrid-tick ${i % 2 === 0 ? "major" : ""}`}
-            />
-          ))}
+          {/* Ticks at dB positions: -36=22.22%, -24=44.44%, -12=66.67%, 0=88.89% */}
+          <div className="hybrid-tick" style={{ left: "22.22%" }} />
+          <div className="hybrid-tick" style={{ left: "44.44%" }} />
+          <div className="hybrid-tick" style={{ left: "66.67%" }} />
+          <div className="hybrid-tick" style={{ left: "88.89%" }} />
         </div>
         <div ref={needleRef} className="hybrid-needle" style={{ left: "0%" }} />
         <div
@@ -277,35 +276,29 @@ export function StereoMeterMinimal({
           opacity: 0.12;
         }
 
-        /* Zone proportions based on dB scale (-48 to +6 dB, 54 dB total):
-           Green: -48 to -12 dB = 36 dB = 66.7% (flex 6)
-           Yellow: -12 to 0 dB = 12 dB = 22.2% (flex 2)
-           Red: 0 to +6 dB = 6 dB = 11.1% (flex 1) */
-        .hybrid-zone.green { flex: 6; background: #22c55e; }
-        .hybrid-zone.yellow { flex: 2; background: #facc15; }
-        .hybrid-zone.red { flex: 1; background: #ef4444; }
+        /* Zone widths based on dB scale (-48 to +6 dB, 54 dB total):
+           Green: -48 to -12 dB = 36/54 = 66.67%
+           Yellow: -12 to 0 dB = 12/54 = 22.22%
+           Red: 0 to +6 dB = 6/54 = 11.11% */
+        .hybrid-zone.green { width: 66.67%; background: #22c55e; }
+        .hybrid-zone.yellow { width: 22.22%; background: #facc15; }
+        .hybrid-zone.red { width: 11.11%; background: #ef4444; }
 
         .hybrid-ticks {
           position: absolute;
           top: 0;
           left: 0;
           right: 0;
-          height: 5px;
-          display: flex;
-          justify-content: space-between;
-          padding: 0 6px;
+          height: 6px;
           pointer-events: none;
         }
 
         .hybrid-tick {
+          position: absolute;
           width: 1px;
           height: 100%;
-          background: #2a2520;
-        }
-
-        .hybrid-tick.major {
-          height: 6px;
           background: #3a3530;
+          transform: translateX(-50%);
         }
 
         .hybrid-needle {
@@ -340,15 +333,18 @@ export function StereoMeterMinimal({
         }
 
         .meter-scale {
-          display: flex;
-          justify-content: space-between;
+          position: relative;
           margin-top: 8px;
-          padding: 0 6px 0 24px;
+          margin-left: 24px;
+          margin-right: 0;
+          height: 12px;
         }
 
         .meter-scale span {
+          position: absolute;
           font-size: 8px;
           color: #3a3530;
+          transform: translateX(-50%);
         }
 
         .meter-scale span.red {
@@ -367,12 +363,16 @@ export function StereoMeterMinimal({
       {renderChannel("L", needleLRef, peakLRef)}
       {renderChannel("R", needleRRef, peakRRef)}
       <div className="meter-scale">
-        <span>-48</span>
-        <span>-36</span>
-        <span>-24</span>
-        <span>-12</span>
-        <span>0</span>
-        <span className="red">+6</span>
+        {/* Position labels on linear dB scale: (db - MIN_DB) / DB_RANGE * 100
+            -48=0%, -36=22.22%, -24=44.44%, -12=66.67%, 0=88.89%, +6=100% */}
+        <span style={{ left: "0%" }}>-48</span>
+        <span style={{ left: "22.22%" }}>-36</span>
+        <span style={{ left: "44.44%" }}>-24</span>
+        <span style={{ left: "66.67%" }}>-12</span>
+        <span style={{ left: "88.89%" }}>0</span>
+        <span className="red" style={{ left: "100%" }}>
+          +6
+        </span>
       </div>
       {label && <div className="meter-label">{label}</div>}
     </div>

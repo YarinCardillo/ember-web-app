@@ -38,6 +38,7 @@ interface AudioState {
   bypassTapeSim: boolean;
   bypassToneStack: boolean;
   bypassSaturation: boolean;
+  bypassTransient: boolean;
   bypassSpeakerSim: boolean;
 
   // Vinyl mode state
@@ -95,6 +96,7 @@ export const useAudioStore = create<AudioState>()(
       bypassTapeSim: STARTER_PRESET.bypassTapeSim ?? false,
       bypassToneStack: STARTER_PRESET.bypassToneStack ?? false,
       bypassSaturation: STARTER_PRESET.bypassSaturation ?? false,
+      bypassTransient: false,
       bypassSpeakerSim: true, // Speaker sim always bypassed by default (no IR)
       vinylMode: {
         isActive: false,
@@ -189,6 +191,7 @@ export const useAudioStore = create<AudioState>()(
         bypassTapeSim: state.bypassTapeSim,
         bypassToneStack: state.bypassToneStack,
         bypassSaturation: state.bypassSaturation,
+        bypassTransient: state.bypassTransient,
         bypassSpeakerSim: state.bypassSpeakerSim,
         vinylIntensity: state.vinylMode.intensity,
       }),

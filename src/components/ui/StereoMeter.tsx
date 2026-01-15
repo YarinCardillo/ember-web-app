@@ -99,9 +99,9 @@ export function StereoMeter({
       const redPos = (RED_THRESHOLD - MIN_DB) / DB_RANGE;
 
       gradient.addColorStop(0, COLORS.green);
-      gradient.addColorStop(yellowPos * 0.95, COLORS.green);
+      gradient.addColorStop(yellowPos, COLORS.green);
       gradient.addColorStop(yellowPos, COLORS.yellow);
-      gradient.addColorStop(redPos * 0.98, COLORS.yellow);
+      gradient.addColorStop(redPos, COLORS.yellow);
       gradient.addColorStop(redPos, COLORS.red);
       gradient.addColorStop(1, COLORS.red);
 

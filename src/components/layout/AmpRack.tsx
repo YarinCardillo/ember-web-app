@@ -22,7 +22,7 @@ import { TransientNode } from "../../audio/nodes/TransientNode";
 import { SpeakerSimNode } from "../../audio/nodes/SpeakerSimNode";
 import { OutputNode } from "../../audio/nodes/OutputNode";
 import { useVinylMode } from "../../hooks/useVinylMode";
-// import { TransientDebug } from '../ui/TransientDebug'; // Debug panel - uncomment if needed
+import { TransientDebug } from "../ui/TransientDebug";
 import { isMobileDevice } from "../../utils/device-detection";
 import presetsData from "../../audio/presets/amp-presets.json";
 import type { PresetCollection } from "../../types/audio.types";
@@ -344,6 +344,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       harmonics: state.harmonics,
       saturationMix: state.saturationMix,
       bypassSaturation: state.bypassSaturation,
+      bypassTransient: state.bypassTransient,
       transientAttack: state.transientAttack,
       transientSustain: state.transientSustain,
       transientMix: state.transientMix,
@@ -362,6 +363,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     harmonics,
     saturationMix,
     bypassSaturation,
+    bypassTransient,
     transientAttack,
     transientSustain,
     transientMix,
@@ -402,6 +404,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.transient.setAttack(transientAttack);
       nodes.transient.setSustain(transientSustain);
       nodes.transient.setMix(transientMix);
+      nodes.transient.setBypass(bypassTransient);
     }
     if (nodes.output) {
       nodes.output.setPreGain(preGain);
@@ -417,6 +420,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     harmonics,
     saturationMix,
     bypassSaturation,
+    bypassTransient,
     transientAttack,
     transientSustain,
     transientMix,
