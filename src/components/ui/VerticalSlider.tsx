@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useRef } from "react";
+import { useThemeStore } from "../../store/useThemeStore";
 
 interface VerticalSliderProps {
   label: string;
@@ -15,6 +16,7 @@ interface VerticalSliderProps {
   formatValue?: (value: number) => string;
   onChange: (value: number) => void;
   defaultValue?: number;
+  showValue?: boolean;
 }
 
 const ACCENT_COLOR = "#F59E0B";
@@ -28,9 +30,15 @@ export function VerticalSlider({
   centerDb,
   step = 0.5,
   height = 180,
+  formatValue,
   onChange,
   defaultValue,
+  showValue = false,
 }: VerticalSliderProps): JSX.Element {
+  const theme = useThemeStore((state) => state.theme);
+  const isVintage = theme === "vintage";
+  const isModern = theme === "modern";
+
   const sliderRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
 
@@ -57,6 +65,19 @@ export function VerticalSlider({
   );
 
   const currentPosition = dbToPosition(value);
+
+  const formatDisplayValue = useCallback(
+    (val: number): string => {
+      if (formatValue) {
+        return formatValue(val);
+      }
+      if (val <= -90) {
+        return "-Inf dB";
+      }
+      return `${val.toFixed(1)} dB`;
+    },
+    [formatValue],
+  );
 
   const handlePointerEvent = useCallback(
     (clientY: number) => {
@@ -153,6 +174,36 @@ export function VerticalSlider({
         />
       </div>
 
+      {showValue && (
+        <span
+          className={
+            isVintage
+              ? "slider-value-vintage"
+              : "text-xs font-mono text-accent-primary"
+          }
+          style={{
+            minWidth: "70px",
+            textAlign: "center",
+            display: "inline-block",
+            marginTop: isModern ? "12px" : "0",
+          }}
+        >
+          {formatDisplayValue(value)}
+        </span>
+      )}
+      {isVintage && showValue && (
+        <style>{`
+          .slider-value-vintage {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 11px;
+            color: #F5A524;
+            background: rgba(0,0,0,0.4);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(245, 165, 36, 0.2);
+          }
+        `}</style>
+      )}
       <label className="text-xs text-text-secondary">{label}</label>
     </div>
   );

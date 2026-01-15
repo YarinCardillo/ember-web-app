@@ -94,7 +94,13 @@ function ArcIndicator({
   const center = size / 2;
   const valueAngle = START_ANGLE + normalizedValue * TOTAL_ARC;
 
-  const backgroundPath = describeArc(center, center, ARC_RADIUS, START_ANGLE, END_ANGLE);
+  const backgroundPath = describeArc(
+    center,
+    center,
+    ARC_RADIUS,
+    START_ANGLE,
+    END_ANGLE,
+  );
   const valuePath =
     normalizedValue > 0.01
       ? describeArc(center, center, ARC_RADIUS, START_ANGLE, valueAngle)
@@ -127,7 +133,9 @@ function ArcIndicator({
       <path
         d={backgroundPath}
         fill="none"
-        stroke={isVintage ? "rgba(42, 37, 32, 0.8)" : "rgba(255, 255, 255, 0.08)"}
+        stroke={
+          isVintage ? "rgba(42, 37, 32, 0.8)" : "rgba(255, 255, 255, 0.08)"
+        }
         strokeWidth={ARC_STROKE_WIDTH}
         strokeLinecap="round"
       />
@@ -140,7 +148,10 @@ function ArcIndicator({
           strokeWidth={ARC_STROKE_WIDTH}
           strokeLinecap="round"
           filter={isActive ? `url(#${filterId})` : undefined}
-          style={{ opacity: isActive ? 1 : 0.85, transition: "opacity 0.15s ease-out" }}
+          style={{
+            opacity: isActive ? 1 : 0.85,
+            transition: "opacity 0.15s ease-out",
+          }}
         />
       )}
     </svg>
@@ -150,7 +161,10 @@ function ArcIndicator({
 /**
  * Generates vintage brushed metal knob style object
  */
-function getVintageKnobStyle(rotation: number, isDragging: boolean): React.CSSProperties {
+function getVintageKnobStyle(
+  rotation: number,
+  isDragging: boolean,
+): React.CSSProperties {
   return {
     width: KNOB_SIZE,
     height: KNOB_SIZE,
@@ -182,6 +196,7 @@ export function Knob({
 }: KnobProps): JSX.Element {
   const theme = useThemeStore((state) => state.theme);
   const isVintage = theme === "vintage";
+  const isModern = theme === "modern";
 
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -190,7 +205,8 @@ export function Knob({
   const startValueRef = useRef<number>(0);
 
   const formatDisplayValue = useCallback(
-    (val: number): string => (formatValue ? formatValue(val) : `${val.toFixed(1)}${unit}`),
+    (val: number): string =>
+      formatValue ? formatValue(val) : `${val.toFixed(1)}${unit}`,
     [formatValue, unit],
   );
 
@@ -237,7 +253,10 @@ export function Knob({
     [handleDragStart],
   );
 
-  const handleMouseMove = useCallback((e: MouseEvent) => handleDragMove(e.clientY), [handleDragMove]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => handleDragMove(e.clientY),
+    [handleDragMove],
+  );
 
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
@@ -291,14 +310,18 @@ export function Knob({
 
   const knobStyle = isVintage
     ? getVintageKnobStyle(rotation, isDragging)
-    : { width: KNOB_SIZE, height: KNOB_SIZE, transform: `translate(-50%, -50%) rotate(${rotation}deg)` };
+    : {
+        width: KNOB_SIZE,
+        height: KNOB_SIZE,
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+      };
 
   const knobClassName = `
     absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
     rounded-full cursor-pointer select-none
     focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary
     transition-transform duration-75 ease-out
-    ${!isVintage ? `radial-gradient-knob border border-white/10 ${isDragging ? "knob-glow-active" : "knob-glow"}` : ""}
+    ${isModern ? `radial-gradient-knob border border-white/10 ${isDragging ? "knob-glow-active" : "knob-glow"}` : ""}
   `;
 
   return (
@@ -342,7 +365,8 @@ export function Knob({
                 style={{
                   width: 18,
                   height: 18,
-                  background: "radial-gradient(circle, #151510 0%, #0a0a08 100%)",
+                  background:
+                    "radial-gradient(circle, #151510 0%, #0a0a08 100%)",
                   border: "1px solid #F5A524",
                   boxShadow: "0 0 8px rgba(245, 165, 36, 0.2)",
                 }}
@@ -365,7 +389,8 @@ export function Knob({
             <div
               className="absolute inset-2 rounded-full pointer-events-none"
               style={{
-                background: "radial-gradient(circle at 40% 40%, rgba(255,255,255,0.05), transparent 60%)",
+                background:
+                  "radial-gradient(circle at 40% 40%, rgba(255,255,255,0.05), transparent 60%)",
               }}
             />
           )}
@@ -375,7 +400,9 @@ export function Knob({
       {/* Labels */}
       <div className="text-center w-full">
         <div className="text-xs text-text-secondary truncate">{label}</div>
-        <div className={`text-sm font-mono whitespace-nowrap ${isVintage ? "value-pill" : "text-accent-primary"}`}>
+        <div
+          className={`text-sm font-mono whitespace-nowrap ${isVintage ? "value-pill" : "text-accent-primary"}`}
+        >
           {formatDisplayValue(value)}
         </div>
       </div>

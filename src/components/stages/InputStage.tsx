@@ -185,9 +185,10 @@ export function InputStage({
             maxDb={36}
             centerDb={0}
             step={0.5}
-            height={170}
+            height={122}
             onChange={(value) => setParameter("inputGain", value)}
             defaultValue={0}
+            showValue
           />
         </div>
         <div className="w-full sm:flex-1 flex justify-center sm:justify-end px-2 sm:px-0 sm:mr-5">

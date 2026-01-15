@@ -218,7 +218,7 @@ export function OutputStage({
             formatValue={formatGainValue}
             onChange={(value) => setParameter("preGain", value)}
             defaultValue={0}
-            showValue={false}
+            showValue={true}
           />
         </div>
         {isVintage ? (
@@ -318,11 +318,28 @@ export function OutputStage({
               LUFS SHORT
             </div>
             <div
-              className="lcd-value text-center mt-2"
-              style={{ fontSize: 48, minWidth: 200 }}
+              className="lcd-value mt-2"
+              style={{
+                fontSize: 48,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "baseline",
+                gap: "8px",
+              }}
             >
-              {formatLcdValue(outputLufs)}
-              <span className="lcd-unit" style={{ fontSize: 18 }}>
+              <span
+                style={{
+                  width: "140px",
+                  textAlign: "right",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {formatLcdValue(outputLufs)}
+              </span>
+              <span
+                className="lcd-unit"
+                style={{ fontSize: 18, width: "50px", textAlign: "left" }}
+              >
                 LUFS
               </span>
             </div>
