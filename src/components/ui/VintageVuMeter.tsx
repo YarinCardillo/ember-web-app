@@ -7,13 +7,15 @@ import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import { linearToDb } from "../../utils/dsp-math";
 
 interface VintageVuMeterProps {
-  analyser: AnalyserNode | null;
+  analyserLeft: AnalyserNode | null;
+  analyserRight: AnalyserNode | null;
   label?: string;
   width?: number;
 }
 
 export function VintageVuMeter({
-  analyser,
+  analyserLeft,
+  analyserRight,
   label = "Input",
   width = 360,
 }: VintageVuMeterProps): JSX.Element {
@@ -245,7 +247,12 @@ export function VintageVuMeter({
   ];
 
   useEffect(() => {
-    if (!analyser || !needleLeftRef.current || !needleRightRef.current) {
+    if (
+      !analyserLeft ||
+      !analyserRight ||
+      !needleLeftRef.current ||
+      !needleRightRef.current
+    ) {
       if (needleLeftRef.current) {
         needleLeftRef.current.style.transform = `translateX(-50%) rotate(${minAngle}deg)`;
       }
@@ -259,8 +266,10 @@ export function VintageVuMeter({
       return;
     }
 
-    const bufferLength = analyser.fftSize;
-    const dataArray = new Float32Array(bufferLength);
+    const bufferLengthL = analyserLeft.fftSize;
+    const bufferLengthR = analyserRight.fftSize;
+    const dataArrayL = new Float32Array(bufferLengthL);
+    const dataArrayR = new Float32Array(bufferLengthR);
 
     const draw = (): void => {
       animationFrameRef.current = requestAnimationFrame(draw);
@@ -269,31 +278,32 @@ export function VintageVuMeter({
       const deltaTime = now - lastUpdateTimeRef.current;
       lastUpdateTimeRef.current = now;
 
-      analyser.getFloatTimeDomainData(dataArray);
+      // Get data from separate analysers
+      analyserLeft.getFloatTimeDomainData(dataArrayL);
+      analyserRight.getFloatTimeDomainData(dataArrayR);
 
-      // RMS measurement per channel (interleaved stereo: L, R, L, R, ...)
+      // RMS measurement for Left channel
       let sumL = 0;
-      let sumR = 0;
       let peakL = 0;
-      let peakR = 0;
-      const halfLength = bufferLength / 2;
-
-      for (let i = 0; i < bufferLength; i++) {
-        const sample = dataArray[i];
+      for (let i = 0; i < bufferLengthL; i++) {
+        const sample = dataArrayL[i];
+        sumL += sample * sample;
         const abs = Math.abs(sample);
-        if (i % 2 === 0) {
-          // Left channel (even indices)
-          sumL += sample * sample;
-          if (abs > peakL) peakL = abs;
-        } else {
-          // Right channel (odd indices)
-          sumR += sample * sample;
-          if (abs > peakR) peakR = abs;
-        }
+        if (abs > peakL) peakL = abs;
       }
 
-      const rmsLevelL = Math.sqrt(sumL / halfLength);
-      const rmsLevelR = Math.sqrt(sumR / halfLength);
+      // RMS measurement for Right channel
+      let sumR = 0;
+      let peakR = 0;
+      for (let i = 0; i < bufferLengthR; i++) {
+        const sample = dataArrayR[i];
+        sumR += sample * sample;
+        const abs = Math.abs(sample);
+        if (abs > peakR) peakR = abs;
+      }
+
+      const rmsLevelL = Math.sqrt(sumL / bufferLengthL);
+      const rmsLevelR = Math.sqrt(sumR / bufferLengthR);
       const rmsDbfsL = linearToDb(rmsLevelL);
       const rmsDbfsR = linearToDb(rmsLevelR);
       const peakDbfs = linearToDb(Math.max(peakL, peakR));
@@ -379,7 +389,7 @@ export function VintageVuMeter({
       peakBrightnessRef.current = 0;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analyser]);
+  }, [analyserLeft, analyserRight]);
 
   const svgContent = useMemo(() => {
     const elements: JSX.Element[] = [];

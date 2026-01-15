@@ -9,7 +9,10 @@ import { dbToLinear } from "../../utils/dsp-math";
 
 export class InputNode {
   private gainNode: GainNode;
-  private analyserNode: AnalyserNode;
+  private analyserNodeL: AnalyserNode;
+  private analyserNodeR: AnalyserNode;
+  private channelSplitter: ChannelSplitterNode;
+  private channelMerger: ChannelMergerNode;
   private inputMuteGain: GainNode; // For muting input when preview is playing
   private mediaStream: MediaStreamAudioSourceNode | null = null;
   private stream: MediaStream | null = null;
@@ -19,13 +22,29 @@ export class InputNode {
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
     this.gainNode = ctx.createGain();
-    this.analyserNode = ctx.createAnalyser();
+    this.analyserNodeL = ctx.createAnalyser();
+    this.analyserNodeR = ctx.createAnalyser();
+    this.channelSplitter = ctx.createChannelSplitter(2);
+    this.channelMerger = ctx.createChannelMerger(2);
     this.inputMuteGain = ctx.createGain();
-    this.analyserNode.fftSize = 2048;
-    this.analyserNode.smoothingTimeConstant = 0.8;
 
-    // Connect gain to analyser
-    this.gainNode.connect(this.analyserNode);
+    // Configure analysers
+    this.analyserNodeL.fftSize = 2048;
+    this.analyserNodeL.smoothingTimeConstant = 0.8;
+    this.analyserNodeR.fftSize = 2048;
+    this.analyserNodeR.smoothingTimeConstant = 0.8;
+
+    // Connect gain to splitter, then to separate analysers
+    // gainNode → splitter → analyserL (channel 0)
+    //                    → analyserR (channel 1)
+    // Then merge back for output
+    this.gainNode.connect(this.channelSplitter);
+    this.channelSplitter.connect(this.analyserNodeL, 0); // Left channel
+    this.channelSplitter.connect(this.analyserNodeR, 1); // Right channel
+
+    // Merge analysers back to stereo output
+    this.analyserNodeL.connect(this.channelMerger, 0, 0);
+    this.analyserNodeR.connect(this.channelMerger, 0, 1);
   }
 
   /**
@@ -145,11 +164,11 @@ export class InputNode {
   }
 
   /**
-   * Get analyser node for metering
-   * @returns AnalyserNode configured for FFT analysis
+   * Get analyser nodes for stereo metering
+   * @returns Object with left and right AnalyserNodes
    */
-  getAnalyser(): AnalyserNode {
-    return this.analyserNode;
+  getAnalysers(): { left: AnalyserNode; right: AnalyserNode } {
+    return { left: this.analyserNodeL, right: this.analyserNodeR };
   }
 
   /**
@@ -163,10 +182,10 @@ export class InputNode {
 
   /**
    * Get output node for connection
-   * @returns AnalyserNode as the output of the input stage
+   * @returns ChannelMergerNode as the output of the input stage (stereo)
    */
   getOutput(): AudioNode {
-    return this.analyserNode;
+    return this.channelMerger;
   }
 
   /**
@@ -174,7 +193,7 @@ export class InputNode {
    * @param destination - AudioNode to connect output to
    */
   connect(destination: AudioNode): void {
-    this.analyserNode.connect(destination);
+    this.channelMerger.connect(destination);
   }
 
   /**
@@ -183,7 +202,7 @@ export class InputNode {
    * Does NOT stop the MediaStream or disconnect the raw source.
    */
   disconnectOutput(): void {
-    this.analyserNode.disconnect();
+    this.channelMerger.disconnect();
   }
 
   /**
@@ -192,7 +211,7 @@ export class InputNode {
    * This stops the MediaStream tracks permanently.
    */
   disconnect(): void {
-    this.analyserNode.disconnect();
+    this.channelMerger.disconnect();
     if (this.mediaStream) {
       this.mediaStream.disconnect();
     }
