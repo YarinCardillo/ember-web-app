@@ -3,7 +3,7 @@
  * Used for clipper metering with left/right channel display
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { linearToDb } from "../../utils/dsp-math";
 
 interface StereoMeterProps {
@@ -11,7 +11,7 @@ interface StereoMeterProps {
   analyserRight: AnalyserNode | null;
   label?: string;
   mode?: "rms" | "peak";
-  width?: number;
+  maxWidth?: number;
   variant?: "modern" | "vintage";
 }
 
@@ -53,16 +53,32 @@ export function StereoMeter({
   analyserRight,
   label = "Clipper",
   mode = "peak",
-  width = 280,
+  maxWidth = 280,
   variant = "modern",
 }: StereoMeterProps): JSX.Element {
   const COLORS = variant === "vintage" ? COLORS_VINTAGE : COLORS_MODERN;
   const isVintage = variant === "vintage";
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number>();
   const smoothedLevelL = useRef(MIN_DB);
   const smoothedLevelR = useRef(MIN_DB);
   const lastUpdateTime = useRef(Date.now());
+
+  const [width, setWidth] = useState(maxWidth);
+
+  const updateWidth = useCallback(() => {
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      setWidth(Math.min(containerWidth, maxWidth));
+    }
+  }, [maxWidth]);
+
+  useEffect(() => {
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, [updateWidth]);
 
   const scale = width / 280;
   const height = 58 * scale;
@@ -312,7 +328,11 @@ export function StereoMeter({
   ]);
 
   return (
-    <div className="flex flex-col items-center gap-1.5 mt-2">
+    <div
+      ref={containerRef}
+      className="flex flex-col items-center gap-1.5 mt-2 w-full"
+      style={{ maxWidth }}
+    >
       <canvas
         ref={canvasRef}
         width={width}

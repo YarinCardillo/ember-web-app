@@ -257,7 +257,7 @@ export function OutputStage({
             analyserRight={preClipperAnalyserRight}
             label=""
             mode="peak"
-            width={420}
+            maxWidth={420}
           />
         )}
 
