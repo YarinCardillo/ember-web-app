@@ -907,11 +907,17 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           {/* Bottom Row: Output (1 column width) + Credits (2 columns width) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
             <OutputStage
-              preClipperAnalyser={
-                audioNodes.output?.getPreClipperAnalyser() || null
+              preClipperAnalyserLeft={
+                audioNodes.output?.getPreClipperAnalysers().left || null
               }
-              postGainAnalyser={
-                audioNodes.output?.getPostGainAnalyser() || null
+              preClipperAnalyserRight={
+                audioNodes.output?.getPreClipperAnalysers().right || null
+              }
+              postGainAnalyserLeft={
+                audioNodes.output?.getPostGainAnalysers().left || null
+              }
+              postGainAnalyserRight={
+                audioNodes.output?.getPostGainAnalysers().right || null
               }
               outputDevices={outputDevices}
               onOutputDeviceChange={handleOutputDeviceChange}
