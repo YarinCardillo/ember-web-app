@@ -888,7 +888,8 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
             <InputStage
               devices={inputDevices}
-              inputAnalyser={audioNodes.input?.getAnalyser() || null}
+              inputAnalyserLeft={audioNodes.input?.getAnalysers().left || null}
+              inputAnalyserRight={audioNodes.input?.getAnalysers().right || null}
               onDeviceChange={handleInputDeviceChange}
               onVinylModeActivate={handleVinylModeActivate}
               onVinylModeDeactivate={handleVinylModeDeactivate}

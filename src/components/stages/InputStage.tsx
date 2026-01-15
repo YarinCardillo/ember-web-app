@@ -17,7 +17,8 @@ import type { AudioDeviceInfo } from "../../types/audio.types";
 
 interface InputStageProps {
   devices: AudioDeviceInfo[];
-  inputAnalyser: AnalyserNode | null;
+  inputAnalyserLeft: AnalyserNode | null;
+  inputAnalyserRight: AnalyserNode | null;
   onDeviceChange: (deviceId: string) => void;
   onVinylModeActivate?: () => void;
   onVinylModeDeactivate?: () => void;
@@ -31,7 +32,8 @@ interface InputStageProps {
 
 export function InputStage({
   devices,
-  inputAnalyser,
+  inputAnalyserLeft,
+  inputAnalyserRight,
   onDeviceChange,
   onVinylModeActivate,
   onVinylModeDeactivate,
@@ -192,7 +194,12 @@ export function InputStage({
           />
         </div>
         <div className="w-full sm:flex-1 flex justify-center sm:justify-end px-2 sm:px-0 sm:mr-5">
-          <VintageVuMeter analyser={inputAnalyser} label="" width={350} />
+          <VintageVuMeter
+            analyserLeft={inputAnalyserLeft}
+            analyserRight={inputAnalyserRight}
+            label=""
+            width={350}
+          />
         </div>
       </div>
     </div>
