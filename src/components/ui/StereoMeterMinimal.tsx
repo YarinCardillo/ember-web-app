@@ -173,11 +173,13 @@ export function StereoMeterMinimal({
       }
       if (peakLRef.current) {
         peakLRef.current.style.left = `${peakLPct}%`;
-        peakLRef.current.style.opacity = peakLPct > 5 ? (peakLPct > levelLPct + 2 ? "0.9" : "0.6") : "0";
+        peakLRef.current.style.opacity =
+          peakLPct > 5 ? (peakLPct > levelLPct + 2 ? "0.9" : "0.6") : "0";
       }
       if (peakRRef.current) {
         peakRRef.current.style.left = `${peakRPct}%`;
-        peakRRef.current.style.opacity = peakRPct > 5 ? (peakRPct > levelRPct + 2 ? "0.9" : "0.6") : "0";
+        peakRRef.current.style.opacity =
+          peakRPct > 5 ? (peakRPct > levelRPct + 2 ? "0.9" : "0.6") : "0";
       }
     };
 
@@ -212,7 +214,11 @@ export function StereoMeterMinimal({
           ))}
         </div>
         <div ref={needleRef} className="hybrid-needle" style={{ left: "0%" }} />
-        <div ref={peakRef} className="hybrid-peak" style={{ left: "0%", opacity: 0 }} />
+        <div
+          ref={peakRef}
+          className="hybrid-peak"
+          style={{ left: "0%", opacity: 0 }}
+        />
       </div>
     </div>
   );
@@ -271,9 +277,13 @@ export function StereoMeterMinimal({
           opacity: 0.12;
         }
 
+        /* Zone proportions based on dB scale (-48 to +6 dB, 54 dB total):
+           Green: -48 to -12 dB = 36 dB = 66.7% (flex 6)
+           Yellow: -12 to 0 dB = 12 dB = 22.2% (flex 2)
+           Red: 0 to +6 dB = 6 dB = 11.1% (flex 1) */
         .hybrid-zone.green { flex: 6; background: #22c55e; }
         .hybrid-zone.yellow { flex: 2; background: #facc15; }
-        .hybrid-zone.red { flex: 2; background: #ef4444; }
+        .hybrid-zone.red { flex: 1; background: #ef4444; }
 
         .hybrid-ticks {
           position: absolute;
