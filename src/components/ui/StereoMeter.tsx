@@ -22,9 +22,9 @@ const DB_RANGE = MAX_DB - MIN_DB;
 const YELLOW_THRESHOLD = -12;
 const RED_THRESHOLD = 0;
 
-// Smoothing ballistics (ms)
-const ATTACK_TIME = 15;
-const RELEASE_TIME = 150;
+// Smoothing ballistics (ms) - modern meter is more responsive
+const ATTACK_TIME = 5;
+const RELEASE_TIME = 100;
 
 // Colors
 const COLORS_MODERN = {

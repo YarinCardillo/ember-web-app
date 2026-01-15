@@ -52,7 +52,7 @@ export function OutputStage({
   const animationRef = useRef<number>();
   const lufsStateRef = useRef<LufsState | null>(null);
 
-  // Update output LUFS level from analyser
+  // Update output LUFS level from analyser (for LCD display only)
   useEffect(() => {
     if (!postGainAnalyser) {
       return;
@@ -65,31 +65,14 @@ export function OutputStage({
       );
     }
 
-    const dataArray = new Float32Array(postGainAnalyser.fftSize);
-
     const updateLevel = () => {
-      // Calculate LUFS short-term
+      // Calculate LUFS short-term (for display only)
       const lufs = calculateShortTermLufs(
         postGainAnalyser,
         lufsStateRef.current!,
       );
       setOutputLufs(lufs);
       setHasSignal(lufs > -60);
-      setIsClipping(lufs > -1);
-
-      // Also check for peak clipping
-      postGainAnalyser.getFloatTimeDomainData(dataArray);
-      let peak = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        const abs = Math.abs(dataArray[i]);
-        if (abs > peak) {
-          peak = abs;
-        }
-      }
-      const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
-      if (peakDb > -0.1) {
-        setIsClipping(true);
-      }
 
       animationRef.current = requestAnimationFrame(updateLevel);
     };
@@ -102,6 +85,39 @@ export function OutputStage({
       }
     };
   }, [postGainAnalyser]);
+
+  // Clip detection from pre-clipper signal (peak > 0dB)
+  const clipAnimationRef = useRef<number>();
+  useEffect(() => {
+    if (!preClipperAnalyser) {
+      return;
+    }
+
+    const dataArray = new Float32Array(preClipperAnalyser.fftSize);
+
+    const checkClipping = () => {
+      preClipperAnalyser.getFloatTimeDomainData(dataArray);
+      let peak = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const abs = Math.abs(dataArray[i]);
+        if (abs > peak) {
+          peak = abs;
+        }
+      }
+      const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
+      setIsClipping(peakDb > 0);
+
+      clipAnimationRef.current = requestAnimationFrame(checkClipping);
+    };
+
+    checkClipping();
+
+    return () => {
+      if (clipAnimationRef.current) {
+        cancelAnimationFrame(clipAnimationRef.current);
+      }
+    };
+  }, [preClipperAnalyser]);
 
   const formatGainValue = (value: number): string => {
     if (value <= -90) {
