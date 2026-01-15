@@ -98,7 +98,7 @@ export function Footer(): JSX.Element {
 
         {/* Version */}
         <div className="hidden sm:flex items-center">
-          <span className="text-xs font-mono text-text-tertiary">v0.10.0</span>
+          <span className="text-xs font-mono text-text-tertiary">v0.11.0</span>
         </div>
       </div>
 

@@ -340,7 +340,7 @@ export function OutputStage({
             style={{ minHeight: 180 }}
           >
             <div className="lcd-label text-center" style={{ fontSize: 14 }}>
-              LUFS SHORT
+              SHORT TERM
             </div>
             <div
               className="lcd-value mt-2"
