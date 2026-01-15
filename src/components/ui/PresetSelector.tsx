@@ -43,7 +43,7 @@ export function PresetSelector({
         bg-bg-secondary text-text-primary rounded-lg
         px-3 py-2 md:px-4 md:py-3 text-sm md:text-base
         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary
-        cursor-pointer min-w-[140px] md:min-w-[180px]
+        cursor-pointer min-w-0 flex-1 sm:flex-initial sm:min-w-[180px]
         transition-colors duration-150
         hover:bg-bg-hover
       "

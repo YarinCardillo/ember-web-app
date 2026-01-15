@@ -69,37 +69,40 @@ export function Header({
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4">
-        {/* Help Button */}
-        {onHelpClick && (
-          <motion.button
-            onClick={onHelpClick}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="
-              w-10 h-10 md:w-12 md:h-12 rounded-full transition-colors duration-200
-              bg-bg-secondary hover:bg-bg-hover
-              text-text-secondary hover:text-accent-primary
-              flex items-center justify-center
-              text-lg md:text-xl font-light
-            "
-            style={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}
-            title="Setup Guide"
-            aria-label="Open setup guide"
-          >
-            ?
-          </motion.button>
-        )}
+      <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4 w-full sm:w-auto">
+        {/* Top row on mobile: Help + Preset */}
+        <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
+          {/* Help Button */}
+          {onHelpClick && (
+            <motion.button
+              onClick={onHelpClick}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="
+                w-10 h-10 md:w-12 md:h-12 rounded-full transition-colors duration-200
+                bg-bg-secondary hover:bg-bg-hover
+                text-text-secondary hover:text-accent-primary
+                flex items-center justify-center flex-shrink-0
+                text-lg md:text-xl font-light
+              "
+              style={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}
+              title="Setup Guide"
+              aria-label="Open setup guide"
+            >
+              ?
+            </motion.button>
+          )}
 
-        {/* Preset Selector */}
-        <PresetSelector
-          presets={presets}
-          currentPreset={currentPreset}
-          onSelect={handlePresetSelect}
-        />
+          {/* Preset Selector */}
+          <PresetSelector
+            presets={presets}
+            currentPreset={currentPreset}
+            onSelect={handlePresetSelect}
+          />
+        </div>
 
-        {/* Bypass + Power group */}
-        <div className="flex items-center gap-2 md:gap-4">
+        {/* Bottom row on mobile: Bypass + Power */}
+        <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
           {/* Master Bypass Button */}
           <motion.button
             onClick={handleBypassToggle}
@@ -108,7 +111,7 @@ export function Header({
             whileTap={!isRunning ? {} : { scale: 0.98 }}
             className={`
               px-3 py-2 md:px-4 md:py-3 rounded-lg font-semibold transition-colors duration-200
-              flex items-center gap-2 text-sm md:text-base
+              flex items-center justify-center gap-2 text-sm md:text-base flex-1 sm:flex-initial
               ${
                 !isRunning
                   ? "bg-bg-secondary text-text-tertiary cursor-not-allowed"
@@ -136,7 +139,7 @@ export function Header({
           >
             {/* Bypass LED indicator */}
             <motion.div
-              className="w-2 h-2 rounded-full"
+              className="w-2 h-2 rounded-full flex-shrink-0"
               animate={{
                 backgroundColor: bypassAll && isRunning ? "#FACC15" : "#3F3F46",
                 boxShadow:
@@ -156,7 +159,7 @@ export function Header({
             whileTap={{ scale: 0.98 }}
             className={`
               px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-colors duration-200
-              flex items-center gap-2 text-sm md:text-base
+              flex items-center justify-center gap-2 text-sm md:text-base flex-1 sm:flex-initial
               ${
                 isRunning
                   ? "bg-meter-red/20 text-meter-red"
@@ -179,7 +182,7 @@ export function Header({
           >
             {/* Power LED indicator */}
             <motion.div
-              className="w-2 h-2 rounded-full"
+              className="w-2 h-2 rounded-full flex-shrink-0"
               animate={{
                 backgroundColor: isRunning ? "#4ADE80" : "#3F3F46",
                 boxShadow: isRunning
