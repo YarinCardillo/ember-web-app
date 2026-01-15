@@ -22,7 +22,6 @@ import { TransientNode } from "../../audio/nodes/TransientNode";
 import { SpeakerSimNode } from "../../audio/nodes/SpeakerSimNode";
 import { OutputNode } from "../../audio/nodes/OutputNode";
 import { useVinylMode } from "../../hooks/useVinylMode";
-// import { TransientDebug } from '../ui/TransientDebug'; // Debug panel - uncomment if needed
 import { isMobileDevice } from "../../utils/device-detection";
 import presetsData from "../../audio/presets/amp-presets.json";
 import type { PresetCollection } from "../../types/audio.types";
@@ -344,11 +343,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       harmonics: state.harmonics,
       saturationMix: state.saturationMix,
       bypassSaturation: state.bypassSaturation,
+      bypassTransient: state.bypassTransient,
       transientAttack: state.transientAttack,
       transientSustain: state.transientSustain,
       transientMix: state.transientMix,
       preGain: state.preGain,
-      outputGain: state.outputGain,
       inputDeviceId: state.inputDeviceId,
     })),
   );
@@ -363,11 +362,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     harmonics,
     saturationMix,
     bypassSaturation,
+    bypassTransient,
     transientAttack,
     transientSustain,
     transientMix,
     preGain,
-    outputGain,
     inputDeviceId: currentInputDeviceId,
   } = audioParams;
 
@@ -404,10 +403,10 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.transient.setAttack(transientAttack);
       nodes.transient.setSustain(transientSustain);
       nodes.transient.setMix(transientMix);
+      nodes.transient.setBypass(bypassTransient);
     }
     if (nodes.output) {
       nodes.output.setPreGain(preGain);
-      nodes.output.setGain(outputGain);
     }
   }, [
     isInitialized,
@@ -420,11 +419,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
     harmonics,
     saturationMix,
     bypassSaturation,
+    bypassTransient,
     transientAttack,
     transientSustain,
     transientMix,
     preGain,
-    outputGain,
   ]);
 
   // Handle master bypass - reroute signal chain
@@ -443,13 +442,13 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       nodes.transient?.disconnect();
       nodes.speakerSim?.disconnect();
 
-      // BYPASS: Connect input directly to master gain (skip all processing but keep volume control)
-      // Signal path in bypass: MediaStream -> VinylMode (bypassed) -> Input Gain -> Master Gain
+      // BYPASS: Connect input directly to output stage (skip all processing but keep clipper active)
+      // Signal path in bypass: MediaStream -> VinylMode (bypassed) -> Input Gain -> Output (with clipper)
       // We keep vinyl mode in the chain but bypassed so we don't break connections
       nodes.vinylMode.connect(nodes.input.getGainInput());
-      nodes.input.getOutput().connect(nodes.output.getMasterGainNode());
+      nodes.input.getOutput().connect(nodes.output.getInput());
 
-      console.log("Master bypass ENABLED - dry signal through master gain");
+      console.log("Master bypass ENABLED - dry signal through clipper");
     } else {
       // Disconnect bypass route
       nodes.input.getOutput().disconnect();
@@ -889,7 +888,10 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
             <InputStage
               devices={inputDevices}
-              inputAnalyser={audioNodes.input?.getAnalyser() || null}
+              inputAnalyserLeft={audioNodes.input?.getAnalysers().left || null}
+              inputAnalyserRight={
+                audioNodes.input?.getAnalysers().right || null
+              }
               onDeviceChange={handleInputDeviceChange}
               onVinylModeActivate={handleVinylModeActivate}
               onVinylModeDeactivate={handleVinylModeDeactivate}
@@ -907,11 +909,17 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           {/* Bottom Row: Output (1 column width) + Credits (2 columns width) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
             <OutputStage
-              preClipperAnalyser={
-                audioNodes.output?.getPreClipperAnalyser() || null
+              preClipperAnalyserLeft={
+                audioNodes.output?.getPreClipperAnalysers().left || null
               }
-              postGainAnalyser={
-                audioNodes.output?.getPostGainAnalyser() || null
+              preClipperAnalyserRight={
+                audioNodes.output?.getPreClipperAnalysers().right || null
+              }
+              postGainAnalyserLeft={
+                audioNodes.output?.getPostGainAnalysers().left || null
+              }
+              postGainAnalyserRight={
+                audioNodes.output?.getPostGainAnalysers().right || null
               }
               outputDevices={outputDevices}
               onOutputDeviceChange={handleOutputDeviceChange}

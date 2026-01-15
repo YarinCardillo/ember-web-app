@@ -1,14 +1,15 @@
 /**
  * OutputNode - Final gain stage with hard clipper and analysers for metering
  *
- * Signal chain: preGain -> preClipperAnalyser -> clipper (0dB hard limit) -> gain (master volume) -> postGainAnalyser -> destination
+ * Signal chain: preGain -> preClipperAnalyser -> clipper (0dB hard limit) -> postGainAnalyser -> destination
  *
  * The preGain control affects levels entering the clipper (can cause clipping).
  * The preClipperAnalyser meters levels entering the clipper (shows when signal clips).
  * The clipper hard-clips at 0dB (±1.0), completely transparent below.
- * The gain control (master) is post-clipper, so it only affects volume to speakers (does not apply clipping).
- * The postGainAnalyser meters the final output level (post-clipper, post-gain).
+ * The postGainAnalyser meters the final output level (post-clipper).
  * Uses 4x oversampling for analog-like anti-aliasing to reduce harsh artifacts.
+ *
+ * Bypass mode: connects directly to gainNode (skipping preGain and clipper) for clean passthrough.
  */
 
 import { dbToLinear } from "../../utils/dsp-math";
@@ -17,32 +18,68 @@ export class OutputNode {
   private preGainNode: GainNode;
   private gainNode: GainNode;
   private clipperNode: WaveShaperNode;
-  private preClipperAnalyser: AnalyserNode;
-  private postGainAnalyser: AnalyserNode;
+  // Stereo analysers for pre-clipper metering
+  private preClipperAnalyserL: AnalyserNode;
+  private preClipperAnalyserR: AnalyserNode;
+  private preClipperSplitter: ChannelSplitterNode;
+  private preClipperMerger: ChannelMergerNode;
+  // Stereo analysers for post-gain metering
+  private postGainAnalyserL: AnalyserNode;
+  private postGainAnalyserR: AnalyserNode;
+  private postGainSplitter: ChannelSplitterNode;
+  private postGainMerger: ChannelMergerNode;
 
   constructor(ctx: AudioContext) {
     this.preGainNode = ctx.createGain();
     this.gainNode = ctx.createGain();
     this.clipperNode = ctx.createWaveShaper();
-    this.preClipperAnalyser = ctx.createAnalyser();
-    this.preClipperAnalyser.fftSize = 256; // Smaller for LED meter
-    this.preClipperAnalyser.smoothingTimeConstant = 0.8;
 
-    this.postGainAnalyser = ctx.createAnalyser();
-    this.postGainAnalyser.fftSize = 256; // Smaller for LED meter
-    this.postGainAnalyser.smoothingTimeConstant = 0.8;
+    // Pre-clipper stereo analysers
+    this.preClipperAnalyserL = ctx.createAnalyser();
+    this.preClipperAnalyserR = ctx.createAnalyser();
+    this.preClipperSplitter = ctx.createChannelSplitter(2);
+    this.preClipperMerger = ctx.createChannelMerger(2);
+    this.preClipperAnalyserL.fftSize = 256;
+    this.preClipperAnalyserL.smoothingTimeConstant = 0.8;
+    this.preClipperAnalyserR.fftSize = 256;
+    this.preClipperAnalyserR.smoothingTimeConstant = 0.8;
+
+    // Post-gain stereo analysers
+    this.postGainAnalyserL = ctx.createAnalyser();
+    this.postGainAnalyserR = ctx.createAnalyser();
+    this.postGainSplitter = ctx.createChannelSplitter(2);
+    this.postGainMerger = ctx.createChannelMerger(2);
+    this.postGainAnalyserL.fftSize = 256;
+    this.postGainAnalyserL.smoothingTimeConstant = 0.8;
+    this.postGainAnalyserR.fftSize = 256;
+    this.postGainAnalyserR.smoothingTimeConstant = 0.8;
 
     // Create hard clipping curve at 0dB
     this.clipperNode.curve =
       this.createHardClipCurve() as Float32Array<ArrayBuffer>;
     this.clipperNode.oversample = "4x"; // Reduce aliasing artifacts
 
-    // Signal chain: preGain -> preClipperAnalyser -> clipper -> gain -> postGainAnalyser -> destination
-    this.preGainNode.connect(this.preClipperAnalyser);
-    this.preClipperAnalyser.connect(this.clipperNode);
+    // Signal chain with stereo metering:
+    // preGain → splitter → analyserL/R → merger → clipper → gain → splitter → analyserL/R → merger → destination
+
+    // Pre-clipper metering
+    this.preGainNode.connect(this.preClipperSplitter);
+    this.preClipperSplitter.connect(this.preClipperAnalyserL, 0);
+    this.preClipperSplitter.connect(this.preClipperAnalyserR, 1);
+    this.preClipperAnalyserL.connect(this.preClipperMerger, 0, 0);
+    this.preClipperAnalyserR.connect(this.preClipperMerger, 0, 1);
+    this.preClipperMerger.connect(this.clipperNode);
+
+    // Clipper to gain
     this.clipperNode.connect(this.gainNode);
-    this.gainNode.connect(this.postGainAnalyser);
-    this.postGainAnalyser.connect(ctx.destination);
+
+    // Post-gain metering
+    this.gainNode.connect(this.postGainSplitter);
+    this.postGainSplitter.connect(this.postGainAnalyserL, 0);
+    this.postGainSplitter.connect(this.postGainAnalyserR, 1);
+    this.postGainAnalyserL.connect(this.postGainMerger, 0, 0);
+    this.postGainAnalyserR.connect(this.postGainMerger, 0, 1);
+    this.postGainMerger.connect(ctx.destination);
   }
 
   /**
@@ -95,34 +132,21 @@ export class OutputNode {
   }
 
   /**
-   * Set output gain (master volume) in dB
-   * This is post-clipper, affects only output volume
-   * @param db - Gain in decibels (-36 to +6)
-   */
-  setGain(db: number): void {
-    this.gainNode.gain.setTargetAtTime(
-      dbToLinear(db),
-      this.gainNode.context.currentTime,
-      0.01,
-    );
-  }
-
-  /**
-   * Get analyser node for metering (pre-clipper)
+   * Get analyser nodes for stereo metering (pre-clipper)
    * Shows level entering clipper for clipping indication
-   * @returns AnalyserNode positioned before the clipper
+   * @returns Object with left and right AnalyserNodes positioned before the clipper
    */
-  getPreClipperAnalyser(): AnalyserNode {
-    return this.preClipperAnalyser;
+  getPreClipperAnalysers(): { left: AnalyserNode; right: AnalyserNode } {
+    return { left: this.preClipperAnalyserL, right: this.preClipperAnalyserR };
   }
 
   /**
-   * Get analyser node for post-gain metering
+   * Get analyser nodes for stereo post-gain metering
    * Shows final output level after all processing
-   * @returns AnalyserNode positioned at the final output
+   * @returns Object with left and right AnalyserNodes positioned at the final output
    */
-  getPostGainAnalyser(): AnalyserNode {
-    return this.postGainAnalyser;
+  getPostGainAnalysers(): { left: AnalyserNode; right: AnalyserNode } {
+    return { left: this.postGainAnalyserL, right: this.postGainAnalyserR };
   }
 
   /**
@@ -149,16 +173,16 @@ export class OutputNode {
    */
   reconnectToDestination(ctx: AudioContext): void {
     // Disconnect from old destination
-    this.postGainAnalyser.disconnect();
+    this.postGainMerger.disconnect();
 
     // Reconnect to (potentially new) destination
-    this.postGainAnalyser.connect(ctx.destination);
+    this.postGainMerger.connect(ctx.destination);
   }
 
   /**
-   * Get the master gain node (post-clipper) for bypass routing
-   * In bypass mode, connect directly here to skip processing but keep volume control
-   * @returns GainNode for master volume
+   * Get the gain node (post-clipper) for bypass routing
+   * In bypass mode, connect directly here to skip clipper and go straight to output
+   * @returns GainNode for bypass connection
    */
   getMasterGainNode(): GainNode {
     return this.gainNode;

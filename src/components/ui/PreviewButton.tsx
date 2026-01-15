@@ -21,7 +21,7 @@ export function PreviewButton({
       disabled={disabled || isLoading}
       className={`
         px-3 py-1.5 rounded-lg text-xs font-medium
-        transition-all duration-150
+        transition-all duration-150 whitespace-nowrap flex-shrink-0
         ${
           isPlaying
             ? "bg-accent-primary/20 text-accent-bright border border-accent-primary/50"

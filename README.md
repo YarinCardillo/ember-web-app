@@ -133,19 +133,22 @@ systemctl --user restart pipewire
 
 ### Analog VU Meters
 
-Beautiful needle-style VU meters with:
-- Analog ballistics (smooth needle movement)
+Beautiful dual-needle stereo VU meter with:
+- **Dual-needle stereo display** - White needle for Left channel, red needle for Right channel
+- **True stereo separation** - Uses `ChannelSplitterNode` for accurate L/R metering
+- Analog ballistics (IEC 60268-17 compliant, 65ms time constant)
 - Color-coded scale (green → yellow → red zones)
-- Peak hold indicator (click to reset)
-- dB scale markings
+- Peak hold indicator LED (lights at 0 VU / -18 dBFS)
+- dB scale markings (-20 VU to +3 VU)
 
 ### LED Output Meters
 
-Two horizontal LED-bar meters in the output section:
+Two horizontal stereo needle meters in the output section:
 - **Clipper Meter** (pre-clipper): Shows peak level entering the hard clipper, warns when clipping occurs
 - **DAC Out Meter** (post-gain): Shows peak level after Master gain, warns when signal exceeds 0dB (potential DAC clipping)
-- Both meters feature 18 circular LED segments with color-coded zones (green → yellow → red)
-- Peak mode measurement for accurate transient detection
+- **True stereo separation** - Each meter displays independent L/R channels via `ChannelSplitterNode`
+- Needle indicators with peak hold markers
+- Color-coded zones (green → yellow → red) with dB scale (-48 to +6 dB)
 
 ### Master Bypass
 
@@ -182,22 +185,23 @@ ember-web-app/
 │   ├── audio/
 │   │   ├── AudioEngine.ts        # Singleton managing AudioContext
 │   │   ├── nodes/                # DSP node wrappers
-│   │   │   ├── InputNode.ts
+│   │   │   ├── InputNode.ts      # Stereo analyser via ChannelSplitter
 │   │   │   ├── VinylModeNode.ts  # 33 Mode - slowed playback, reverb, +8dB boost
 │   │   │   ├── TapeSimNode.ts    # Wow/flutter, head bump, HF rolloff
 │   │   │   ├── ToneStackNode.ts
 │   │   │   ├── TubeSaturationNode.ts
 │   │   │   ├── TransientNode.ts  # Bass transient shaper (< 150Hz)
 │   │   │   ├── SpeakerSimNode.ts
-│   │   │   └── OutputNode.ts     # Includes hard clipper
+│   │   │   └── OutputNode.ts     # Hard clipper + stereo pre/post analysers
 │   │   └── presets/
 │   │       └── amp-presets.json
 │   │
 │   ├── components/
 │   │   ├── ui/                   # Reusable UI components
 │   │   │   ├── Knob.tsx
-│   │   │   ├── VintageVuMeter.tsx # Analog needle meter
-│   │   │   ├── StereoMeter.tsx   # Dual-channel LED-bar meter
+│   │   │   ├── VintageVuMeter.tsx # Dual-needle stereo VU meter (L/R)
+│   │   │   ├── StereoMeter.tsx   # Stereo needle meter (L/R channels)
+│   │   │   ├── StereoMeterMinimal.tsx # Minimal stereo needle meter
 │   │   │   ├── OutputMeter.tsx   # Output section LED-bar meters
 │   │   │   ├── MasterSlider.tsx  # Non-linear master volume slider
 │   │   │   ├── Toggle.tsx
@@ -237,7 +241,8 @@ ember-web-app/
 │   └── index.css
 │
 ├── docs/
-│   └── ARCHITECTURE.md           # Technical documentation
+│   ├── ARCHITECTURE.md           # Technical documentation
+│   └── VU_METER.md               # VU meter implementation details
 │
 ├── package.json
 ├── tsconfig.json
@@ -260,12 +265,12 @@ ember-web-app/
 ### Processing Stages
 
 1. **VinylModeNode** - Slowed playback (0.733x), synthetic reverb, and +8dB boost for vinyl record simulation. Processes audio FIRST, before input gain. Activated via the "33" button in the Input stage.
-2. **InputNode** - Captures audio via `getUserMedia()`, gain control (-36 to +36 dB), level metering (RMS VU meter + peak bar)
+2. **InputNode** - Captures audio via `getUserMedia()`, gain control (-36 to +36 dB), stereo level metering via `ChannelSplitterNode` (dual-needle VU meter + peak LED)
 3. **TapeSimNode** - Wow/flutter, head bump (+2dB @ 80Hz), HF rolloff (15kHz), stereo widening, odd harmonic saturation (3rd, 5th, 7th with 1/n³ decay)
 4. **ToneStackNode** - 4-band EQ (Bass 75Hz, Mid 800Hz, Treble 4kHz, Presence 11kHz)
 5. **TubeSaturationNode** - AudioWorklet with tanh clipping, even harmonic generation (2nd, 4th, 6th with 1/n² decay), controllable via Drive and Harmonics knobs
 6. **TransientNode** - SPL Transient Designer-style processor using sidechain filtering (150Hz lowpass for detection, fullband gain modulation). Fixed parameters: Attack 75%, Sustain 0%, Mix 55%. Always active, no user controls.
-7. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip metering (Clipper peak meter) → Hard clipper (0dB) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain metering (DAC out peak meter)
+7. **OutputNode** - Pre-clipper gain (-36 to +36 dB) → Pre-clip stereo metering (L/R via `ChannelSplitterNode`) → Hard clipper (0dB, 4x oversampling) → Master gain (-96 to +6 dB, 0 dB centered) → Post-gain stereo metering (L/R)
 
 **Note:** `SpeakerSimNode` exists in the codebase but is not currently used in the signal chain. It may be implemented in future versions for cabinet simulation via impulse response convolution.
 

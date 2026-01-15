@@ -7,10 +7,12 @@ import { useEffect, useRef } from "react";
 import { linearToDb } from "../../utils/dsp-math";
 
 interface StereoMeterProps {
-  analyser: AnalyserNode | null;
+  analyserLeft: AnalyserNode | null;
+  analyserRight: AnalyserNode | null;
   label?: string;
   mode?: "rms" | "peak";
   width?: number;
+  variant?: "modern" | "vintage";
 }
 
 const MIN_DB = -60;
@@ -21,12 +23,12 @@ const DB_RANGE = MAX_DB - MIN_DB;
 const YELLOW_THRESHOLD = -12;
 const RED_THRESHOLD = 0;
 
-// Smoothing ballistics (ms)
-const ATTACK_TIME = 15;
-const RELEASE_TIME = 150;
+// Smoothing ballistics (ms) - modern meter is more responsive
+const ATTACK_TIME = 5;
+const RELEASE_TIME = 100;
 
 // Colors
-const COLORS = {
+const COLORS_MODERN = {
   green: "#4ADE80",
   yellow: "#FACC15",
   red: "#F87171",
@@ -36,12 +38,26 @@ const COLORS = {
   scaleColor: "#444444",
 };
 
+const COLORS_VINTAGE = {
+  green: "#F5A524",
+  yellow: "#fbbf24",
+  red: "#ef4444",
+  background: "linear-gradient(180deg, #e8dcc8 0%, #d4c4a8 100%)",
+  barBackground: "#1a1815",
+  labelColor: "#3d2e1a",
+  scaleColor: "#5c4a2a",
+};
+
 export function StereoMeter({
-  analyser,
+  analyserLeft,
+  analyserRight,
   label = "Clipper",
   mode = "peak",
   width = 280,
+  variant = "modern",
 }: StereoMeterProps): JSX.Element {
+  const COLORS = variant === "vintage" ? COLORS_VINTAGE : COLORS_MODERN;
+  const isVintage = variant === "vintage";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
   const smoothedLevelL = useRef(MIN_DB);
@@ -85,9 +101,9 @@ export function StereoMeter({
       const redPos = (RED_THRESHOLD - MIN_DB) / DB_RANGE;
 
       gradient.addColorStop(0, COLORS.green);
-      gradient.addColorStop(yellowPos * 0.95, COLORS.green);
+      gradient.addColorStop(yellowPos, COLORS.green);
       gradient.addColorStop(yellowPos, COLORS.yellow);
-      gradient.addColorStop(redPos * 0.98, COLORS.yellow);
+      gradient.addColorStop(redPos, COLORS.yellow);
       gradient.addColorStop(redPos, COLORS.red);
       gradient.addColorStop(1, COLORS.red);
 
@@ -178,52 +194,74 @@ export function StereoMeter({
       lastUpdateTime.current = now;
 
       // Clear canvas
-      ctx.fillStyle = COLORS.background;
+      if (isVintage) {
+        // Vintage gradient background
+        const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+        bgGradient.addColorStop(0, "#e8dcc8");
+        bgGradient.addColorStop(1, "#d4c4a8");
+        ctx.fillStyle = bgGradient;
+      } else {
+        ctx.fillStyle = COLORS.background;
+      }
       ctx.beginPath();
       ctx.roundRect(0, 0, width, height, 8 * scale);
       ctx.fill();
 
+      // Vintage border
+      if (isVintage) {
+        ctx.strokeStyle = "#3d3022";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
       let targetDbL = MIN_DB;
       let targetDbR = MIN_DB;
 
-      if (analyser) {
-        const bufferLength = analyser.fftSize;
-        const dataArray = new Float32Array(bufferLength);
-        analyser.getFloatTimeDomainData(dataArray);
-
-        const halfLength = Math.floor(bufferLength / 2);
+      // Process left channel
+      if (analyserLeft) {
+        const bufferLengthL = analyserLeft.fftSize;
+        const dataArrayL = new Float32Array(bufferLengthL);
+        analyserLeft.getFloatTimeDomainData(dataArrayL);
 
         if (mode === "peak") {
           let peakL = 0;
-          let peakR = 0;
-          for (let i = 0; i < bufferLength; i++) {
-            const abs = Math.abs(dataArray[i]);
-            if (i % 2 === 0) {
-              if (abs > peakL) peakL = abs;
-            } else {
-              if (abs > peakR) peakR = abs;
-            }
+          for (let i = 0; i < bufferLengthL; i++) {
+            const abs = Math.abs(dataArrayL[i]);
+            if (abs > peakL) peakL = abs;
           }
           targetDbL = linearToDb(peakL);
-          targetDbR = linearToDb(peakR);
         } else {
           let sumL = 0;
-          let sumR = 0;
-          for (let i = 0; i < bufferLength; i++) {
-            const val = dataArray[i] * dataArray[i];
-            if (i % 2 === 0) {
-              sumL += val;
-            } else {
-              sumR += val;
-            }
+          for (let i = 0; i < bufferLengthL; i++) {
+            sumL += dataArrayL[i] * dataArrayL[i];
           }
-          const rmsL = Math.sqrt(sumL / halfLength);
-          const rmsR = Math.sqrt(sumR / halfLength);
+          const rmsL = Math.sqrt(sumL / bufferLengthL);
           targetDbL = linearToDb(rmsL);
+        }
+        targetDbL = Math.max(MIN_DB, Math.min(MAX_DB, targetDbL));
+      }
+
+      // Process right channel
+      if (analyserRight) {
+        const bufferLengthR = analyserRight.fftSize;
+        const dataArrayR = new Float32Array(bufferLengthR);
+        analyserRight.getFloatTimeDomainData(dataArrayR);
+
+        if (mode === "peak") {
+          let peakR = 0;
+          for (let i = 0; i < bufferLengthR; i++) {
+            const abs = Math.abs(dataArrayR[i]);
+            if (abs > peakR) peakR = abs;
+          }
+          targetDbR = linearToDb(peakR);
+        } else {
+          let sumR = 0;
+          for (let i = 0; i < bufferLengthR; i++) {
+            sumR += dataArrayR[i] * dataArrayR[i];
+          }
+          const rmsR = Math.sqrt(sumR / bufferLengthR);
           targetDbR = linearToDb(rmsR);
         }
-
-        targetDbL = Math.max(MIN_DB, Math.min(MAX_DB, targetDbL));
         targetDbR = Math.max(MIN_DB, Math.min(MAX_DB, targetDbR));
       }
 
@@ -259,7 +297,8 @@ export function StereoMeter({
       }
     };
   }, [
-    analyser,
+    analyserLeft,
+    analyserRight,
     mode,
     width,
     scale,
@@ -268,6 +307,8 @@ export function StereoMeter({
     barMarginLeft,
     barMarginRight,
     barWidth,
+    isVintage,
+    COLORS,
   ]);
 
   return (

@@ -217,24 +217,40 @@ Bypass path: Input → Bypass → Output
 
 Captures audio from the user's selected input device. Receives processed audio from VinylModeNode.
 
+**Signal Chain Inside InputNode:**
+```
+MediaStream → InputMuteGain → GainNode → ChannelSplitter → AnalyserL (ch 0)
+                                                        → AnalyserR (ch 1)
+                                                        → ChannelMerger → Output
+```
+
 **Web Audio Nodes Used:**
 - `MediaStreamAudioSourceNode` - Captures getUserMedia stream (raw source)
 - `GainNode` - Input mute control (for preview mode)
 - `GainNode` - Input level control (receives from VinylModeNode)
-- `AnalyserNode` - Level metering
+- `ChannelSplitterNode` - Separates stereo signal into L/R channels
+- `AnalyserNode` (x2) - Separate analysers for left and right channel metering
+- `ChannelMergerNode` - Recombines L/R channels for output
+
+**Stereo Metering:**
+The input stage uses true stereo channel separation via `ChannelSplitterNode`. This allows the VU meter to display independent levels for left and right channels, rather than a mono-mixed signal.
 
 **Key Methods:**
 - `connectRawSource(destination)` - Connects raw MediaStream to VinylModeNode
 - `getGainInput()` - Returns gain node input for VinylModeNode connection
-- `getOutput()` - Returns analyser node output for signal chain
+- `getAnalysers()` - Returns `{ left: AnalyserNode, right: AnalyserNode }` for stereo metering
+- `getOutput()` - Returns ChannelMergerNode output for signal chain
 - `muteInput()` / `unmuteInput()` - Mutes mic input when preview is playing
 
 ```typescript
 class InputNode {
   private gainNode: GainNode;
-  private analyserNode: AnalyserNode;
+  private analyserNodeL: AnalyserNode;
+  private analyserNodeR: AnalyserNode;
+  private channelSplitter: ChannelSplitterNode;
+  private channelMerger: ChannelMergerNode;
   private mediaStream: MediaStreamAudioSourceNode | null;
-  
+
   async setInput(deviceId?: string): Promise<void> {
     // Creates MediaStream but doesn't auto-connect
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -243,18 +259,11 @@ class InputNode {
     this.mediaStream = ctx.createMediaStreamSource(stream);
     // Connection handled separately: MediaStream → VinylMode → Input Gain
   }
-  
-  connectRawSource(destination: AudioNode): void {
-    // Connect raw MediaStream to VinylModeNode (first in chain)
-    if (this.mediaStream) {
-      this.mediaStream.connect(destination);
-    }
+
+  getAnalysers(): { left: AnalyserNode; right: AnalyserNode } {
+    return { left: this.analyserNodeL, right: this.analyserNodeR };
   }
-  
-  getGainInput(): AudioNode {
-    return this.gainNode; // VinylModeNode connects here
-  }
-  
+
   setGain(db: number): void {
     this.gainNode.gain.value = dbToLinear(db);
   }
@@ -424,15 +433,27 @@ Final output stage with pre-clipper gain control, pre-clipper metering, hard cli
 
 **Signal Chain Inside OutputNode:**
 ```
-Input → PreGainNode → PreClipperAnalyser → ClipperNode → GainNode (Master) → PostGainAnalyser → destination
+PreGain → Splitter → AnalyserPreL/R → Merger → Clipper → Gain → Splitter → AnalyserPostL/R → Merger → destination
 ```
 
 **Web Audio Nodes Used:**
 - `GainNode` (preGain) - Pre-clipper gain control (-36 to +36 dB, 0.1 dB steps)
-- `AnalyserNode` (preClipperAnalyser) - "Clipper" meter, shows level entering clipper (peak mode)
+- `ChannelSplitterNode` (x2) - Separate L/R channels for pre-clipper and post-gain metering
+- `AnalyserNode` (x4) - Stereo analysers: preClipperL, preClipperR, postGainL, postGainR
+- `ChannelMergerNode` (x2) - Recombine channels after metering
 - `WaveShaperNode` - Hard clipper (0dB ceiling with 4x oversampling)
 - `GainNode` (master) - Master volume control (-96 to +6 dB, 0 dB visually centered, non-linear)
-- `AnalyserNode` (postGainAnalyser) - "DAC out" LED meter, shows final output level (peak mode)
+
+**Stereo Metering:**
+The output stage uses true stereo channel separation via `ChannelSplitterNode` at two points:
+1. **Pre-clipper**: Separate L/R analysers show signal levels entering the clipper
+2. **Post-gain**: Separate L/R analysers show final output levels after all processing
+
+This allows the StereoMeter components to display accurate per-channel levels.
+
+**Key Methods:**
+- `getPreClipperAnalysers()` - Returns `{ left: AnalyserNode, right: AnalyserNode }`
+- `getPostGainAnalysers()` - Returns `{ left: AnalyserNode, right: AnalyserNode }`
 
 **Design Rationale:**
 - The preGain control affects levels *before* the clipper, allowing users to drive the clipper for distortion
@@ -597,12 +618,22 @@ Horizontal slider control optimized for master volume:
 
 ### VintageVuMeter Component
 
-Analog needle-style VU meter with:
-- Semi-circular arc scale (-60 to +6 dB)
-- Smooth needle animation (analog ballistics: 10ms attack, 300ms release)
-- Color-coded zones (green → yellow → red)
-- Peak hold indicator (small dot, click to reset)
-- High-DPI canvas rendering
+Dual-needle analog VU meter with true stereo channel separation:
+- **Dual needles**: White needle for Left channel, red needle for Right channel
+- Semi-circular arc scale (-20 to +3 VU, calibrated to -18 dBFS = 0 VU)
+- Smooth needle animation (IEC 60268-17 ballistics: 65ms attack/release)
+- Color-coded scale (white/brown → red zone above 0 VU)
+- Peak LED indicator (lights when either channel exceeds 0 VU)
+- Responsive sizing with aspect ratio preservation
+
+**Stereo Display:**
+When both needles are aligned, the signal is balanced. Diverging needles indicate L/R imbalance, providing immediate visual feedback on stereo image.
+
+**Props:**
+- `analyserLeft: AnalyserNode | null` - Left channel analyser
+- `analyserRight: AnalyserNode | null` - Right channel analyser
+- `label?: string` - Optional label above meter
+- `width?: number` - Base width (scales proportionally)
 
 ### OutputMeter Component
 
@@ -618,7 +649,22 @@ Compact horizontal LED-bar style meter with:
 
 ### StereoMeter Component
 
-Dual-channel LED-bar meter for stereo level visualization.
+Dual-channel horizontal bar meter for stereo level visualization with true channel separation:
+- Separate L and R bar meters with independent levels
+- Canvas-based rendering for smooth animation
+- Color-coded zones: green (-60 to -12 dB), yellow (-12 to 0 dB), red (0 to +6 dB)
+- Configurable mode: `'peak'` for transient detection, `'rms'` for average level
+- Vintage and modern style variants
+
+**Props:**
+- `analyserLeft: AnalyserNode | null` - Left channel analyser
+- `analyserRight: AnalyserNode | null` - Right channel analyser
+- `mode?: 'rms' | 'peak'` - Measurement mode (default: peak)
+- `width?: number` - Meter width in pixels
+- `variant?: 'modern' | 'vintage'` - Visual style
+
+**StereoMeterMinimal Component:**
+A more compact variant with needle-style indicators and peak hold markers. Uses the same dual-analyser architecture for true stereo separation.
 
 ### EmberSparks Component
 
@@ -665,8 +711,8 @@ User Drags Knob
 
 ```
 When bypassAll = true:
-  InputNode.getOutput() ──────────────────▶ AudioContext.destination
-  (all processing nodes disconnected)
+  MediaStream → VinylModeNode (bypassed) → InputNode → OutputNode (clipper active) → destination
+  (all processing nodes disconnected, but clipper remains active for protection)
 
 When bypassAll = false:
   MediaStream → VinylModeNode → InputNode → TapeSim → ToneStack → Saturation → Transient → SpeakerSim → OutputNode → destination

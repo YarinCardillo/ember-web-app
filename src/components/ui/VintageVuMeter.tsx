@@ -3,27 +3,62 @@
  * Used for input metering with warm analog appearance
  */
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import { linearToDb } from "../../utils/dsp-math";
 
 interface VintageVuMeterProps {
-  analyser: AnalyserNode | null;
+  analyserLeft: AnalyserNode | null;
+  analyserRight: AnalyserNode | null;
   label?: string;
   width?: number;
 }
 
 export function VintageVuMeter({
-  analyser,
+  analyserLeft,
+  analyserRight,
   label = "Input",
   width = 360,
 }: VintageVuMeterProps): JSX.Element {
-  const needleRef = useRef<HTMLDivElement>(null);
+  const needleLeftRef = useRef<HTMLDivElement>(null);
+  const needleRightRef = useRef<HTMLDivElement>(null);
   const peakLedRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number>();
-  const currentAngleRef = useRef(-45);
+  const currentAngleLeftRef = useRef(-45);
+  const currentAngleRightRef = useRef(-45);
   const lastUpdateTimeRef = useRef(Date.now());
   const peakBrightnessRef = useRef(0);
   const peakHoldTimeRef = useRef(0);
+
+  // Dynamic scale based on container width for responsive sizing
+  const [containerScale, setContainerScale] = useState(1);
+
+  const updateScale = useCallback(() => {
+    if (wrapperRef.current) {
+      const containerWidth = wrapperRef.current.offsetWidth;
+      const newScale = containerWidth / width;
+      setContainerScale(newScale);
+    }
+  }, [width]);
+
+  // Observe container size changes
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    // Initial scale calculation
+    updateScale();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScale();
+    });
+
+    resizeObserver.observe(wrapper);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [updateScale]);
 
   const scale = width / 360;
   const height = 180 * scale;
@@ -31,19 +66,34 @@ export function VintageVuMeter({
   // VU meter scale: -20 to +3 dB
   const minDb = -20;
   const maxDb = 3;
-  const minAngle = -35;
-  const maxAngle = 35;
+  const minAngle = -25;
+  const maxAngle = 25;
 
   // Memoize scale-dependent styles to avoid object recreation on each render
   const meterStyles = useMemo(
     () => ({
+      // Outer wrapper - responsive container that maintains aspect ratio
+      outerWrapper: {
+        width: "100%",
+        maxWidth: width,
+      },
+      // Inner wrapper - maintains aspect ratio and clips overflow
+      innerWrapper: {
+        width: "100%",
+        aspectRatio: `${width} / ${height}`,
+        position: "relative" as const,
+        overflow: "hidden" as const,
+      },
       container: {
         width,
         height,
         background: "linear-gradient(180deg, #1a1612 0%, #e1cf95 100%)",
         border: "2px solid #3d3022",
         borderRadius: 8 * scale,
-        position: "relative" as const,
+        position: "absolute" as const,
+        top: 0,
+        left: 0,
+        transformOrigin: "top left",
         overflow: "hidden" as const,
         boxShadow:
           "inset 0 0 80px rgba(245, 165, 36, 0.08), inset 0 -20px 40px rgba(0,0,0,0.3)",
@@ -88,19 +138,19 @@ export function VintageVuMeter({
         bottom: 0,
         left: "50%",
         transform: "translateX(-50%)",
-        width: 120 * scale,
+        width: 200 * scale,
         height: 10 * scale,
         background: "linear-gradient(to bottom, #1a1612 0%, #0d0b09 100%)",
         borderRadius: `${4 * scale}px ${4 * scale}px 0 0`,
         boxShadow: "inset 0 2px 6px rgba(0,0,0,0.8)",
         zIndex: 5,
       },
-      needle: {
+      needleLeft: {
         position: "absolute" as const,
-        bottom: -62 * scale,
+        bottom: -160 * scale,
         left: "50%",
         width: 2 * scale,
-        height: 200 * scale,
+        height: 300 * scale,
         background:
           "linear-gradient(to top, #8b0000 0%, #dc2626 8%, #ffffff 10%, #ffffff 100%)",
         transformOrigin: "bottom center",
@@ -110,9 +160,24 @@ export function VintageVuMeter({
           "0 0 8px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3)",
         zIndex: 6,
       },
+      needleRight: {
+        position: "absolute" as const,
+        bottom: -160 * scale,
+        left: "50%",
+        width: 2 * scale,
+        height: 300 * scale,
+        background:
+          "linear-gradient(to top, #8b0000 0%, #dc2626 8%, #ff3333 10%, #ff3333 100%)",
+        transformOrigin: "bottom center",
+        transform: `translateX(-50%) rotate(${minAngle}deg)`,
+        borderRadius: 1,
+        boxShadow:
+          "0 0 8px rgba(255, 51, 51, 0.9), 0 0 20px rgba(255, 51, 51, 0.6), 0 0 40px rgba(255, 51, 51, 0.3)",
+        zIndex: 5,
+      },
       pivot: {
         position: "absolute" as const,
-        bottom: -68 * scale,
+        bottom: -166 * scale,
         left: "50%",
         transform: "translateX(-50%)",
         width: 12 * scale,
@@ -143,12 +208,12 @@ export function VintageVuMeter({
   const svgWidth = 360;
   const svgHeight = 140;
   const cx = 180;
-  const cy = 220;
-  const arcRadius = 200;
-  const tickOuter = 200;
-  const tickInnerMajor = 170;
-  const tickInnerMinor = 180;
-  const textRadius = 152;
+  const cy = 320;
+  const arcRadius = 300;
+  const tickOuter = 300;
+  const tickInnerMajor = 265;
+  const tickInnerMinor = 278;
+  const textRadius = 245;
 
   // Convert angle to SVG coordinates
   const angleToPoint = (angleDeg: number, r: number) => {
@@ -166,25 +231,33 @@ export function VintageVuMeter({
     return `M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`;
   };
 
-  // Scale marks - adjusted for -35 to +35 degree range
+  // Scale marks - adjusted for -25 to +25 degree range (flatter arc)
   const marks = [
-    { angle: -45, label: "20", isRed: false, isMajor: true },
-    { angle: -30, label: "10", isRed: false, isMajor: true },
-    { angle: -18, label: "7", isRed: false, isMajor: true },
-    { angle: -8, label: "5", isRed: false, isMajor: true },
-    { angle: 5, label: "3", isRed: false, isMajor: true },
-    { angle: 20, label: "0", isRed: true, isMajor: true },
-    { angle: 35, label: "3", isRed: true, isMajor: true },
+    { angle: -32, label: "20", isRed: false, isMajor: true },
+    { angle: -21, label: "10", isRed: false, isMajor: true },
+    { angle: -13, label: "7", isRed: false, isMajor: true },
+    { angle: -6, label: "5", isRed: false, isMajor: true },
+    { angle: 4, label: "3", isRed: false, isMajor: true },
+    { angle: 14, label: "0", isRed: true, isMajor: true },
+    { angle: 25, label: "3", isRed: true, isMajor: true },
   ];
 
   const minorTicks = [
-    -42, -39, -36, -33, -27, -24, -21, -15, -12, -3, 0, 10, 15, 25, 30, 40, 45,
+    -30, -28, -26, -24, -19, -17, -15, -11, -9, -2, 0, 7, 11, 18, 21, 28, 32,
   ];
 
   useEffect(() => {
-    if (!analyser || !needleRef.current) {
-      if (needleRef.current) {
-        needleRef.current.style.transform = `translateX(-50%) rotate(${minAngle}deg)`;
+    if (
+      !analyserLeft ||
+      !analyserRight ||
+      !needleLeftRef.current ||
+      !needleRightRef.current
+    ) {
+      if (needleLeftRef.current) {
+        needleLeftRef.current.style.transform = `translateX(-50%) rotate(${minAngle}deg)`;
+      }
+      if (needleRightRef.current) {
+        needleRightRef.current.style.transform = `translateX(-50%) rotate(${minAngle}deg)`;
       }
       if (peakLedRef.current) {
         peakLedRef.current.style.background = "#3d1a1a";
@@ -193,8 +266,10 @@ export function VintageVuMeter({
       return;
     }
 
-    const bufferLength = analyser.fftSize;
-    const dataArray = new Float32Array(bufferLength);
+    const bufferLengthL = analyserLeft.fftSize;
+    const bufferLengthR = analyserRight.fftSize;
+    const dataArrayL = new Float32Array(bufferLengthL);
+    const dataArrayR = new Float32Array(bufferLengthR);
 
     const draw = (): void => {
       animationFrameRef.current = requestAnimationFrame(draw);
@@ -203,38 +278,70 @@ export function VintageVuMeter({
       const deltaTime = now - lastUpdateTimeRef.current;
       lastUpdateTimeRef.current = now;
 
-      analyser.getFloatTimeDomainData(dataArray);
+      // Get data from separate analysers
+      analyserLeft.getFloatTimeDomainData(dataArrayL);
+      analyserRight.getFloatTimeDomainData(dataArrayR);
 
-      // RMS measurement for VU meter behavior
-      let sum = 0;
-      let peak = 0;
-      for (let i = 0; i < bufferLength; i++) {
-        sum += dataArray[i] * dataArray[i];
-        const abs = Math.abs(dataArray[i]);
-        if (abs > peak) peak = abs;
+      // RMS measurement for Left channel
+      let sumL = 0;
+      let peakL = 0;
+      for (let i = 0; i < bufferLengthL; i++) {
+        const sample = dataArrayL[i];
+        sumL += sample * sample;
+        const abs = Math.abs(sample);
+        if (abs > peakL) peakL = abs;
       }
-      const rmsLevel = Math.sqrt(sum / bufferLength);
-      const rmsDbfs = linearToDb(rmsLevel);
-      const peakDbfs = linearToDb(peak);
+
+      // RMS measurement for Right channel
+      let sumR = 0;
+      let peakR = 0;
+      for (let i = 0; i < bufferLengthR; i++) {
+        const sample = dataArrayR[i];
+        sumR += sample * sample;
+        const abs = Math.abs(sample);
+        if (abs > peakR) peakR = abs;
+      }
+
+      const rmsLevelL = Math.sqrt(sumL / bufferLengthL);
+      const rmsLevelR = Math.sqrt(sumR / bufferLengthR);
+      const rmsDbfsL = linearToDb(rmsLevelL);
+      const rmsDbfsR = linearToDb(rmsLevelR);
+      const peakDbfs = linearToDb(Math.max(peakL, peakR));
 
       // Convert dBFS to VU scale (0 VU = -18 dBFS)
-      const rmsVu = rmsDbfs - VU_REFERENCE_DBFS;
+      const rmsVuL = rmsDbfsL - VU_REFERENCE_DBFS;
+      const rmsVuR = rmsDbfsR - VU_REFERENCE_DBFS;
       const peakVu = peakDbfs - VU_REFERENCE_DBFS;
 
-      // Map to VU scale (-20 to +3)
-      const clampedLevel = Math.max(minDb, Math.min(maxDb, rmsVu));
-      const normalizedLevel = (clampedLevel - minDb) / (maxDb - minDb);
-      const targetAngle = minAngle + normalizedLevel * (maxAngle - minAngle);
+      // Map to VU scale (-20 to +3) - Left channel
+      const clampedLevelL = Math.max(minDb, Math.min(maxDb, rmsVuL));
+      const normalizedLevelL = (clampedLevelL - minDb) / (maxDb - minDb);
+      const targetAngleL = minAngle + normalizedLevelL * (maxAngle - minAngle);
 
-      // Apply VU meter ballistics
-      const currentAngle = currentAngleRef.current;
-      const angleDiff = targetAngle - currentAngle;
-      const timeConstant = angleDiff > 0 ? attackTime : releaseTime;
-      const smoothingFactor = 1 - Math.exp(-deltaTime / timeConstant);
-      currentAngleRef.current = currentAngle + angleDiff * smoothingFactor;
+      // Map to VU scale (-20 to +3) - Right channel
+      const clampedLevelR = Math.max(minDb, Math.min(maxDb, rmsVuR));
+      const normalizedLevelR = (clampedLevelR - minDb) / (maxDb - minDb);
+      const targetAngleR = minAngle + normalizedLevelR * (maxAngle - minAngle);
 
-      if (needleRef.current) {
-        needleRef.current.style.transform = `translateX(-50%) rotate(${currentAngleRef.current}deg)`;
+      // Apply VU meter ballistics - Left needle
+      const currentAngleL = currentAngleLeftRef.current;
+      const angleDiffL = targetAngleL - currentAngleL;
+      const timeConstantL = angleDiffL > 0 ? attackTime : releaseTime;
+      const smoothingFactorL = 1 - Math.exp(-deltaTime / timeConstantL);
+      currentAngleLeftRef.current = currentAngleL + angleDiffL * smoothingFactorL;
+
+      // Apply VU meter ballistics - Right needle
+      const currentAngleR = currentAngleRightRef.current;
+      const angleDiffR = targetAngleR - currentAngleR;
+      const timeConstantR = angleDiffR > 0 ? attackTime : releaseTime;
+      const smoothingFactorR = 1 - Math.exp(-deltaTime / timeConstantR);
+      currentAngleRightRef.current = currentAngleR + angleDiffR * smoothingFactorR;
+
+      if (needleLeftRef.current) {
+        needleLeftRef.current.style.transform = `translateX(-50%) rotate(${currentAngleLeftRef.current}deg)`;
+      }
+      if (needleRightRef.current) {
+        needleRightRef.current.style.transform = `translateX(-50%) rotate(${currentAngleRightRef.current}deg)`;
       }
 
       // Peak LED logic with hold and fade
@@ -277,11 +384,12 @@ export function VintageVuMeter({
         cancelAnimationFrame(animationFrameRef.current);
       }
       // Reset refs to prevent visual jumps when analyser changes
-      currentAngleRef.current = minAngle;
+      currentAngleLeftRef.current = minAngle;
+      currentAngleRightRef.current = minAngle;
       peakBrightnessRef.current = 0;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analyser]);
+  }, [analyserLeft, analyserRight]);
 
   const svgContent = useMemo(() => {
     const elements: JSX.Element[] = [];
@@ -290,7 +398,7 @@ export function VintageVuMeter({
     elements.push(
       <path
         key="main-arc"
-        d={createArc(arcRadius, -45, 45)}
+        d={createArc(arcRadius, -32, 32)}
         fill="none"
         stroke="#2a2015"
         strokeWidth="1.5"
@@ -301,7 +409,7 @@ export function VintageVuMeter({
     elements.push(
       <path
         key="red-arc"
-        d={createArc(arcRadius - 8, 20, 45)}
+        d={createArc(arcRadius - 8, 14, 32)}
         fill="none"
         stroke="#991b1b"
         strokeWidth="8"
@@ -353,7 +461,7 @@ export function VintageVuMeter({
     minorTicks.forEach((angle, i) => {
       const outer = angleToPoint(angle, tickOuter);
       const inner = angleToPoint(angle, tickInnerMinor);
-      const isRed = angle > 20;
+      const isRed = angle > 14;
 
       elements.push(
         <line
@@ -390,7 +498,7 @@ export function VintageVuMeter({
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 w-full">
       {label && (
         <div
           className="text-xs text-text-secondary"
@@ -399,44 +507,57 @@ export function VintageVuMeter({
           {label}
         </div>
       )}
-      <div
-        style={meterStyles.container}
-        role="meter"
-        aria-label={`${label} VU meter`}
-        aria-labelledby={label ? `vu-meter-label-${label}` : undefined}
-        aria-valuemin={minDb}
-        aria-valuemax={maxDb}
-        aria-valuenow={0}
-        aria-valuetext="Audio level meter"
-      >
-        {/* Scale SVG */}
-        <svg
-          width={svgWidth * scale}
-          height={svgHeight * scale}
-          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          style={meterStyles.svg}
-        >
-          {svgContent}
-        </svg>
+      {/* Outer responsive wrapper */}
+      <div style={meterStyles.outerWrapper} ref={wrapperRef}>
+        {/* Inner wrapper maintains aspect ratio */}
+        <div style={meterStyles.innerWrapper}>
+          {/* Actual meter container - scales to fit */}
+          <div
+            style={{
+              ...meterStyles.container,
+              transform: `scale(${containerScale})`,
+            }}
+            role="meter"
+            aria-label={`${label} VU meter`}
+            aria-labelledby={label ? `vu-meter-label-${label}` : undefined}
+            aria-valuemin={minDb}
+            aria-valuemax={maxDb}
+            aria-valuenow={0}
+            aria-valuetext="Audio level meter"
+          >
+            {/* Scale SVG */}
+            <svg
+              width={svgWidth * scale}
+              height={svgHeight * scale}
+              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+              style={meterStyles.svg}
+            >
+              {svgContent}
+            </svg>
 
-        {/* Peak indicator section (+ sign and LED) */}
-        <div style={meterStyles.peakSection}>
-          {/* + sign */}
-          <span style={meterStyles.plusSign}>+</span>
-          {/* Peak LED */}
-          <div ref={peakLedRef} style={meterStyles.peakLed} />
-          {/* PEAK label */}
-          <span style={meterStyles.peakLabel}>PEAK</span>
+            {/* Peak indicator section (+ sign and LED) */}
+            <div style={meterStyles.peakSection}>
+              {/* + sign */}
+              <span style={meterStyles.plusSign}>+</span>
+              {/* Peak LED */}
+              <div ref={peakLedRef} style={meterStyles.peakLed} />
+              {/* PEAK label */}
+              <span style={meterStyles.peakLabel}>PEAK</span>
+            </div>
+
+            {/* Needle slot - dark opening where needle emerges */}
+            <div style={meterStyles.needleSlot} />
+
+            {/* Right channel needle (red) - rendered first so it's behind */}
+            <div ref={needleRightRef} style={meterStyles.needleRight} />
+
+            {/* Left channel needle (white) - rendered on top */}
+            <div ref={needleLeftRef} style={meterStyles.needleLeft} />
+
+            {/* Pivot */}
+            <div style={meterStyles.pivot} />
+          </div>
         </div>
-
-        {/* Needle slot - dark opening where needle emerges */}
-        <div style={meterStyles.needleSlot} />
-
-        {/* Glowing White Needle with Red Base */}
-        <div ref={needleRef} style={meterStyles.needle} />
-
-        {/* Pivot */}
-        <div style={meterStyles.pivot} />
       </div>
     </div>
   );

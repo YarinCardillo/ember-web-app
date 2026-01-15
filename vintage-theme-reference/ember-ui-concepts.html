@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ember Amp - Premium Vintage UI Concepts</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      padding: 40px;
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      color: #e8e0d0;
+    }
+    
+    h2 {
+      color: #F5A524;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+    
+    .concepts {
+      display: flex;
+      flex-direction: column;
+      gap: 60px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .concept {
+      background: #111;
+      border-radius: 16px;
+      padding: 30px;
+    }
+    
+    .concept-title {
+      color: #666;
+      font-size: 12px;
+      letter-spacing: 3px;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+
+    /* ========== CONCEPT 1: FACEPLATE WITH SCREWS ========== */
+    .faceplate {
+      background: linear-gradient(180deg, #1a1815 0%, #12100e 100%);
+      border: 1px solid #2a2520;
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+      box-shadow: 
+        0 10px 40px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    
+    .screw {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: radial-gradient(circle at 30% 30%, #3a3530, #1a1815);
+      border-radius: 50%;
+      border: 1px solid #2a2520;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    }
+    .screw::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(35deg);
+      width: 6px;
+      height: 1px;
+      background: #0a0a0a;
+    }
+    .screw.tl { top: 10px; left: 10px; }
+    .screw.tr { top: 10px; right: 10px; }
+    .screw.bl { bottom: 10px; left: 10px; }
+    .screw.br { bottom: 10px; right: 10px; }
+    
+    .faceplate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 0 20px;
+    }
+    
+    .section-label {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 18px;
+      color: #c9a66b;
+      letter-spacing: 4px;
+    }
+    
+    .pilot-light {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e, 0 0 16px rgba(34, 197, 94, 0.5);
+      animation: pilot-pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pilot-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* ========== CONCEPT 2: BRUSHED METAL KNOB ========== */
+    .knob-section {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    
+    .knob-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .knob-label {
+      font-size: 10px;
+      color: #666;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    
+    .knob {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 0deg,
+        #2a2a2a 0deg,
+        #3a3a3a 30deg,
+        #2a2a2a 60deg,
+        #3a3a3a 90deg,
+        #2a2a2a 120deg,
+        #3a3a3a 150deg,
+        #2a2a2a 180deg,
+        #3a3a3a 210deg,
+        #2a2a2a 240deg,
+        #3a3a3a 270deg,
+        #2a2a2a 300deg,
+        #3a3a3a 330deg,
+        #2a2a2a 360deg
+      );
+      position: relative;
+      box-shadow: 
+        0 4px 12px rgba(0,0,0,0.5),
+        inset 0 2px 4px rgba(255,255,255,0.05),
+        inset 0 -2px 4px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    
+    .knob:hover {
+      transform: scale(1.02);
+    }
+    
+    .knob::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      background: radial-gradient(circle, #1a1a1a 0%, #0a0a0a 100%);
+      border-radius: 50%;
+      border: 2px solid #F5A524;
+      box-shadow: 0 0 10px rgba(245, 165, 36, 0.3);
+    }
+    
+    .knob .indicator {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 3px;
+      height: 10px;
+      background: #F5A524;
+      border-radius: 2px;
+      box-shadow: 0 0 6px rgba(245, 165, 36, 0.8);
+    }
+    
+    .knob-value {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 11px;
+      color: #F5A524;
+      background: #0a0a0a;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #2a2520;
+    }
+
+    /* ========== CONCEPT 3: TOGGLE SWITCHES ========== */
+    .toggle-row {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    
+    .toggle-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .toggle-switch {
+      width: 36px;
+      height: 20px;
+      background: linear-gradient(180deg, #1a1815 0%, #0a0908 100%);
+      border-radius: 10px;
+      position: relative;
+      cursor: pointer;
+      border: 1px solid #3a3530;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .toggle-switch.active {
+      background: linear-gradient(180deg, #1a1510 0%, #0a0805 100%);
+      border-color: rgba(245, 165, 36, 0.3);
+    }
+    
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .toggle-switch.active::after {
+      left: 18px;
+      background: linear-gradient(180deg, #F5A524 0%, #b45309 100%);
+      box-shadow: 0 0 8px rgba(245, 165, 36, 0.5);
+    }
+    
+    .toggle-label {
+      font-size: 9px;
+      color: #555;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    
+    .toggle-container.active .toggle-label {
+      color: #F5A524;
+    }
+
+    /* ========== CONCEPT 4: INSET LCD DISPLAY ========== */
+    .lcd-display {
+      background: #0a0908;
+      border: 2px solid #1a1815;
+      border-radius: 8px;
+      padding: 16px 24px;
+      margin: 20px auto;
+      max-width: 280px;
+      box-shadow: 
+        inset 0 4px 12px rgba(0,0,0,0.8),
+        0 1px 0 rgba(255,255,255,0.03);
+    }
+    
+    .lcd-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .lcd-label {
+      font-size: 10px;
+      color: #4a4540;
+      letter-spacing: 1px;
+    }
+    
+    .lcd-value {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 22px;
+      color: #F5A524;
+      text-shadow: 0 0 10px rgba(245, 165, 36, 0.5);
+    }
+    
+    .lcd-unit {
+      font-size: 11px;
+      color: #8b7355;
+      margin-left: 4px;
+    }
+
+    /* ========== CONCEPT 5: ENGRAVED SECTION DIVIDER ========== */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 30px 0;
+    }
+    
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, #2a2520 50%, transparent 100%);
+    }
+    
+    .divider-text {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 11px;
+      color: #4a4540;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* ========== CONCEPT 6: VINTAGE SLIDER ========== */
+    .slider-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .vintage-slider {
+      width: 8px;
+      height: 100px;
+      background: linear-gradient(180deg, #0a0908 0%, #1a1815 100%);
+      border-radius: 4px;
+      position: relative;
+      border: 1px solid #2a2520;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    }
+    
+    .slider-track {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 65%;
+      background: linear-gradient(to top, #F5A524, #b45309);
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(245, 165, 36, 0.4);
+    }
+    
+    .slider-thumb {
+      position: absolute;
+      bottom: 60%;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      width: 24px;
+      height: 12px;
+      background: linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+      border-radius: 3px;
+      border: 1px solid #555;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .slider-thumb::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px;
+      height: 2px;
+      background: #666;
+      border-radius: 1px;
+    }
+    
+    .slider-label {
+      font-size: 9px;
+      color: #555;
+      letter-spacing: 1px;
+    }
+
+    /* ========== CONCEPT 7: VENTILATION GRILLE ========== */
+    .ventilation {
+      display: flex;
+      gap: 4px;
+      padding: 16px;
+      justify-content: center;
+    }
+    
+    .vent-slot {
+      width: 40px;
+      height: 4px;
+      background: #0a0908;
+      border-radius: 2px;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+    }
+
+    /* ========== CONCEPT 8: EMBOSSED LOGO ========== */
+    .logo-embossed {
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .logo-embossed h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 32px;
+      font-weight: 400;
+      letter-spacing: 8px;
+      color: #2a2520;
+      text-shadow: 
+        0 1px 0 rgba(255,255,255,0.05),
+        0 -1px 0 rgba(0,0,0,0.3);
+    }
+    
+    .logo-embossed .tagline {
+      font-size: 9px;
+      letter-spacing: 4px;
+      color: #3a3530;
+      margin-top: 4px;
+    }
+
+    /* ========== CONCEPT 9: JEWEL INDICATOR LIGHTS ========== */
+    .jewel-row {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+    
+    .jewel-light {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .jewel {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid #2a2520;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .jewel::before {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 4px;
+      height: 4px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 50%;
+    }
+    
+    .jewel.green {
+      background: radial-gradient(circle at 30% 30%, #4ade80, #166534);
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+    }
+    
+    .jewel.amber {
+      background: radial-gradient(circle at 30% 30%, #F5A524, #92400e);
+      box-shadow: 0 0 8px rgba(245, 165, 36, 0.6);
+    }
+    
+    .jewel.red {
+      background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+    }
+    
+    .jewel.off {
+      background: radial-gradient(circle at 30% 30%, #2a2520, #1a1815);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+    }
+    
+    .jewel-label {
+      font-size: 8px;
+      color: #4a4540;
+      letter-spacing: 1px;
+    }
+
+    /* ========== CONCEPT 10: WOOD SIDE PANELS ========== */
+    .rack-unit {
+      display: flex;
+      gap: 0;
+    }
+    
+    .wood-panel {
+      width: 20px;
+      background: linear-gradient(180deg, 
+        #3d2b1f 0%, 
+        #2a1f17 20%, 
+        #3d2b1f 40%, 
+        #2a1f17 60%, 
+        #3d2b1f 80%, 
+        #2a1f17 100%
+      );
+      border-radius: 4px 0 0 4px;
+      box-shadow: inset -2px 0 4px rgba(0,0,0,0.3);
+    }
+    
+    .wood-panel:last-child {
+      border-radius: 0 4px 4px 0;
+      box-shadow: inset 2px 0 4px rgba(0,0,0,0.3);
+    }
+    
+    .metal-center {
+      flex: 1;
+      background: linear-gradient(180deg, #1a1815 0%, #12100e 100%);
+      padding: 20px;
+      border-top: 1px solid #2a2520;
+      border-bottom: 1px solid #2a2520;
+    }
+
+    /* ========== FULL MODULE DEMO ========== */
+    .full-module {
+      background: linear-gradient(180deg, #1a1815 0%, #12100e 100%);
+      border: 1px solid #2a2520;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    
+    .module-header {
+      background: linear-gradient(180deg, #12100e 0%, #0a0908 100%);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #2a2520;
+    }
+    
+    .module-title {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 14px;
+      color: #c9a66b;
+      letter-spacing: 3px;
+    }
+    
+    .module-body {
+      padding: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="concepts">
+    
+    <!-- CONCEPT: Faceplate with Screws -->
+    <div class="concept">
+      <div class="concept-title">1. Faceplate con viti a vista</div>
+      <div class="faceplate">
+        <div class="screw tl"></div>
+        <div class="screw tr"></div>
+        <div class="screw bl"></div>
+        <div class="screw br"></div>
+        
+        <div class="faceplate-header">
+          <span class="section-label">PREAMP</span>
+          <div class="pilot-light"></div>
+        </div>
+        
+        <div class="knob-section">
+          <div class="knob-container">
+            <div class="knob" style="transform: rotate(-60deg);">
+              <div class="indicator"></div>
+            </div>
+            <span class="knob-label">Gain</span>
+            <span class="knob-value">-6 dB</span>
+          </div>
+          <div class="knob-container">
+            <div class="knob" style="transform: rotate(30deg);">
+              <div class="indicator"></div>
+            </div>
+            <span class="knob-label">Drive</span>
+            <span class="knob-value">42%</span>
+          </div>
+          <div class="knob-container">
+            <div class="knob" style="transform: rotate(-20deg);">
+              <div class="indicator"></div>
+            </div>
+            <span class="knob-label">Output</span>
+            <span class="knob-value">0 dB</span>
+          </div>
+        </div>
+        
+        <div class="toggle-row">
+          <div class="toggle-container active">
+            <div class="toggle-switch active"></div>
+            <span class="toggle-label">Bypass</span>
+          </div>
+          <div class="toggle-container">
+            <div class="toggle-switch"></div>
+            <span class="toggle-label">Phase</span>
+          </div>
+          <div class="toggle-container active">
+            <div class="toggle-switch active"></div>
+            <span class="toggle-label">Link</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONCEPT: LCD Display -->
+    <div class="concept">
+      <div class="concept-title">2. Display LCD incassato</div>
+      <div class="faceplate" style="padding: 30px;">
+        <div class="screw tl"></div>
+        <div class="screw tr"></div>
+        <div class="screw bl"></div>
+        <div class="screw br"></div>
+        
+        <div class="lcd-display">
+          <div class="lcd-row">
+            <span class="lcd-label">OUTPUT LEVEL</span>
+          </div>
+          <div class="lcd-row" style="margin-top: 8px;">
+            <span class="lcd-value">-12.4<span class="lcd-unit">dBFS</span></span>
+          </div>
+        </div>
+        
+        <div class="jewel-row">
+          <div class="jewel-light">
+            <div class="jewel green"></div>
+            <span class="jewel-label">SIGNAL</span>
+          </div>
+          <div class="jewel-light">
+            <div class="jewel amber"></div>
+            <span class="jewel-label">ACTIVE</span>
+          </div>
+          <div class="jewel-light">
+            <div class="jewel off"></div>
+            <span class="jewel-label">CLIP</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONCEPT: Wood Side Panels -->
+    <div class="concept">
+      <div class="concept-title">3. Pannelli laterali in legno (stile rack)</div>
+      <div class="rack-unit">
+        <div class="wood-panel"></div>
+        <div class="metal-center">
+          <div class="faceplate-header">
+            <span class="section-label">TONE STACK</span>
+            <div class="pilot-light"></div>
+          </div>
+          <div class="knob-section" style="margin-top: 16px;">
+            <div class="knob-container">
+              <div class="knob" style="transform: rotate(-30deg);"><div class="indicator"></div></div>
+              <span class="knob-label">Bass</span>
+            </div>
+            <div class="knob-container">
+              <div class="knob" style="transform: rotate(10deg);"><div class="indicator"></div></div>
+              <span class="knob-label">Mid</span>
+            </div>
+            <div class="knob-container">
+              <div class="knob" style="transform: rotate(20deg);"><div class="indicator"></div></div>
+              <span class="knob-label">Treble</span>
+            </div>
+            <div class="knob-container">
+              <div class="knob" style="transform: rotate(-10deg);"><div class="indicator"></div></div>
+              <span class="knob-label">Presence</span>
+            </div>
+          </div>
+        </div>
+        <div class="wood-panel"></div>
+      </div>
+    </div>
+
+    <!-- CONCEPT: Embossed Logo + Ventilation -->
+    <div class="concept">
+      <div class="concept-title">4. Logo embossed + ventilazione</div>
+      <div class="faceplate">
+        <div class="screw tl"></div>
+        <div class="screw tr"></div>
+        <div class="screw bl"></div>
+        <div class="screw br"></div>
+        
+        <div class="logo-embossed">
+          <h1>EMBER</h1>
+          <div class="tagline">ANALOG WARMTH SIMULATOR</div>
+        </div>
+        
+        <div class="ventilation">
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+        </div>
+        
+        <div class="section-divider">
+          <div class="divider-line"></div>
+          <span class="divider-text">Master Section</span>
+          <div class="divider-line"></div>
+        </div>
+        
+        <div class="knob-section">
+          <div class="slider-container">
+            <div class="vintage-slider">
+              <div class="slider-track"></div>
+              <div class="slider-thumb"></div>
+            </div>
+            <span class="slider-label">Master</span>
+          </div>
+          <div class="knob-container">
+            <div class="knob" style="transform: rotate(0deg); width: 80px; height: 80px;"><div class="indicator"></div></div>
+            <span class="knob-label">Output</span>
+            <span class="knob-value">0.0 dB</span>
+          </div>
+          <div class="slider-container">
+            <div class="vintage-slider">
+              <div class="slider-track" style="height: 45%;"></div>
+              <div class="slider-thumb" style="bottom: 40%;"></div>
+            </div>
+            <span class="slider-label">Mix</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONCEPT: Complete Module -->
+    <div class="concept">
+      <div class="concept-title">5. Modulo completo con header</div>
+      <div class="full-module">
+        <div class="module-header">
+          <span class="module-title">COMPRESSOR</span>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <div class="jewel amber"></div>
+            <div class="toggle-switch active"></div>
+          </div>
+        </div>
+        <div class="module-body">
+          <div class="knob-section">
+            <div class="knob-container">
+              <div class="knob" style="transform: rotate(-40deg);"><div class="indicator"></div></div>
+              <span class="knob-label">Threshold</span>
+              <span class="knob-value">-18 dB</span>
+            </div>
+            <div class="knob-container">
+              <div class="knob" style="transform: rotate(-20deg);"><div class="indicator"></div></div>
+              <span class="knob-label">Ratio</span>
+              <span class="knob-value">4:1</span>
+            </div>
+            <div class="knob-container">
+              <div class="knob" style="transform: rotate(10deg);"><div class="indicator"></div></div>
+              <span class="knob-label">Attack</span>
+              <span class="knob-value">10 ms</span>
+            </div>
+            <div class="knob-container">
+              <div class="knob" style="transform: rotate(30deg);"><div class="indicator"></div></div>
+              <span class="knob-label">Release</span>
+              <span class="knob-value">150 ms</span>
+            </div>
+          </div>
+          <div class="lcd-display" style="margin-top: 20px;">
+            <div class="lcd-row">
+              <span class="lcd-label">GAIN REDUCTION</span>
+              <span class="lcd-value">-4.2<span class="lcd-unit">dB</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

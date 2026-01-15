@@ -1,10 +1,11 @@
 /**
- * Footer - Premium sticky footer bar with audio status and links
+ * Footer - Premium sticky footer bar with audio status, theme selector, and links
  */
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAudioStore } from "../../store/useAudioStore";
+import { useThemeStore } from "../../store/useThemeStore";
 import AudioEngine from "../../audio/AudioEngine";
 
 export function Footer(): JSX.Element {
@@ -13,6 +14,9 @@ export function Footer(): JSX.Element {
   const outputDeviceId = useAudioStore((state) => state.outputDeviceId);
   const [sampleRate, setSampleRate] = useState<number | null>(null);
   const [bufferSize, setBufferSize] = useState<number | null>(null);
+
+  const theme = useThemeStore((state) => state.theme);
+  const setTheme = useThemeStore((state) => state.setTheme);
 
   useEffect(() => {
     if (isRunning) {
@@ -42,8 +46,14 @@ export function Footer(): JSX.Element {
       transition={{ duration: 0.3, delay: 0.2 }}
       className="fixed bottom-0 left-0 right-0 z-50 h-12 flex items-center justify-between px-4 md:px-8"
       style={{
-        backgroundColor: "rgba(17, 17, 19, 0.95)",
-        borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+        backgroundColor:
+          theme === "vintage"
+            ? "rgba(18, 16, 14, 0.95)"
+            : "rgba(17, 17, 19, 0.95)",
+        borderTop:
+          theme === "vintage"
+            ? "1px solid #2a2520"
+            : "1px solid rgba(255, 255, 255, 0.06)",
         backdropFilter: "blur(12px)",
       }}
     >
@@ -88,12 +98,68 @@ export function Footer(): JSX.Element {
 
         {/* Version */}
         <div className="hidden sm:flex items-center">
-          <span className="text-xs font-mono text-text-tertiary">v0.9.1</span>
+          <span className="text-xs font-mono text-text-tertiary">v0.11.0</span>
         </div>
       </div>
 
-      {/* Right side: Links */}
+      {/* Right side: Theme selector and Links */}
       <div className="flex items-center gap-4">
+        {/* Theme Selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-tertiary hidden sm:inline">
+            Theme:
+          </span>
+          <div
+            className="flex rounded-md overflow-hidden"
+            style={{
+              border:
+                theme === "vintage"
+                  ? "1px solid #2a2520"
+                  : "1px solid rgba(255, 255, 255, 0.1)",
+            }}
+          >
+            <button
+              onClick={() => setTheme("vintage")}
+              className={`px-2 py-1 text-xs transition-colors duration-150 ${
+                theme === "vintage"
+                  ? "bg-accent-primary text-bg-primary"
+                  : "bg-bg-secondary text-text-secondary hover:text-text-primary"
+              }`}
+              style={
+                theme === "vintage"
+                  ? { boxShadow: "0 0 8px rgba(245, 158, 11, 0.4)" }
+                  : {}
+              }
+            >
+              Vintage
+            </button>
+            <button
+              onClick={() => setTheme("modern")}
+              className={`px-2 py-1 text-xs transition-colors duration-150 ${
+                theme === "modern"
+                  ? "bg-accent-primary text-bg-primary"
+                  : "bg-bg-secondary text-text-secondary hover:text-text-primary"
+              }`}
+              style={
+                theme === "modern"
+                  ? { boxShadow: "0 0 8px rgba(245, 158, 11, 0.4)" }
+                  : {}
+              }
+            >
+              Modern
+            </button>
+          </div>
+        </div>
+
+        {/* Separator */}
+        <div
+          className="hidden sm:block w-px h-4"
+          style={{
+            backgroundColor:
+              theme === "vintage" ? "#2a2520" : "rgba(255, 255, 255, 0.1)",
+          }}
+        />
+
         {/* GitHub */}
         <a
           href="https://github.com/YarinCardillo/ember-web-app"
