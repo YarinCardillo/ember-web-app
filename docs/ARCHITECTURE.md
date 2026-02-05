@@ -854,7 +854,7 @@ For breaking changes, the app also implements a one-time cache clearing mechanis
 
 ```typescript
 // Increment this when deploying a fix for cache-related bugs
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const CACHE_CLEARED_KEY = `ember-amp-cache-cleared-${CACHE_VERSION}`;
 
 async function clearStaleCaches(): Promise<void> {

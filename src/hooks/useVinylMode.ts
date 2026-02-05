@@ -6,7 +6,7 @@
  * callbacks passed from AmpRack.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useAudioStore } from "../store/useAudioStore";
 
 interface VinylModeConfig {
@@ -17,7 +17,7 @@ interface VinylModeConfig {
 
 const DEFAULT_CONFIG: VinylModeConfig = {
   transitionDuration: 1500, // Faster transition (was 2500ms)
-  maxBufferDuration: 240, // 4 minutes
+  maxBufferDuration: 180, // 3 minutes (matches worklet buffer limit)
   reverbWet: 0.75, // 75% reverb when vinyl mode active
 };
 
@@ -130,6 +130,33 @@ export const useVinylMode = (
     setVinylModeActive,
     setVinylModeRemainingTime,
   ]);
+
+  // Auto-exit timer: triggers deactivate() after maxBufferDuration seconds
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const deactivateRef = useRef(deactivate);
+  deactivateRef.current = deactivate;
+
+  useEffect(() => {
+    if (vinylMode.state === "active") {
+      // Start countdown timer
+      timerRef.current = setInterval(() => {
+        const currentTime = useAudioStore.getState().vinylMode.remainingTime;
+        if (currentTime <= 1) {
+          // Time's up - trigger graceful exit
+          deactivateRef.current();
+        } else {
+          setVinylModeRemainingTime(currentTime - 1);
+        }
+      }, 1000);
+
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      };
+    }
+  }, [vinylMode.state, setVinylModeRemainingTime]);
 
   return {
     state: vinylMode.state,

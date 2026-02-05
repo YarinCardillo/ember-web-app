@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useAudioStore } from "../../store/useAudioStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import AudioEngine from "../../audio/AudioEngine";
+import { version } from "../../../package.json";
 
 export function Footer(): JSX.Element {
   const isRunning = useAudioStore((state) => state.isRunning);
@@ -98,7 +99,7 @@ export function Footer(): JSX.Element {
 
         {/* Version */}
         <div className="hidden sm:flex items-center">
-          <span className="text-xs font-mono text-text-tertiary">v0.11.0</span>
+          <span className="text-xs font-mono text-text-tertiary">v{version}</span>
         </div>
       </div>
 

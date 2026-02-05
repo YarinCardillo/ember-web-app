@@ -63,10 +63,26 @@ class VinylBufferProcessor extends AudioWorkletProcessor {
   }
 
   flush() {
-    // Reset buffer to empty state
-    this.readPos = this.writePos;
+    // Reset buffer to empty state and shrink back to initial size to reclaim memory
+    const previousSize = this.currentBufferSeconds;
+
+    // Reallocate to initial size
+    this.bufferSize = Math.floor(sampleRate * this.initialBufferSeconds);
+    this.bufferL = new Float32Array(this.bufferSize);
+    this.bufferR = new Float32Array(this.bufferSize);
+    this.currentBufferSeconds = this.initialBufferSeconds;
+
+    // Reset positions
+    this.writePos = 0;
+    this.readPos = 0;
     this.bufferFillLevel = 0;
-    console.log("[VinylBuffer] Buffer flushed");
+
+    const memoryReclaimed = Math.round(
+      ((previousSize - this.initialBufferSeconds) * sampleRate * 2 * 4) / 1024 / 1024
+    );
+    console.log(
+      `[VinylBuffer] Buffer flushed and shrunk: ${previousSize}s → ${this.initialBufferSeconds}s (~${memoryReclaimed}MB reclaimed)`
+    );
   }
 
   growBuffer() {

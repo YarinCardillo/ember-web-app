@@ -100,7 +100,7 @@ export const useAudioStore = create<AudioState>()(
       bypassSpeakerSim: true, // Speaker sim always bypassed by default (no IR)
       vinylMode: {
         isActive: false,
-        remainingTime: 240, // 4 minutes in seconds
+        remainingTime: 180, // 3 minutes (matches worklet buffer limit)
         state: "idle",
         intensity: 0.3, // Default: 0.3 (~-8% speed, sweet spot for "slowed & reverb")
       },
