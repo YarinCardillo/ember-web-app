@@ -44,3 +44,6 @@ coverage/
 .specstory/
 .cursor/
 
+# Old icons backup
+.old-icons/
+
