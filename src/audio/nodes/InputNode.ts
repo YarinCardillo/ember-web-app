@@ -57,7 +57,7 @@ export class InputNode {
     // These are critical for music/audio quality
     // Note: We intentionally don't specify sampleRate or channelCount
     // to use the device's native settings and avoid resampling
-    const audioConstraints: MediaTrackConstraints = {
+    const baseConstraints: MediaTrackConstraints = {
       // Disable echo cancellation (causes comb filtering)
       echoCancellation: false,
       // Disable noise suppression (causes audio artifacts)
@@ -66,13 +66,10 @@ export class InputNode {
       autoGainControl: false,
     };
 
-    // Add device ID if specified
-    if (deviceId) {
-      audioConstraints.deviceId = { exact: deviceId };
-    }
-
     const constraints: MediaStreamConstraints = {
-      audio: audioConstraints,
+      audio: deviceId
+        ? { ...baseConstraints, deviceId: { exact: deviceId } }
+        : baseConstraints,
       video: false,
     };
 
@@ -85,7 +82,26 @@ export class InputNode {
         this.mediaStream.disconnect();
       }
 
-      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+      try {
+        this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        // Saved device no longer available — retry with default input
+        if (
+          deviceId &&
+          err instanceof Error &&
+          (err.name === "OverconstrainedError" || err.name === "NotFoundError")
+        ) {
+          console.warn(
+            `Saved input device not available (${err.name}), falling back to default`,
+          );
+          this.stream = await navigator.mediaDevices.getUserMedia({
+            audio: baseConstraints,
+            video: false,
+          });
+        } else {
+          throw err;
+        }
+      }
 
       // Log the actual track settings
       const track = this.stream.getAudioTracks()[0];

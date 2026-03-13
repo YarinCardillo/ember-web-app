@@ -8,6 +8,19 @@
 import { useCallback } from "react";
 import { useThemeStore } from "../../store/useThemeStore";
 
+const renderDbValue = (str: string): React.ReactNode => {
+  const i = str.lastIndexOf("dB");
+  if (i === -1) return str;
+  return (
+    <span className="inline-flex items-baseline gap-[0.2em]">
+      <span className="inline-block min-w-[5ch] tabular-nums">
+        {str.slice(0, i).trim()}
+      </span>
+      <span>dB</span>
+    </span>
+  );
+};
+
 interface MasterSliderProps {
   label: string;
   value: number;
@@ -93,7 +106,7 @@ export function MasterSlider({
       <div className="flex flex-col gap-1.5 w-full">
         <div className="flex justify-between items-center">
           <label className="slider-label-vintage">{label}</label>
-          <span className="slider-value-vintage">{formatDisplayValue(value)}</span>
+          <span className="slider-value-vintage">{renderDbValue(formatDisplayValue(value))}</span>
         </div>
         <div
           className="slider-brushed-h"
@@ -216,7 +229,7 @@ export function MasterSlider({
           <label className="text-xs text-text-secondary">{label}</label>
           {showValue && (
             <span className="text-xs font-mono text-accent-primary">
-              {formatDisplayValue(value)}
+              {renderDbValue(formatDisplayValue(value))}
             </span>
           )}
         </div>

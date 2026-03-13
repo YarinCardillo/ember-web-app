@@ -7,6 +7,7 @@ import { AmpRack } from "./components/layout/AmpRack";
 import { SetupGuide } from "./components/layout/SetupGuide";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 import { EmberSparks } from "./components/ui/EmberSparks";
+import { GradientBackground } from "./components/ui/GradientBackground";
 import { useThemeStore } from "./store/useThemeStore";
 
 function App(): JSX.Element {
@@ -38,6 +39,7 @@ function App(): JSX.Element {
 
   return (
     <ErrorBoundary>
+      <GradientBackground />
       <EmberSparks />
       <AmpRack onHelpClick={handleOpenSetupGuide} />
       {showSetupGuide && <SetupGuide onClose={handleCloseSetupGuide} />}

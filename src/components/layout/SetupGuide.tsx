@@ -2,7 +2,7 @@
  * SetupGuide - Modal/overlay explaining virtual audio cable setup
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SetupGuideProps {
@@ -48,22 +48,30 @@ function CodeBlock({ code, language = "bash" }: CodeBlockProps): JSX.Element {
 }
 
 export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
       >
         <motion.div
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="premium-card p-8 max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+          className="premium-card max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col"
         >
-          <div className="flex items-center justify-between mb-6">
+          {/* Fixed header */}
+          <div className="flex items-center justify-between px-8 pt-8 pb-4 flex-shrink-0">
             <h2 className="text-2xl font-bold text-accent-primary">
               Setup Guide
             </h2>
@@ -76,6 +84,8 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
             </button>
           </div>
 
+          {/* Scrollable body */}
+          <div className="overflow-y-auto overscroll-contain flex-1 min-h-0 px-8 pb-8">
           <div className="space-y-6 text-text-primary">
             <div className="bg-accent-primary/10 border border-accent-primary/30 p-4 rounded">
               <p className="text-sm">
@@ -235,6 +245,7 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
             >
               Got it!
             </button>
+          </div>
           </div>
         </motion.div>
       </motion.div>

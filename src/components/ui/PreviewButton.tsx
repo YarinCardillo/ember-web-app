@@ -20,6 +20,7 @@ export function PreviewButton({
       onClick={onToggle}
       disabled={disabled || isLoading}
       className={`
+        noise-surface
         px-3 py-1.5 rounded-lg text-xs font-medium
         transition-all duration-150 whitespace-nowrap flex-shrink-0
         ${

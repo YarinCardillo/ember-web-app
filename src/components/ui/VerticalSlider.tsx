@@ -5,6 +5,19 @@
 import { useCallback, useRef } from "react";
 import { useThemeStore } from "../../store/useThemeStore";
 
+const renderDbValue = (str: string): React.ReactNode => {
+  const i = str.lastIndexOf("dB");
+  if (i === -1) return str;
+  return (
+    <span className="inline-flex items-baseline gap-[0.2em]">
+      <span className="inline-block min-w-[5ch] tabular-nums">
+        {str.slice(0, i).trim()}
+      </span>
+      <span>dB</span>
+    </span>
+  );
+};
+
 interface VerticalSliderProps {
   label: string;
   value: number;
@@ -188,7 +201,7 @@ export function VerticalSlider({
             marginTop: isModern ? "12px" : "0",
           }}
         >
-          {formatDisplayValue(value)}
+          {renderDbValue(formatDisplayValue(value))}
         </span>
       )}
       {isVintage && showValue && (

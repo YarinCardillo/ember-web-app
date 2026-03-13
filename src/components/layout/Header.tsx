@@ -44,7 +44,7 @@ export function Header({
       {/* Logo/Title */}
       <div className="flex items-center gap-3">
         <img
-          src="/ember_app_icon.png"
+          src="/volumetric-wave-tube-transparent.png"
           alt="Ember Amp"
           className="w-16 h-16 md:w-28 md:h-28 rounded-xl"
           loading="eager"
@@ -58,9 +58,6 @@ export function Header({
               </span>
               <span className="text-text-primary ml-2 md:ml-3">AMP</span>
             </h1>
-            <span className="ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 text-[10px] md:text-xs font-semibold bg-accent-primary/15 text-accent-primary border border-accent-primary/30 rounded-full uppercase tracking-wider">
-              Beta
-            </span>
           </div>
           <p className="text-xs md:text-sm text-text-secondary">
             HiFi Amplifier DSP
@@ -85,7 +82,6 @@ export function Header({
                 flex items-center justify-center flex-shrink-0
                 text-lg md:text-xl font-light
               "
-              style={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}
               title="Setup Guide"
               aria-label="Open setup guide"
             >
@@ -120,17 +116,6 @@ export function Header({
                     : "bg-bg-secondary hover:bg-bg-hover text-text-secondary"
               }
             `}
-            style={{
-              border: !isRunning
-                ? "1px solid rgba(255, 255, 255, 0.06)"
-                : bypassAll
-                  ? "1px solid rgba(250, 204, 21, 0.4)"
-                  : "1px solid rgba(255, 255, 255, 0.1)",
-              boxShadow:
-                bypassAll && isRunning
-                  ? "0 0 16px rgba(250, 204, 21, 0.2)"
-                  : "none",
-            }}
             title="Bypass all processing to hear dry signal"
             aria-label={
               bypassAll ? "Disable bypass mode" : "Enable bypass mode"
@@ -166,14 +151,6 @@ export function Header({
                   : "bg-accent-primary/20 text-accent-primary hover:bg-accent-primary/30"
               }
             `}
-            style={{
-              border: isRunning
-                ? "1px solid rgba(248, 113, 113, 0.4)"
-                : "1px solid rgba(245, 158, 11, 0.4)",
-              boxShadow: isRunning
-                ? "0 0 16px rgba(248, 113, 113, 0.2)"
-                : "0 0 16px rgba(245, 158, 11, 0.15)",
-            }}
             title={isMobile ? "Power on to use Preview" : undefined}
             aria-label={
               isRunning ? "Power off the amplifier" : "Power on the amplifier"

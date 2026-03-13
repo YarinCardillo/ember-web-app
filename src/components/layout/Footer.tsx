@@ -121,7 +121,7 @@ export function Footer(): JSX.Element {
           >
             <button
               onClick={() => setTheme("vintage")}
-              className={`px-2 py-1 text-xs transition-colors duration-150 ${
+              className={`noise-surface px-2 py-1 text-xs transition-colors duration-150 ${
                 theme === "vintage"
                   ? "bg-accent-primary text-bg-primary"
                   : "bg-bg-secondary text-text-secondary hover:text-text-primary"
@@ -136,7 +136,7 @@ export function Footer(): JSX.Element {
             </button>
             <button
               onClick={() => setTheme("modern")}
-              className={`px-2 py-1 text-xs transition-colors duration-150 ${
+              className={`noise-surface px-2 py-1 text-xs transition-colors duration-150 ${
                 theme === "modern"
                   ? "bg-accent-primary text-bg-primary"
                   : "bg-bg-secondary text-text-secondary hover:text-text-primary"

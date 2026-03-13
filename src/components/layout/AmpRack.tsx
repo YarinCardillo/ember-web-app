@@ -134,8 +134,11 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
       // Apply stored output device if one was selected before initialization
       const storedOutputDeviceId = useAudioStore.getState().outputDeviceId;
       if (storedOutputDeviceId) {
-        console.log("Applying stored output device:", storedOutputDeviceId);
-        await engine.setOutputDevice(storedOutputDeviceId);
+        const outputOk = await engine.setOutputDevice(storedOutputDeviceId);
+        if (!outputOk) {
+          // Device no longer available — clear stale ID so we don't retry next time
+          useAudioStore.getState().setOutputDevice(null);
+        }
       }
 
       const nodes: AudioNodes = {
@@ -267,26 +270,26 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
         setError(null);
       } catch (err) {
         console.error("Failed to start audio:", err);
-        if (err instanceof DOMException) {
-          switch (err.name) {
-            case "NotAllowedError":
-              setError(
-                "Microphone permission denied. Please allow access in your browser settings.",
-              );
-              break;
-            case "NotFoundError":
-              setError(
-                "No audio input device found. Please connect a microphone or virtual audio cable.",
-              );
-              break;
-            case "NotReadableError":
-              setError("Audio device is in use by another application.");
-              break;
-            default:
-              setError(`Audio error: ${err.message}`);
-          }
-        } else {
-          setError("Failed to start audio");
+        const name = err instanceof Error ? err.name : "";
+        switch (name) {
+          case "NotAllowedError":
+            setError(
+              "Microphone permission denied. Please allow access in your browser settings.",
+            );
+            break;
+          case "NotFoundError":
+          case "OverconstrainedError":
+            setError(
+              "No audio input device found. Please connect a microphone or virtual audio cable.",
+            );
+            break;
+          case "NotReadableError":
+            setError("Audio device is in use by another application.");
+            break;
+          default:
+            setError(
+              err instanceof Error ? `Audio error: ${err.message}` : "Failed to start audio",
+            );
         }
       }
     },
@@ -852,7 +855,7 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const presets = presetsData as PresetCollection;
 
   return (
-    <div className="min-h-screen bg-bg-primary p-4 md:p-8 pb-32 select-none">
+    <div className="min-h-screen p-4 md:p-8 pb-32 select-none relative z-[1]">
       <div className="max-w-[1800px] mx-auto">
         {/* Mobile Notice - shown only on actual mobile devices */}
         {isMobile && (

@@ -47,9 +47,6 @@ export function PresetSelector({
         transition-colors duration-150
         hover:bg-bg-hover
       "
-      style={{
-        border: "1px solid rgba(255, 255, 255, 0.1)",
-      }}
     >
       <option value="starter">Starter Preset</option>
       {presetEntries

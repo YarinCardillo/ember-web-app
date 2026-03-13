@@ -6,6 +6,21 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useThemeStore } from "../../store/useThemeStore";
 
+/** Renders a dB string with the numeric part in a fixed-width right-aligned
+ *  span so the "dB" unit never shifts as digit count changes. */
+const renderDbValue = (str: string): React.ReactNode => {
+  const i = str.lastIndexOf("dB");
+  if (i === -1) return str;
+  return (
+    <span className="inline-flex items-baseline gap-[0.2em]">
+      <span className="inline-block min-w-[5ch] tabular-nums">
+        {str.slice(0, i).trim()}
+      </span>
+      <span>dB</span>
+    </span>
+  );
+};
+
 interface KnobProps {
   label: string;
   value: number;
@@ -403,7 +418,7 @@ export function Knob({
         <div
           className={`text-sm font-mono whitespace-nowrap ${isVintage ? "value-pill" : "text-accent-primary"}`}
         >
-          {formatDisplayValue(value)}
+          {renderDbValue(formatDisplayValue(value))}
         </div>
       </div>
     </div>

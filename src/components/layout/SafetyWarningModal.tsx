@@ -76,7 +76,7 @@ export function SafetyWarningModal({
               onClick={onCancel}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-4 py-2.5 rounded-lg bg-bg-tertiary hover:bg-bg-hover text-text-primary font-medium transition-colors"
+              className="noise-surface px-4 py-2.5 rounded-lg bg-bg-tertiary hover:bg-bg-hover text-text-primary font-medium transition-colors"
               style={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}
             >
               Cancel
