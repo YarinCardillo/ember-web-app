@@ -1,4 +1,4 @@
-# Ember Amp
+# HF-1
 
 > Browser-based HiFi amplifier simulator with real-time DSP processing.  
 > **All audio processing happens 100% locally in your browser.**
@@ -7,7 +7,7 @@
 
 ## Overview
 
-Ember Amp simulates the warm, rich characteristics of vintage HiFi tube amplifiers directly in your web browser. Route your system audio (Spotify, YouTube, games, etc.) through a virtual audio cable, and the app applies real-time DSP processing including:
+HF-1 simulates the warm, rich characteristics of vintage HiFi tube amplifiers directly in your web browser. Route your system audio (Spotify, YouTube, games, etc.) through a virtual audio cable, and the app applies real-time DSP processing including:
 
 - **33 Mode (Vinyl Mode)** - Slowed playback with reverb and +8dB boost (to recover lost volume from reverb) for vinyl record simulation (processes audio FIRST, before input gain)
 - **Preview Mode** - Play demo audio through the signal chain to hear how the app sounds before setting up virtual cables
@@ -58,8 +58,8 @@ Mobile users can power on the app and use the **Preview** feature to hear how it
 
 ```bash
 # Clone the repository
-git clone https://github.com/YarinCardillo/ember-web-app.git
-cd ember-web-app
+git clone https://github.com/YarinCardillo/hf1-web.git
+cd hf1-web
 
 # Install dependencies
 npm install
@@ -86,38 +86,38 @@ npm run preview
 
 ## Audio Setup
 
-To route system audio through Ember Amp, you need a virtual audio cable.
+To route system audio through HF-1, you need a virtual audio cable.
 
-Signal flow: System Audio → Virtual Cable Input → Virtual Cable Output → Ember Input → Ember Processing → Ember Output → Speakers
+Signal flow: System Audio → Virtual Cable Input → Virtual Cable Output → HF-1 Input → HF-1 Processing → HF-1 Output → Speakers
 
 ### macOS: BlackHole
 
 1. Download [BlackHole](https://existential.audio/blackhole/) (2ch version)
 2. Install the package
 3. Set **BlackHole 2ch** as system output (System Preferences → Sound → Output)
-4. In Ember Amp Web, select **BlackHole 2ch** as **input**
-5. In Ember Amp Web, select your speakers/headphones as **output**
+4. In HF-1, select **BlackHole 2ch** as **input**
+5. In HF-1, select your speakers/headphones as **output**
 
 ### Windows: VB-Cable
 
 1. Download [VB-Cable](https://vb-audio.com/Cable/)
 2. Install and restart
 3. Set **CABLE Input** as default playback device (Sound Settings)
-4. In Ember Amp, select **CABLE Output** as input
+4. In HF-1, select **CABLE Output** as input
 
 ### Linux: PipeWire (Arch, Fedora, Ubuntu 22.10+)
 
 ```bash 
 # Create a null sink
-pactl load-module module-null-sink sink_name=ember_virtual sink_properties=device.description="Ember_Virtual"
+pactl load-module module-null-sink sink_name=hf1_virtual sink_properties=device.description="HF1_Virtual"
 ```
 
 And then make it persistent with config:
-Create ~/.config/pipewire/pipewire.conf.d/ember-virtual.conf
+Create ~/.config/pipewire/pipewire.conf.d/hf1-virtual.conf
 
 ```bash 
 context.exec = [
-    { path = "pactl" args = "load-module module-null-sink sink_name=ember_virtual sink_properties=device.description=Ember_Virtual" }
+    { path = "pactl" args = "load-module module-null-sink sink_name=hf1_virtual sink_properties=device.description=HF1_Virtual" }
 ]
 ```
 
@@ -167,7 +167,7 @@ Subtle ember spark animation overlay for an atmospheric touch.
 ## Project Structure
 
 ```
-ember-web-app/
+hf1-web/
 ├── public/
 │   ├── worklets/                 # AudioWorklet processors
 │   │   ├── tube-saturation.worklet.js

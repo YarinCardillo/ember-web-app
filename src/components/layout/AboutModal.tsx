@@ -12,7 +12,7 @@ interface AboutModalProps {
 }
 
 const LINKS = [
-  { label: "GitHub", href: "https://github.com/YarinCardillo/ember-web-app" },
+  { label: "GitHub", href: "https://github.com/YarinCardillo/hf1-web" },
   { label: "Portfolio", href: "https://yarincardillo.com/" },
   { label: "Support", href: "https://buymeacoffee.com/yarincardillo" },
 ];
