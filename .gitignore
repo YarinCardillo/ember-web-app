@@ -47,3 +47,7 @@ coverage/
 # Old icons backup
 .old-icons/
 
+
+# Design references / mockups
+*-mockup-*.html
+hf1-logo-*.html
