@@ -8,6 +8,7 @@ import { Footer } from "./Footer";
 import { HeaderMenu } from "./HeaderMenu";
 import { PresetSelector } from "../ui/PresetSelector";
 import { TEToggleButton } from "../ui/te/TEToggleButton";
+import { DotWaveMark } from "../ui/te/DotWaveMark";
 import { Power, CircleSlash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InputStage } from "../stages/InputStage";
@@ -868,30 +869,14 @@ export function AmpRack({
     <div className="flex min-h-screen items-center justify-center px-4 py-8 select-none md:py-12">
       <main className="w-full max-w-[1100px] overflow-hidden rounded-xl border border-border bg-card shadow-[0_1px_0_#fff_inset,0_18px_40px_-28px_rgba(20,20,16,0.45)]">
         {/* Head */}
-        <div className="flex items-center gap-4 px-6 py-4">
-          <svg
-            className="size-6 flex-shrink-0"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <rect
-              x="2.5"
-              y="2.5"
-              width="19"
-              height="19"
-              rx="3"
-              className="fill-none stroke-foreground"
-              strokeWidth="1.4"
-            />
-            <line x1="12" y1="2.5" x2="12" y2="21.5" className="stroke-foreground" strokeWidth="1.4" />
-            <line x1="2.5" y1="12" x2="12" y2="2.5" className="stroke-foreground" strokeWidth="1.4" />
-          </svg>
+        <div className="flex items-center gap-3.5 px-6 py-4">
+          <DotWaveMark className="h-5 w-auto flex-shrink-0 fill-foreground" />
           <div className="flex items-baseline gap-2.5">
             <span className="text-[19px] font-semibold tracking-[0.04em] text-foreground">
-              EMBER AMP
+              HF<span className="text-brand">&middot;</span>1
             </span>
             <span className="hidden font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:inline">
-              HiFi amplifier
+              valve amplifier
             </span>
           </div>
 
@@ -940,7 +925,7 @@ export function AmpRack({
         {isMobile && (
           <div className="border-b border-border bg-brand/5 px-6 py-3 text-center">
             <p className="text-sm text-brand">
-              Ember Amp is designed for desktop browsers with virtual audio
+              HF-1 is designed for desktop browsers with virtual audio
               cables.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">

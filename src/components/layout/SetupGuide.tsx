@@ -105,7 +105,7 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
               <div className="rounded-md border border-brand/30 bg-brand/10 p-4">
                 <p>
                   <strong className="text-brand">Browser compatibility:</strong>{" "}
-                  Ember Amp is fully supported only on{" "}
+                  HF-1 is fully supported only on{" "}
                   <strong>Chromium-based browsers</strong> (Chrome, Edge, Brave,
                   Opera). Firefox and Safari have limited support (output device
                   selection not available).
@@ -117,13 +117,13 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
                   Virtual Audio Cable Setup
                 </h3>
                 <p className="mb-3">
-                  To route your system audio through Ember, install a virtual
+                  To route your system audio through HF-1, install a virtual
                   audio cable. This lets your computer's audio output be captured
                   as an input device.
                 </p>
                 <p className="font-mono text-xs text-muted-foreground">
-                  System Audio → Virtual Cable → Ember Input → Processing →
-                  Ember Output → Speakers
+                  System Audio → Virtual Cable → HF-1 Input → Processing →
+                  HF-1 Output → Speakers
                 </p>
               </div>
 
@@ -192,17 +192,17 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
                 <ol className="flex list-decimal flex-col gap-3 pl-5 marker:text-muted-foreground">
                   <li className="space-y-2 pl-1">
                     Create a virtual sink (temporary, lives until reboot):
-                    <CodeBlock code='pactl load-module module-null-sink sink_name=ember_virtual sink_properties=device.description="Ember_Virtual"' />
+                    <CodeBlock code='pactl load-module module-null-sink sink_name=hf1_virtual sink_properties=device.description="HF1_Virtual"' />
                   </li>
                   <li className="pl-1">
                     Set as system output:{" "}
-                    <strong>Settings → Sound → Output → Ember_Virtual</strong>
+                    <strong>Settings → Sound → Output → HF1_Virtual</strong>
                   </li>
                   <li className="space-y-1 pl-1">
-                    In Ember app:
+                    In HF-1:
                     <ul className="flex list-disc flex-col gap-0.5 pl-5 text-sm marker:text-muted-foreground">
                       <li>
-                        Input: select <strong>"Ember_Virtual"</strong>
+                        Input: select <strong>"HF1_Virtual"</strong>
                       </li>
                       <li>Output: select your speakers/headphones</li>
                     </ul>
@@ -216,13 +216,13 @@ export function SetupGuide({ onClose }: SetupGuideProps): JSX.Element {
                   <p className="mb-2 text-sm">
                     Create{" "}
                     <code className="break-all rounded bg-muted px-1 font-mono text-xs">
-                      ~/.config/pipewire/pipewire.conf.d/ember-virtual.conf
+                      ~/.config/pipewire/pipewire.conf.d/hf1-virtual.conf
                     </code>
                     :
                   </p>
                   <CodeBlock
                     code={`context.exec = [
-    { path = "pactl" args = "load-module module-null-sink sink_name=ember_virtual sink_properties=device.description=Ember_Virtual" }
+    { path = "pactl" args = "load-module module-null-sink sink_name=hf1_virtual sink_properties=device.description=HF1_Virtual" }
 ]`}
                   />
                   <p className="mb-2 mt-3 text-sm">Then restart PipeWire:</p>

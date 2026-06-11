@@ -57,7 +57,7 @@ export function AboutModal({ onClose }: AboutModalProps): JSX.Element {
                 About
               </span>
               <span className="font-mono text-[10px] text-muted-foreground/70">
-                ember amp
+                valve amplifier
               </span>
             </div>
             <button
@@ -71,7 +71,7 @@ export function AboutModal({ onClose }: AboutModalProps): JSX.Element {
 
           <div className="flex flex-col gap-3 p-5 text-sm">
             <p className="leading-relaxed text-foreground">
-              EMBER AMP is a browser-based HiFi amplifier simulator with
+              HF-1 is a browser-based HiFi amplifier simulator with
               real-time DSP processing. All audio processing happens locally in
               your browser using the Web Audio API. Open source on GitHub.
               Supported for Chromium-based desktop browsers only.

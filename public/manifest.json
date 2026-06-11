@@ -1,6 +1,6 @@
 {
-  "name": "EMBER",
-  "short_name": "EMBER",
+  "name": "HF-1",
+  "short_name": "HF-1",
   "description": "Browser-based HiFi amplifier simulator with real-time DSP",
   "theme_color": "#1a1a1a",
   "background_color": "#1a1a1a",
