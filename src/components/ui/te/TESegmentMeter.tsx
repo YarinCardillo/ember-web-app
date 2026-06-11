@@ -19,8 +19,10 @@ interface TESegmentMeterProps {
 // Mockup colors: lit = ink, hot (clip zone) = accent, with a softer pre-clip
 // gradation in the few segments just below the hot zone. Segments are always
 // visible at a low opacity; the signal raises lit ones to full opacity.
+// Zone boundaries (dB). With a -60..+6 range over 22 segments (3 dB each) every
+// boundary and label lands exactly on a segment edge: caution = -12..0, red = 0..+6.
 const HOT_DB = 0;
-const PRECLIP_DB = -9; // ~3 segments below the hot zone
+const PRECLIP_DB = -12;
 const INK = "hsl(var(--foreground))";
 const ACCENT = "hsl(var(--brand))";
 const PRECLIP = "hsl(222 9% 52%)"; // sidereal grey (cool steel)
@@ -28,12 +30,12 @@ const REST_OPACITY = "0.2";
 
 const ATTACK_TIME = 5;
 const RELEASE_TIME = 100;
-const SCALE_MARKS = [-60, -36, -24, -12, 0, 6];
+const SCALE_MARKS = [-60, -24, -12, -6, 0, 6];
 
 export function TESegmentMeter({
   analyserLeft,
   analyserRight,
-  segments = 20,
+  segments = 22, // 3 dB/segment over -60..+6 (uniform dBFS peak meter)
   minDb = -60,
   maxDb = 6,
 }: TESegmentMeterProps): JSX.Element {
@@ -57,8 +59,10 @@ export function TESegmentMeter({
       for (let i = 0; i < segments; i++) {
         const el = segRefs.current[i];
         if (!el) continue;
-        const segDb = minDb + ((i + 0.5) / segments) * range;
-        el.style.opacity = levelDb >= segDb ? "1" : REST_OPACITY;
+        // Fill model: a segment lights as soon as the level enters it (lower
+        // edge), so the first red block lights as the level crosses ~0 dB.
+        const segLow = minDb + (i / segments) * range;
+        el.style.opacity = levelDb >= segLow ? "1" : REST_OPACITY;
       }
     };
 
