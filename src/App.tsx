@@ -5,20 +5,12 @@
 import { useState, useEffect } from "react";
 import { AmpRack } from "./components/layout/AmpRack";
 import { SetupGuide } from "./components/layout/SetupGuide";
+import { AboutModal } from "./components/layout/AboutModal";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
-import { EmberSparks } from "./components/ui/EmberSparks";
-import { GradientBackground } from "./components/ui/GradientBackground";
-import { useThemeStore } from "./store/useThemeStore";
 
 function App(): JSX.Element {
   const [showSetupGuide, setShowSetupGuide] = useState(false);
-  const theme = useThemeStore((state) => state.theme);
-
-  // Apply theme to document body
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    document.body.setAttribute("data-theme", theme);
-  }, [theme]);
+  const [showAbout, setShowAbout] = useState(false);
 
   // Check if user has seen setup guide
   useEffect(() => {
@@ -39,10 +31,12 @@ function App(): JSX.Element {
 
   return (
     <ErrorBoundary>
-      <GradientBackground />
-      <EmberSparks />
-      <AmpRack onHelpClick={handleOpenSetupGuide} />
+      <AmpRack
+        onHelpClick={handleOpenSetupGuide}
+        onAboutClick={() => setShowAbout(true)}
+      />
       {showSetupGuide && <SetupGuide onClose={handleCloseSetupGuide} />}
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
     </ErrorBoundary>
   );
 }
