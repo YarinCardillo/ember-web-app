@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--room:#161614;--ink:#ededea;--muted:#86857d;--faint:#5a5953;--line:#3a3a34;--accent:#ec5a23}
+  *{box-sizing:border-box;margin:0}
+  body{width:1200px;height:630px;background:var(--room);
+    font-family:'Space Grotesk',sans-serif;-webkit-font-smoothing:antialiased;position:relative}
+  .corner{position:absolute;font-family:'JetBrains Mono',monospace;font-size:16px;
+    letter-spacing:.1em;color:var(--muted)}
+  .tl{top:46px;left:56px}
+  .tr{top:46px;right:56px}
+  .bl{bottom:46px;left:56px}
+  .br{bottom:46px;right:56px}
+  .center{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:54px}
+  .wm{font-size:38px;font-weight:600;letter-spacing:.04em;color:var(--ink);line-height:1}
+  .wm .dot{color:var(--accent)}
+</style>
+</head>
+<body>
+  <span class="corner tl">no. 0001</span>
+  <span class="corner tr">32-bit float</span>
+  <span class="corner bl">valve amplifier</span>
+  <span class="corner br">100% local dsp</span>
+  <div class="center">
+    <svg id="mark" aria-hidden="true"></svg>
+    <div class="wm">HF<span class="dot">&middot;</span>1</div>
+  </div>
+<script>
+(function(){
+  var svg=document.getElementById('mark');
+  var NS='http://www.w3.org/2000/svg';
+  var pts=[[8.63,32],[13.30,22.65],[17.98,17.98],[22.65,17.98],[27.33,22.65],[32,32],[36.67,41.35],[41.35,46.02],[46.02,46.02],[50.70,41.35],[55.37,32]];
+  var minX=8.63,maxX=55.37,minY=17.98,maxY=46.02;
+  var W=1200,H=300,r=19,pad=250;
+  var sx=(W-2*pad-2*r)/(maxX-minX), sy=(H-2*r)/(maxY-minY);
+  var X=function(x){return pad+r+(x-minX)*sx}, Y=function(y){return r+(y-minY)*sy};
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.setAttribute('width',W);svg.setAttribute('height',H);
+  var axisY=Y(32);
+  function line(x1,y1,x2,y2,w,col){
+    var l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+    l.setAttribute('stroke',col);l.setAttribute('stroke-width',w);svg.appendChild(l);
+  }
+  line(0,axisY,W,axisY,1.5,getComputedStyle(document.documentElement).getPropertyValue('--line').trim());
+  pts.forEach(function(p){
+    var tx=X(p[0]);
+    line(tx,axisY-5,tx,axisY+5,1.5,getComputedStyle(document.documentElement).getPropertyValue('--line').trim());
+  });
+  pts.forEach(function(p){
+    var c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',X(p[0]).toFixed(2));
+    c.setAttribute('cy',Y(p[1]).toFixed(2));
+    c.setAttribute('r',r);
+    c.setAttribute('fill',getComputedStyle(document.documentElement).getPropertyValue('--ink').trim());
+    svg.appendChild(c);
+  });
+})();
+</script>
+</body>
+</html>

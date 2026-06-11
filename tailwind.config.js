@@ -9,7 +9,6 @@ export default {
       fontFamily: {
         sans: [
           "Space Grotesk",
-          "Inter",
           "system-ui",
           "-apple-system",
           "BlinkMacSystemFont",
