@@ -879,55 +879,59 @@ export function AmpRack({
         }
       >
         {/* Head */}
-        <div className="flex items-center gap-3.5 px-6 py-4">
-          <DotWaveMark className="h-5 w-auto flex-shrink-0 fill-foreground" />
-          <div className="flex items-baseline gap-2.5">
-            <span className="text-[19px] font-semibold tracking-[0.04em] text-foreground">
-              HF<span className="text-brand">&middot;</span>1
-            </span>
-            <span className="hidden font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:inline">
-              valve amplifier
-            </span>
+        <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-3.5 sm:px-6">
+          <div className="flex items-center gap-3.5">
+            <DotWaveMark className="h-5 w-auto flex-shrink-0 fill-foreground" />
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-[19px] font-semibold tracking-[0.04em] text-foreground">
+                HF<span className="text-brand">&middot;</span>1
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                valve amplifier
+              </span>
+            </div>
           </div>
 
-          <span className="flex-1" />
+          <span className="hidden flex-1 sm:block" />
 
-          <PresetSelector
-            presets={presets}
-            currentPreset={currentPreset}
-            onSelect={(_id, preset) => loadPreset(preset)}
-          />
-          <TEToggleButton
-            label="Bypass"
-            icon={CircleSlash}
-            active={bypassAll}
-            onClick={() => setParameter("bypassAll", !bypassAll)}
-            disabled={!isRunning}
-            title="Bypass all processing"
-            size="md"
-          />
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
+            <PresetSelector
+              presets={presets}
+              currentPreset={currentPreset}
+              onSelect={(_id, preset) => loadPreset(preset)}
+            />
+            <TEToggleButton
+              label="Bypass"
+              icon={CircleSlash}
+              active={bypassAll}
+              onClick={() => setParameter("bypassAll", !bypassAll)}
+              disabled={!isRunning}
+              title="Bypass all processing"
+              size="md"
+            />
 
-          <span className="mx-1 hidden h-6 w-px bg-border sm:block" />
+            <span className="mx-1 hidden h-6 w-px bg-border sm:block" />
 
-          {/* Primary action */}
-          <button
-            onClick={handlePowerToggle}
-            className={cn(
-              "inline-flex h-9 min-w-[116px] items-center justify-center gap-2 rounded-md border font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
-              isRunning
-                ? "border-brand bg-brand text-brand-foreground"
-                : "border-foreground bg-foreground text-background hover:bg-foreground/90",
-            )}
-            aria-pressed={isRunning}
-            aria-label={isRunning ? "Power off" : "Power on"}
-          >
-            <Power className="size-3.5" strokeWidth={2.4} />
-            {isRunning ? "On" : "Power"}
-          </button>
-          <HeaderMenu
-            onSetupGuide={onHelpClick ?? (() => {})}
-            onAbout={onAboutClick ?? (() => {})}
-          />
+            {/* Primary action */}
+            <button
+              onClick={handlePowerToggle}
+              className={cn(
+                "inline-flex h-9 min-w-[116px] flex-1 items-center justify-center gap-2 rounded-md border font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card sm:flex-initial",
+                isRunning
+                  ? "border-brand bg-brand text-brand-foreground"
+                  : "border-foreground bg-foreground text-background hover:bg-foreground/90",
+              )}
+              aria-pressed={isRunning}
+              aria-label={isRunning ? "Power off" : "Power on"}
+            >
+              <Power className="size-3.5" strokeWidth={2.4} />
+              {isRunning ? "On" : "Power"}
+            </button>
+            <HeaderMenu
+              onSetupGuide={onHelpClick ?? (() => {})}
+              onAbout={onAboutClick ?? (() => {})}
+            />
+          </div>
         </div>
 
         <div className="h-px bg-border" />
