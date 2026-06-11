@@ -5,6 +5,7 @@
 import { useState, useEffect } from "react";
 import { useAudioStore } from "../../store/useAudioStore";
 import { useUiThemeStore, type UiTheme } from "../../store/useUiThemeStore";
+import { TextMorph } from "../ui/te/TextMorph";
 import AudioEngine from "../../audio/AudioEngine";
 import { version } from "../../../package.json";
 
@@ -25,7 +26,7 @@ function ThemeSwitch(): JSX.Element {
       aria-label={`Theme: ${THEME_LABEL[theme]}. Click to cycle.`}
       className="rounded-md px-2 py-1 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      {THEME_LABEL[theme]}
+      <TextMorph>{THEME_LABEL[theme]}</TextMorph>
     </button>
   );
 }
