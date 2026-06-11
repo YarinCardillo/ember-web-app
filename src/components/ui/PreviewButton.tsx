@@ -1,6 +1,10 @@
 /**
- * PreviewButton - Premium button for playing demo audio through the signal chain
+ * PreviewButton - Play/stop action for the demo audio. Styled as an action
+ * (not a toggle): outline when idle, filled accent while playing.
  */
+
+import { Play, Square, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PreviewButtonProps {
   isPlaying: boolean;
@@ -15,67 +19,32 @@ export function PreviewButton({
   disabled,
   onToggle,
 }: PreviewButtonProps): JSX.Element {
+  const inert = disabled || isLoading;
+
   return (
     <button
       onClick={onToggle}
-      disabled={disabled || isLoading}
-      className={`
-        noise-surface
-        px-3 py-1.5 rounded-lg text-xs font-medium
-        transition-all duration-150 whitespace-nowrap flex-shrink-0
-        ${
-          isPlaying
-            ? "bg-accent-primary/20 text-accent-bright border border-accent-primary/50"
-            : "bg-bg-secondary text-text-secondary border border-white/10 hover:border-white/20 hover:text-text-primary hover:bg-bg-hover"
-        }
-        ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-      `}
+      disabled={inert}
+      className={cn(
+        "inline-flex h-8 flex-shrink-0 items-center gap-1.5 rounded-md border px-2.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        disabled && "cursor-not-allowed border-border bg-popover text-muted-foreground/40",
+        !disabled && isPlaying && "border-brand bg-brand text-brand-foreground",
+        !disabled && !isPlaying && "border-border bg-popover text-muted-foreground hover:text-foreground",
+      )}
       title="Play demo audio through the signal chain"
       aria-label={
-        isLoading
-          ? "Loading preview audio"
-          : isPlaying
-            ? "Stop preview"
-            : "Play preview audio"
+        isLoading ? "Loading preview" : isPlaying ? "Stop preview" : "Play preview"
       }
       aria-pressed={isPlaying}
     >
       {isLoading ? (
-        <span className="flex items-center gap-1">
-          <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-              fill="none"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          Loading
-        </span>
+        <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
       ) : isPlaying ? (
-        <span className="flex items-center gap-1">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-            <rect x="6" y="4" width="4" height="16" />
-            <rect x="14" y="4" width="4" height="16" />
-          </svg>
-          Stop
-        </span>
+        <Square className="size-3.5 fill-current" strokeWidth={2} />
       ) : (
-        <span className="flex items-center gap-1">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          Preview
-        </span>
+        <Play className="size-3.5 fill-current" strokeWidth={2} />
       )}
+      {isLoading ? "Load" : isPlaying ? "Stop" : "Preview"}
     </button>
   );
 }

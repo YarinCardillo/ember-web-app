@@ -4,9 +4,13 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { Header } from "./Header";
 import { Footer } from "./Footer";
-import { Credits } from "./Credits";
+import { HeaderMenu } from "./HeaderMenu";
+import { PresetSelector } from "../ui/PresetSelector";
+import { TEToggleButton } from "../ui/te/TEToggleButton";
+import { DotWaveMark } from "../ui/te/DotWaveMark";
+import { Power, CircleSlash } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { InputStage } from "../stages/InputStage";
 import { ToneStage } from "../stages/ToneStage";
 import { SaturationStage } from "../stages/SaturationStage";
@@ -40,6 +44,7 @@ interface AudioNodes {
 
 interface AmpRackProps {
   onHelpClick?: () => void;
+  onAboutClick?: () => void;
 }
 
 // Helper to check if a device looks like a physical microphone
@@ -76,7 +81,10 @@ const isMicrophoneDevice = (label: string): boolean => {
   return false;
 };
 
-export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
+export function AmpRack({
+  onHelpClick,
+  onAboutClick,
+}: AmpRackProps): JSX.Element {
   // Detect mobile once on mount (user agent doesn't change during session)
   const isMobile = useMemo(() => isMobileDevice(), []);
 
@@ -121,6 +129,9 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const setInitialized = useAudioStore((state) => state.setInitialized);
   const setRunning = useAudioStore((state) => state.setRunning);
   const bypassAll = useAudioStore((state) => state.bypassAll);
+  const currentPreset = useAudioStore((state) => state.currentPreset);
+  const loadPreset = useAudioStore((state) => state.loadPreset);
+  const setParameter = useAudioStore((state) => state.setParameter);
 
   // Initialize audio engine and create nodes
   const initializeAudio = useCallback(async (): Promise<AudioNodes> => {
@@ -855,86 +866,126 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
   const presets = presetsData as PresetCollection;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 pb-32 select-none relative z-[1]">
-      <div className="max-w-[1800px] mx-auto">
-        {/* Mobile Notice - shown only on actual mobile devices */}
+    <div className="flex min-h-screen items-center justify-center px-4 py-8 select-none md:py-12">
+      <main className="w-full max-w-[1100px] overflow-hidden rounded-xl border border-border bg-card shadow-[0_18px_40px_-28px_rgba(20,20,16,0.45)]">
+        {/* Head */}
+        <div className="flex items-center gap-3.5 px-6 py-4">
+          <DotWaveMark className="h-5 w-auto flex-shrink-0 fill-foreground" />
+          <div className="flex items-baseline gap-2.5">
+            <span className="text-[19px] font-semibold tracking-[0.04em] text-foreground">
+              HF<span className="text-brand">&middot;</span>1
+            </span>
+            <span className="hidden font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:inline">
+              valve amplifier
+            </span>
+          </div>
+
+          <span className="flex-1" />
+
+          <PresetSelector
+            presets={presets}
+            currentPreset={currentPreset}
+            onSelect={(_id, preset) => loadPreset(preset)}
+          />
+          <TEToggleButton
+            label="Bypass"
+            icon={CircleSlash}
+            active={bypassAll}
+            onClick={() => setParameter("bypassAll", !bypassAll)}
+            disabled={!isRunning}
+            title="Bypass all processing"
+            size="md"
+          />
+
+          <span className="mx-1 hidden h-6 w-px bg-border sm:block" />
+
+          {/* Primary action */}
+          <button
+            onClick={handlePowerToggle}
+            className={cn(
+              "inline-flex h-9 min-w-[116px] items-center justify-center gap-2 rounded-md border font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
+              isRunning
+                ? "border-brand bg-brand text-brand-foreground"
+                : "border-foreground bg-foreground text-background hover:bg-foreground/90",
+            )}
+            aria-pressed={isRunning}
+            aria-label={isRunning ? "Power off" : "Power on"}
+          >
+            <Power className="size-3.5" strokeWidth={2.4} />
+            {isRunning ? "On" : "Power"}
+          </button>
+          <HeaderMenu
+            onSetupGuide={onHelpClick ?? (() => {})}
+            onAbout={onAboutClick ?? (() => {})}
+          />
+        </div>
+
+        <div className="h-px bg-border" />
+
         {isMobile && (
-          <div className="mb-4 p-3 bg-accent-primary/15 border border-accent-primary/30 rounded-xl text-center">
-            <p className="text-sm text-accent-primary">
-              Ember Amp is designed for desktop browsers with virtual audio
+          <div className="border-b border-border bg-brand/5 px-6 py-3 text-center">
+            <p className="text-sm text-brand">
+              HF-1 is designed for desktop browsers with virtual audio
               cables.
             </p>
-            <p className="text-xs text-accent-bright/80 mt-1">
-              Power on and tap <strong>Preview</strong> to hear how the amp
-              sounds!
+            <p className="mt-1 text-xs text-muted-foreground">
+              Power on and tap <strong>Preview</strong> to hear how it sounds.
             </p>
           </div>
         )}
 
-        {/* Header */}
-        <Header
-          presets={presets}
-          onPowerToggle={handlePowerToggle}
-          onHelpClick={onHelpClick}
-        />
-
-        {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-meter-red/15 border border-meter-red/30 rounded-xl text-meter-red">
+          <div className="border-b border-destructive/30 bg-destructive/10 px-6 py-3 text-sm text-destructive">
             {error}
           </div>
         )}
 
-        {/* Signal Chain */}
-        <div className="flex flex-col gap-6 min-w-0">
-          {/* Top Row: 3 columns - Input, Tone Stack, Saturation */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
-            <InputStage
-              devices={inputDevices}
-              inputAnalyserLeft={audioNodes.input?.getAnalysers().left || null}
-              inputAnalyserRight={
-                audioNodes.input?.getAnalysers().right || null
-              }
-              onDeviceChange={handleInputDeviceChange}
-              onVinylModeActivate={handleVinylModeActivate}
-              onVinylModeDeactivate={handleVinylModeDeactivate}
-              onVinylIntensityChange={handleVinylIntensityChange}
-              isPreviewPlaying={isPreviewPlaying}
-              isPreviewLoading={isPreviewLoading}
-              onPreviewToggle={togglePreview}
-              isMobileMode={isMobile}
-              isDangerous={isInputDangerous}
-            />
-            <ToneStage />
-            <SaturationStage />
-          </div>
-
-          {/* Bottom Row: Output (1 column width) + Credits (2 columns width) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
-            <OutputStage
-              preClipperAnalyserLeft={
-                audioNodes.output?.getPreClipperAnalysers().left || null
-              }
-              preClipperAnalyserRight={
-                audioNodes.output?.getPreClipperAnalysers().right || null
-              }
-              postGainAnalyserLeft={
-                audioNodes.output?.getPostGainAnalysers().left || null
-              }
-              postGainAnalyserRight={
-                audioNodes.output?.getPostGainAnalysers().right || null
-              }
-              outputDevices={outputDevices}
-              onOutputDeviceChange={handleOutputDeviceChange}
-              isOutputDeviceSupported={isOutputDeviceSupported}
-              isMobileMode={isMobile}
-            />
-            <div className="md:col-span-2">
-              <Credits />
-            </div>
-          </div>
+        {/* Main grid: Input / Tone / Tube */}
+        <div className="grid grid-cols-1 divide-y divide-border lg:grid-cols-[1.05fr_1.25fr_1fr] lg:divide-x lg:divide-y-0">
+          <InputStage
+            devices={inputDevices}
+            inputAnalyserLeft={audioNodes.input?.getAnalysers().left || null}
+            inputAnalyserRight={audioNodes.input?.getAnalysers().right || null}
+            onDeviceChange={handleInputDeviceChange}
+            onVinylModeActivate={handleVinylModeActivate}
+            onVinylModeDeactivate={handleVinylModeDeactivate}
+            onVinylIntensityChange={handleVinylIntensityChange}
+            isPreviewPlaying={isPreviewPlaying}
+            isPreviewLoading={isPreviewLoading}
+            onPreviewToggle={togglePreview}
+            isMobileMode={isMobile}
+            isDangerous={isInputDangerous}
+          />
+          <ToneStage />
+          <SaturationStage />
         </div>
-      </div>
+
+        <div className="h-px bg-border" />
+
+        {/* Output bar */}
+        <OutputStage
+          preClipperAnalyserLeft={
+            audioNodes.output?.getPreClipperAnalysers().left || null
+          }
+          preClipperAnalyserRight={
+            audioNodes.output?.getPreClipperAnalysers().right || null
+          }
+          postGainAnalyserLeft={
+            audioNodes.output?.getPostGainAnalysers().left || null
+          }
+          postGainAnalyserRight={
+            audioNodes.output?.getPostGainAnalysers().right || null
+          }
+          outputDevices={outputDevices}
+          onOutputDeviceChange={handleOutputDeviceChange}
+          isOutputDeviceSupported={isOutputDeviceSupported}
+          isMobileMode={isMobile}
+        />
+
+        <div className="h-px bg-border" />
+
+        <Footer />
+      </main>
 
       {/* Safety Warning Modal */}
       {showSafetyModal && (
@@ -944,15 +995,6 @@ export function AmpRack({ onHelpClick }: AmpRackProps): JSX.Element {
           onContinue={handleSafetyConfirm}
         />
       )}
-
-      {/* Debug UI - Temporary for parameter tuning */}
-      {/* <TransientDebug /> */}
-
-      {/* Spacer for fixed footer */}
-      <div className="h-10" />
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

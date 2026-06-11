@@ -1,24 +1,23 @@
 /**
- * OutputStage - Premium output device selector, master gain slider, and LED meter
- * Supports both modern and vintage themes with LCD display and LUFS metering
+ * OutputStage - Output bar (mockup layout): output fader + segmented meter,
+ * output device selector, status LEDs, and LUFS readout.
  */
 
 import { useState, useEffect, useRef } from "react";
-import { MasterSlider } from "../ui/MasterSlider";
-import { StereoMeter } from "../ui/StereoMeter";
-import { StereoMeterMinimal } from "../ui/StereoMeterMinimal";
-import { Screws } from "../ui/Screw";
-import { JewelLed } from "../ui/JewelLed";
-import { PilotLight } from "../ui/PilotLight";
+import { TEFader } from "../ui/te/TEFader";
+import { TESegmentMeter } from "../ui/te/TESegmentMeter";
 import { useAudioStore } from "../../store/useAudioStore";
-import { useThemeStore } from "../../store/useThemeStore";
 import {
   createLufsState,
   calculateShortTermLufs,
   formatLufs,
 } from "../../utils/lufs-meter";
+import { cn } from "@/lib/utils";
 import type { AudioDeviceInfo } from "../../types/audio.types";
 import type { LufsState } from "../../utils/lufs-meter";
+
+const SELECT_CLASS =
+  "w-full cursor-pointer rounded-md border border-border bg-popover px-3 py-2 font-mono text-[11px] tracking-tight text-foreground transition-colors hover:bg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 interface OutputStageProps {
   preClipperAnalyserLeft: AnalyserNode | null;
@@ -31,11 +30,39 @@ interface OutputStageProps {
   isMobileMode?: boolean;
 }
 
+interface StatusDotProps {
+  label: string;
+  active: boolean;
+  tone: "brand" | "destructive";
+}
+
+function StatusDot({ label, active, tone }: StatusDotProps): JSX.Element {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={cn(
+          "size-2 rounded-full transition-colors",
+          !active && "bg-border",
+          active && tone === "brand" && "bg-brand",
+          active && tone === "destructive" && "bg-destructive",
+        )}
+        style={
+          active && tone === "destructive"
+            ? { boxShadow: `0 0 0 3px hsl(var(--${tone}) / 0.14)` }
+            : undefined
+        }
+      />
+      <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 export function OutputStage({
   preClipperAnalyserLeft,
   preClipperAnalyserRight,
   postGainAnalyserLeft,
-  postGainAnalyserRight: _postGainAnalyserRight,
   outputDevices,
   onOutputDeviceChange,
   isOutputDeviceSupported,
@@ -44,26 +71,17 @@ export function OutputStage({
   const preGain = useAudioStore((state) => state.preGain);
   const outputDeviceId = useAudioStore((state) => state.outputDeviceId);
   const setParameter = useAudioStore((state) => state.setParameter);
-  const isRunning = useAudioStore((state) => state.isRunning);
 
-  const theme = useThemeStore((state) => state.theme);
-  const isVintage = theme === "vintage";
-
-  // State for LCD display LUFS level
   const [outputLufs, setOutputLufs] = useState(-Infinity);
   const [hasSignal, setHasSignal] = useState(false);
   const [isClipping, setIsClipping] = useState(false);
   const animationRef = useRef<number>();
   const lufsStateRef = useRef<LufsState | null>(null);
 
-  // Update output LUFS level from analyser (for LCD display only)
-  // Uses left channel for LUFS calculation (mono-compatible)
+  // LUFS short-term from post-gain analyser (left channel, mono-compatible).
   useEffect(() => {
-    if (!postGainAnalyserLeft) {
-      return;
-    }
+    if (!postGainAnalyserLeft) return;
 
-    // Initialize LUFS state if needed
     if (!lufsStateRef.current) {
       lufsStateRef.current = createLufsState(
         postGainAnalyserLeft.context.sampleRate,
@@ -71,33 +89,25 @@ export function OutputStage({
     }
 
     const updateLevel = () => {
-      // Calculate LUFS short-term (for display only)
       const lufs = calculateShortTermLufs(
         postGainAnalyserLeft,
         lufsStateRef.current!,
       );
       setOutputLufs(lufs);
       setHasSignal(lufs > -60);
-
       animationRef.current = requestAnimationFrame(updateLevel);
     };
 
     updateLevel();
-
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [postGainAnalyserLeft]);
 
-  // Clip detection from pre-clipper signal (peak > 0dB)
-  // Uses left channel for clip detection (either channel clipping triggers LED)
+  // Clip detection from pre-clipper signal (peak > 0dB), either channel.
   const clipAnimationRef = useRef<number>();
   useEffect(() => {
-    if (!preClipperAnalyserLeft) {
-      return;
-    }
+    if (!preClipperAnalyserLeft) return;
 
     const dataArrayL = new Float32Array(preClipperAnalyserLeft.fftSize);
     const dataArrayR = preClipperAnalyserRight
@@ -110,14 +120,12 @@ export function OutputStage({
         preClipperAnalyserRight.getFloatTimeDomainData(dataArrayR);
       }
 
-      // Check peak on left channel
       let peakL = 0;
       for (let i = 0; i < dataArrayL.length; i++) {
         const abs = Math.abs(dataArrayL[i]);
         if (abs > peakL) peakL = abs;
       }
 
-      // Check peak on right channel
       let peakR = 0;
       if (dataArrayR) {
         for (let i = 0; i < dataArrayR.length; i++) {
@@ -129,66 +137,50 @@ export function OutputStage({
       const peak = Math.max(peakL, peakR);
       const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
       setIsClipping(peakDb > 0);
-
       clipAnimationRef.current = requestAnimationFrame(checkClipping);
     };
 
     checkClipping();
-
     return () => {
-      if (clipAnimationRef.current) {
-        cancelAnimationFrame(clipAnimationRef.current);
-      }
+      if (clipAnimationRef.current) cancelAnimationFrame(clipAnimationRef.current);
     };
   }, [preClipperAnalyserLeft, preClipperAnalyserRight]);
 
-  const formatGainValue = (value: number): string => {
-    if (value <= -90) {
-      return "-Inf dB";
-    }
-    return `${value.toFixed(1)} dB`;
-  };
-
-  const formatLcdValue = (lufs: number): string => {
-    return formatLufs(lufs);
-  };
+  const formatGainValue = (value: number): string =>
+    value <= -90 ? "-Inf dB" : `${value.toFixed(1)} dB`;
 
   return (
-    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden relative">
-      <Screws />
-
-      {/* Title */}
-      <div className="flex items-center gap-2">
-        {isVintage && <PilotLight isActive={isRunning} />}
-        <h3
-          className="font-semibold"
-          style={
-            isVintage
-              ? {
-                  fontFamily: "'Instrument Serif', Georgia, serif",
-                  fontSize: "20px",
-                  letterSpacing: "4px",
-                  color: "#c9a66b",
-                  fontWeight: 400,
-                }
-              : { fontSize: "18px", color: "#e8dccc" }
-          }
-        >
-          OUTPUT
-        </h3>
+    <div className="grid grid-cols-1 gap-6 px-6 py-5 md:grid-cols-[1.6fr_1fr_auto] md:items-start md:gap-8">
+      {/* Output fader + segmented meter */}
+      <div className="flex flex-col gap-2.5">
+        <div className="flex h-[22px] items-center">
+          <TEFader
+            label="Output"
+            value={preGain}
+            min={-36}
+            max={36}
+            step={0.1}
+            formatValue={formatGainValue}
+            onChange={(value) => setParameter("preGain", value)}
+            defaultValue={0}
+          />
+        </div>
+        <TESegmentMeter
+          analyserLeft={preClipperAnalyserLeft}
+          analyserRight={preClipperAnalyserRight}
+        />
       </div>
 
-      {/* Output Device Selector */}
-      <div className="flex flex-col gap-2 min-h-[60px]">
-        <label
-          className="text-xs text-text-secondary"
-          style={isVintage ? { marginLeft: "16px" } : undefined}
-        >
-          Device
-        </label>
+      {/* Output device */}
+      <div className="flex flex-col gap-2.5">
+        <div className="flex h-[22px] items-center">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            Out
+          </span>
+        </div>
         {isMobileMode ? (
-          <div className="bg-bg-tertiary/50 border border-white/5 rounded-lg px-3 py-2 text-text-tertiary text-sm">
-            Default output (mobile)
+          <div className="rounded-md border border-border bg-secondary px-3 py-2 font-mono text-[11px] text-muted-foreground">
+            Default (mobile)
           </div>
         ) : isOutputDeviceSupported ? (
           <select
@@ -198,22 +190,9 @@ export function OutputStage({
               useAudioStore
                 .getState()
                 .setOutputDevice(deviceId === "default" ? null : deviceId);
-              if (deviceId !== "default") {
-                onOutputDeviceChange(deviceId);
-              }
+              if (deviceId !== "default") onOutputDeviceChange(deviceId);
             }}
-            className="
-              bg-bg-secondary text-text-primary rounded-lg
-              px-3 py-2 text-sm
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary
-              cursor-pointer w-full
-              transition-colors duration-150 hover:bg-bg-hover
-            "
-            style={{
-              border: isVintage
-                ? "1px solid #2a2520"
-                : "1px solid rgba(255, 255, 255, 0.1)",
-            }}
+            className={SELECT_CLASS}
           >
             {outputDevices.map((device) => (
               <option key={device.deviceId} value={device.deviceId}>
@@ -222,154 +201,31 @@ export function OutputStage({
             ))}
           </select>
         ) : (
-          <p className="text-xs text-text-tertiary py-2">
-            Output device selection not supported in this browser
+          <p className="font-mono text-[11px] text-muted-foreground">
+            Not supported in this browser
           </p>
         )}
       </div>
 
-      <div className="flex flex-col items-center justify-start gap-2 mt-4 pb-4 px-4 min-w-0">
-        {/* Pre-clipper gain control, post-clipper metering */}
-        <div className="w-full">
-          <MasterSlider
-            label=""
-            value={preGain}
-            minDb={-36}
-            maxDb={36}
-            centerDb={0}
-            step={0.1}
-            formatValue={formatGainValue}
-            onChange={(value) => setParameter("preGain", value)}
-            defaultValue={0}
-            showValue={true}
-          />
+      {/* Status + LUFS metric */}
+      <div className="flex flex-col gap-3 md:items-end">
+        <div className="flex h-[22px] items-center gap-4">
+          <StatusDot label="Signal" active={hasSignal} tone="brand" />
+          <StatusDot label="Clip" active={isClipping} tone="destructive" />
         </div>
-        {isVintage ? (
-          <StereoMeterMinimal
-            analyserLeft={preClipperAnalyserLeft}
-            analyserRight={preClipperAnalyserRight}
-            label=""
-            mode="peak"
-          />
-        ) : (
-          <StereoMeter
-            analyserLeft={preClipperAnalyserLeft}
-            analyserRight={preClipperAnalyserRight}
-            label=""
-            mode="peak"
-            maxWidth={420}
-          />
-        )}
-
-        {/* Status LEDs */}
-        {isVintage ? (
-          <div className="flex justify-between mt-6 mb-4 w-full max-w-[400px]">
-            <JewelLed
-              color={hasSignal ? "green" : "off"}
-              label="Signal"
-              size={14}
-            />
-            <JewelLed
-              color={isRunning ? "amber" : "off"}
-              label="Active"
-              size={14}
-            />
-            <JewelLed
-              color={isClipping ? "red" : "off"}
-              label="Clip"
-              size={14}
-            />
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground/80">
+            Short Term
+          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="min-w-[5ch] text-right font-mono text-xl leading-none tabular-nums text-foreground">
+              {formatLufs(outputLufs)}
+            </span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              LUFS
+            </span>
           </div>
-        ) : (
-          <div className="flex justify-between mt-6 mb-4 w-full max-w-[400px]">
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className="rounded-full transition-all duration-150"
-                style={{
-                  width: 14,
-                  height: 14,
-                  backgroundColor: hasSignal ? "#4ADE80" : "#27272a",
-                  boxShadow: hasSignal
-                    ? "0 0 8px rgba(74, 222, 128, 0.6)"
-                    : "none",
-                }}
-              />
-              <span className="text-[9px] text-zinc-500 uppercase tracking-wider">
-                Signal
-              </span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className="rounded-full transition-all duration-150"
-                style={{
-                  width: 14,
-                  height: 14,
-                  backgroundColor: isRunning ? "#F59E0B" : "#27272a",
-                  boxShadow: isRunning
-                    ? "0 0 8px rgba(245, 158, 11, 0.6)"
-                    : "none",
-                }}
-              />
-              <span className="text-[9px] text-zinc-500 uppercase tracking-wider">
-                Active
-              </span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className="rounded-full transition-all duration-150"
-                style={{
-                  width: 14,
-                  height: 14,
-                  backgroundColor: isClipping ? "#F87171" : "#27272a",
-                  boxShadow: isClipping
-                    ? "0 0 8px rgba(248, 113, 113, 0.6)"
-                    : "none",
-                }}
-              />
-              <span className="text-[9px] text-zinc-500 uppercase tracking-wider">
-                Clip
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Vintage: LCD Display */}
-        {isVintage && (
-          <div
-            className="lcd-display flex-1 flex flex-col justify-center w-full max-w-[420px]"
-            style={{ minHeight: 180 }}
-          >
-            <div className="lcd-label text-center" style={{ fontSize: 14 }}>
-              SHORT TERM
-            </div>
-            <div
-              className="lcd-value mt-2"
-              style={{
-                fontSize: 48,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "baseline",
-                gap: "8px",
-              }}
-            >
-              <span
-                style={{
-                  width: "140px",
-                  textAlign: "right",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {formatLcdValue(outputLufs)}
-              </span>
-              <span
-                className="lcd-unit"
-                style={{ fontSize: 18, width: "50px", textAlign: "left" }}
-              >
-                LUFS
-              </span>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

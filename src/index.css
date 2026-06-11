@@ -1,10 +1,65 @@
-@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Space+Grotesk:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+    /* TE light theme — shadcn/ui semantic tokens (single active theme) */
+    :root {
+        --background: 60 8% 90%;
+        --foreground: 60 6% 10%;
+        --card: 60 14% 96%;
+        --card-foreground: 60 6% 10%;
+        --popover: 60 20% 98%;
+        --popover-foreground: 60 6% 10%;
+        --primary: 60 6% 10%;
+        --primary-foreground: 60 14% 96%;
+        --secondary: 60 9% 92%;
+        --secondary-foreground: 60 6% 10%;
+        --muted: 60 10% 94%;
+        --muted-foreground: 45 6% 56%;
+        --accent: 60 10% 88%;
+        --accent-foreground: 60 6% 10%;
+        --destructive: 0 72% 51%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 60 8% 79%;
+        --input: 60 8% 79%;
+        --ring: 16 84% 53%;
+        --brand: 16 84% 53%;
+        --brand-foreground: 0 0% 100%;
+        --bg-glow: 60 14% 95%;
+        --radius: 0.75rem;
+    }
+
+    /* TE dark theme (mockup dark palette).
+       The device card is the deepest black (#161614); the page sits a step
+       lighter so the device reads against it. */
+    .dark {
+        --background: 50 4% 13%;
+        --foreground: 60 8% 92%;
+        --card: 48 9% 4%;
+        --card-foreground: 60 8% 92%;
+        --popover: 48 5% 11%;
+        --popover-foreground: 60 8% 92%;
+        --primary: 60 8% 92%;
+        --primary-foreground: 60 6% 9%;
+        --secondary: 60 4% 15%;
+        --secondary-foreground: 60 8% 92%;
+        --muted: 60 4% 15%;
+        --muted-foreground: 50 5% 60%;
+        --accent: 60 4% 17%;
+        --accent-foreground: 60 8% 92%;
+        --destructive: 0 72% 55%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 55 5% 21%;
+        --input: 55 5% 21%;
+        --ring: 16 84% 53%;
+        --brand: 16 84% 53%;
+        --brand-foreground: 0 0% 100%;
+        --bg-glow: 50 4% 16%;
+    }
+
     :root {
         /* Legacy variables */
         --ember-orange: #ff6b35;
@@ -52,7 +107,13 @@
     }
 
     body {
-        @apply bg-bg-primary text-text-primary font-sans;
+        @apply bg-background text-foreground font-sans;
+        background-image: radial-gradient(
+            120% 90% at 50% -10%,
+            hsl(var(--bg-glow)) 0%,
+            hsl(var(--background)) 60%
+        );
+        background-attachment: fixed;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
@@ -462,6 +523,37 @@
         text-transform: uppercase;
         text-align: center;
         margin-top: 8px;
+    }
+
+    /* TE horizontal fader (native range input) */
+    .te-fader::-webkit-slider-runnable-track {
+        height: 2px;
+        border-radius: 2px;
+        background: hsl(var(--border));
+    }
+    .te-fader::-moz-range-track {
+        height: 2px;
+        border-radius: 2px;
+        background: hsl(var(--border));
+    }
+    .te-fader::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 11px;
+        height: 20px;
+        margin-top: -9px;
+        border-radius: 3px;
+        background: hsl(var(--foreground));
+        border: 2px solid hsl(var(--card));
+        box-shadow: 0 0 0 1px hsl(var(--foreground));
+    }
+    .te-fader::-moz-range-thumb {
+        width: 11px;
+        height: 20px;
+        border-radius: 3px;
+        background: hsl(var(--foreground));
+        border: 2px solid hsl(var(--card));
+        box-shadow: 0 0 0 1px hsl(var(--foreground));
     }
 
     /* Value display pills */

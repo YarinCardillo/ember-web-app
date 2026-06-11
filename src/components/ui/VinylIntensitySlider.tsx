@@ -12,9 +12,9 @@ import { memo, useCallback, useMemo, useRef } from "react";
 // Full vinyl ratio: 33⅓ / 45 ≈ 0.733
 const VINYL_RATIO_FULL = 33 / 45;
 
-// Vinyl amber color (matches VinylDisc)
-const VINYL_COLOR = "#F5A524";
-const TRACK_COLOR = "#1a1612";
+// TE flat palette (CSS variables resolve in inline styles)
+const FILL_COLOR = "hsl(var(--foreground))";
+const TRACK_COLOR = "hsl(var(--border))";
 
 interface VinylIntensitySliderProps {
   value: number;
@@ -111,7 +111,7 @@ function VinylIntensitySliderComponent({
         aria-valuenow={value}
         tabIndex={visible ? 0 : -1}
       >
-        {/* Track background with inset shadow */}
+        {/* Track background */}
         <div
           className="absolute left-1/2 rounded-full"
           style={{
@@ -119,12 +119,10 @@ function VinylIntensitySliderComponent({
             height: "100%",
             transform: "translateX(-50%)",
             background: TRACK_COLOR,
-            boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.6)",
-            border: "1px solid rgba(255, 255, 255, 0.05)",
           }}
         />
 
-        {/* Active fill (from bottom) with glow */}
+        {/* Active fill (from bottom) */}
         <div
           className="absolute left-1/2 rounded-full transition-all duration-75"
           style={{
@@ -132,12 +130,11 @@ function VinylIntensitySliderComponent({
             height: `${currentPosition}%`,
             bottom: 0,
             transform: "translateX(-50%)",
-            background: `linear-gradient(to top, ${VINYL_COLOR}, #d4891a)`,
-            boxShadow: `0 0 8px ${VINYL_COLOR}60`,
+            background: FILL_COLOR,
           }}
         />
 
-        {/* Thumb with metallic look */}
+        {/* Thumb */}
         <div
           className="absolute left-1/2 transition-all duration-75"
           style={{
@@ -145,25 +142,11 @@ function VinylIntensitySliderComponent({
             height: thumbSize,
             bottom: thumbBottom,
             transform: "translateX(-50%)",
-            background: `radial-gradient(circle at 30% 30%, ${VINYL_COLOR}, #b8780f)`,
+            background: FILL_COLOR,
             borderRadius: "50%",
-            boxShadow: `
-              0 2px 4px rgba(0, 0, 0, 0.5),
-              0 0 0 1px rgba(0, 0, 0, 0.3),
-              inset 0 1px 2px rgba(255, 255, 255, 0.3),
-              0 0 10px ${VINYL_COLOR}50
-            `,
+            border: "2px solid hsl(var(--card))",
+            boxShadow: "0 0 0 1px hsl(var(--foreground))",
           }}
-        />
-
-        {/* Tick marks for reference */}
-        <div
-          className="absolute left-0 w-1 h-px bg-white/20"
-          style={{ bottom: "30%", transform: "translateX(-2px)" }}
-        />
-        <div
-          className="absolute right-0 w-1 h-px bg-white/20"
-          style={{ bottom: "30%", transform: "translateX(2px)" }}
         />
       </div>
     </div>

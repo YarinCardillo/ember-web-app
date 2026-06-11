@@ -62,7 +62,7 @@ export function SafetyWarningModal({
               </p>
 
               <p className="text-sm text-text-tertiary">
-                Ember Amp is designed to be used with{" "}
+                HF-1 is designed to be used with{" "}
                 <strong className="text-text-secondary">
                   virtual audio cables
                 </strong>{" "}

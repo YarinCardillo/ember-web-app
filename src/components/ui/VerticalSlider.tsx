@@ -1,22 +1,8 @@
 /**
- * VerticalSlider - Vertical fader control with center at 0 dB
+ * VerticalSlider - Vertical fader control with center at 0 dB (TE flat style).
  */
 
 import { useCallback, useRef } from "react";
-import { useThemeStore } from "../../store/useThemeStore";
-
-const renderDbValue = (str: string): React.ReactNode => {
-  const i = str.lastIndexOf("dB");
-  if (i === -1) return str;
-  return (
-    <span className="inline-flex items-baseline gap-[0.2em]">
-      <span className="inline-block min-w-[5ch] tabular-nums">
-        {str.slice(0, i).trim()}
-      </span>
-      <span>dB</span>
-    </span>
-  );
-};
 
 interface VerticalSliderProps {
   label: string;
@@ -32,8 +18,20 @@ interface VerticalSliderProps {
   showValue?: boolean;
 }
 
-const ACCENT_COLOR = "#F59E0B";
-const TRACK_COLOR = "#18181B";
+/** dB value readout with the numeric part in a fixed-width span so the unit
+ *  never shifts as digit count changes. */
+const renderDbValue = (str: string): React.ReactNode => {
+  const i = str.lastIndexOf("dB");
+  if (i === -1) return str;
+  return (
+    <span className="inline-flex items-baseline gap-[0.2em]">
+      <span className="inline-block min-w-[5ch] text-right tabular-nums">
+        {str.slice(0, i).trim()}
+      </span>
+      <span className="text-muted-foreground">dB</span>
+    </span>
+  );
+};
 
 export function VerticalSlider({
   label,
@@ -48,10 +46,6 @@ export function VerticalSlider({
   defaultValue,
   showValue = false,
 }: VerticalSliderProps): JSX.Element {
-  const theme = useThemeStore((state) => state.theme);
-  const isVintage = theme === "vintage";
-  const isModern = theme === "modern";
-
   const sliderRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
 
@@ -59,9 +53,8 @@ export function VerticalSlider({
     (db: number): number => {
       if (db <= centerDb) {
         return ((db - minDb) / (centerDb - minDb)) * 50;
-      } else {
-        return 50 + ((db - centerDb) / (maxDb - centerDb)) * 50;
       }
+      return 50 + ((db - centerDb) / (maxDb - centerDb)) * 50;
     },
     [minDb, maxDb, centerDb],
   );
@@ -70,9 +63,8 @@ export function VerticalSlider({
     (position: number): number => {
       if (position <= 50) {
         return minDb + (position / 50) * (centerDb - minDb);
-      } else {
-        return centerDb + ((position - 50) / 50) * (maxDb - centerDb);
       }
+      return centerDb + ((position - 50) / 50) * (maxDb - centerDb);
     },
     [minDb, maxDb, centerDb],
   );
@@ -81,12 +73,8 @@ export function VerticalSlider({
 
   const formatDisplayValue = useCallback(
     (val: number): string => {
-      if (formatValue) {
-        return formatValue(val);
-      }
-      if (val <= -90) {
-        return "-Inf dB";
-      }
+      if (formatValue) return formatValue(val);
+      if (val <= -90) return "-Inf dB";
       return `${val.toFixed(1)} dB`;
     },
     [formatValue],
@@ -95,7 +83,6 @@ export function VerticalSlider({
   const handlePointerEvent = useCallback(
     (clientY: number) => {
       if (!sliderRef.current) return;
-
       const rect = sliderRef.current.getBoundingClientRect();
       const relativeY = clientY - rect.top;
       const position = Math.max(
@@ -126,17 +113,15 @@ export function VerticalSlider({
   };
 
   const handleDoubleClick = useCallback((): void => {
-    if (defaultValue !== undefined) {
-      onChange(defaultValue);
-    }
+    if (defaultValue !== undefined) onChange(defaultValue);
   }, [defaultValue, onChange]);
 
-  const thumbSize = 20;
-  const trackWidth = 8;
-  const touchTargetWidth = 48; // Larger touch area for mobile
+  const thumbSize = 16;
+  const trackWidth = 3;
+  const touchTargetWidth = 44;
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-3">
       <div
         ref={sliderRef}
         className="relative cursor-pointer touch-none"
@@ -148,76 +133,38 @@ export function VerticalSlider({
       >
         {/* Track background */}
         <div
-          className="absolute left-1/2 rounded-full"
-          style={{
-            width: trackWidth,
-            height: "100%",
-            transform: "translateX(-50%)",
-            background: TRACK_COLOR,
-            boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.4)",
-          }}
+          className="absolute left-1/2 -translate-x-1/2 rounded-full bg-border"
+          style={{ width: trackWidth, height: "100%" }}
         />
-
         {/* Active fill (from bottom) */}
         <div
-          className="absolute left-1/2 rounded-full"
-          style={{
-            width: trackWidth,
-            height: `${currentPosition}%`,
-            bottom: 0,
-            transform: "translateX(-50%)",
-            background: ACCENT_COLOR,
-            boxShadow: `0 0 8px ${ACCENT_COLOR}40`,
-          }}
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full bg-foreground"
+          style={{ width: trackWidth, height: `${currentPosition}%` }}
         />
-
         {/* Thumb */}
         <div
-          className="absolute left-1/2 transition-transform duration-75"
+          className="absolute left-1/2 rounded-[3px] bg-foreground transition-transform duration-75"
           style={{
-            width: thumbSize,
-            height: thumbSize,
-            bottom: `calc(${currentPosition}% - ${thumbSize / 2}px)`,
+            width: thumbSize - 4,
+            height: thumbSize + 6,
+            bottom: `calc(${currentPosition}% - ${(thumbSize + 6) / 2}px)`,
             transform: "translateX(-50%)",
-            background: "radial-gradient(circle at 30% 30%, #FAFAFA, #D4D4D8)",
-            borderRadius: "50%",
-            boxShadow:
-              "0 2px 6px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(245, 158, 11, 0.3)",
+            border: "2px solid hsl(var(--card))",
+            boxShadow: "0 0 0 1px hsl(var(--foreground))",
           }}
         />
       </div>
 
       {showValue && (
-        <span
-          className={
-            isVintage
-              ? "slider-value-vintage"
-              : "text-xs font-mono text-accent-primary"
-          }
-          style={{
-            minWidth: "70px",
-            textAlign: "center",
-            display: "inline-block",
-            marginTop: isModern ? "12px" : "0",
-          }}
-        >
+        <span className="font-mono text-[11px] tabular-nums text-foreground">
           {renderDbValue(formatDisplayValue(value))}
         </span>
       )}
-      {isVintage && showValue && (
-        <style>{`
-          .slider-value-vintage {
-            font-family: 'Space Grotesk', monospace;
-            font-size: 11px;
-            color: #F5A524;
-            background: rgba(0,0,0,0.4);
-            padding: 2px 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(245, 165, 36, 0.2);
-          }
-        `}</style>
+      {label && (
+        <label className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          {label}
+        </label>
       )}
-      <label className="text-xs text-text-secondary">{label}</label>
     </div>
   );
 }
