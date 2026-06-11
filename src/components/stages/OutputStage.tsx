@@ -214,8 +214,10 @@ export function OutputStage({
                 )}
             </div>
 
-            {/* Status + LUFS metric */}
-            <div className="flex flex-col gap-3 md:items-end">
+            {/* Status + LUFS metric. On small (stacked) the bar is a row with
+                Signal/Clip left and a larger LUFS right, vertically centered;
+                on md+ it becomes the right-aligned column. */}
+            <div className="flex items-center justify-between gap-4 md:flex-col md:items-end md:gap-3">
                 <div className="flex h-[22px] items-center gap-4">
                     <StatusDot label="Signal" active={hasSignal} tone="brand" />
                     <StatusDot label="Clip" active={isClipping} tone="destructive" />
