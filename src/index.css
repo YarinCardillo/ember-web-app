@@ -32,30 +32,32 @@
         --radius: 0.75rem;
     }
 
-    /* TE dark theme (mockup dark palette) */
+    /* TE dark theme (mockup dark palette).
+       The device card is the deepest black (#161614); the page sits a step
+       lighter so the device reads against it. */
     .dark {
-        --background: 60 5% 8%;
+        --background: 50 4% 13%;
         --foreground: 60 8% 92%;
-        --card: 60 6% 11%;
+        --card: 60 6% 8%;
         --card-foreground: 60 8% 92%;
-        --popover: 48 5% 13%;
+        --popover: 48 5% 11%;
         --popover-foreground: 60 8% 92%;
         --primary: 60 8% 92%;
-        --primary-foreground: 60 6% 10%;
-        --secondary: 60 5% 15%;
+        --primary-foreground: 60 6% 9%;
+        --secondary: 60 4% 15%;
         --secondary-foreground: 60 8% 92%;
-        --muted: 60 5% 15%;
-        --muted-foreground: 50 5% 58%;
-        --accent: 60 5% 18%;
+        --muted: 60 4% 15%;
+        --muted-foreground: 50 5% 60%;
+        --accent: 60 4% 17%;
         --accent-foreground: 60 8% 92%;
         --destructive: 0 72% 55%;
         --destructive-foreground: 0 0% 100%;
-        --border: 60 6% 19%;
-        --input: 60 6% 19%;
+        --border: 55 5% 21%;
+        --input: 55 5% 21%;
         --ring: 16 84% 53%;
         --brand: 16 84% 53%;
         --brand-foreground: 0 0% 100%;
-        --bg-glow: 60 5% 11%;
+        --bg-glow: 50 4% 16%;
     }
 
     :root {

@@ -867,7 +867,7 @@ export function AmpRack({
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8 select-none md:py-12">
-      <main className="w-full max-w-[1100px] overflow-hidden rounded-xl border border-border bg-card shadow-[0_1px_0_#fff_inset,0_18px_40px_-28px_rgba(20,20,16,0.45)]">
+      <main className="w-full max-w-[1100px] overflow-hidden rounded-xl border border-border bg-card shadow-[0_18px_40px_-28px_rgba(20,20,16,0.45)]">
         {/* Head */}
         <div className="flex items-center gap-3.5 px-6 py-4">
           <DotWaveMark className="h-5 w-auto flex-shrink-0 fill-foreground" />
