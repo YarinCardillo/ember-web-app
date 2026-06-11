@@ -62,7 +62,6 @@ export function TextMorph({
         {characters.map((character) => (
           <motion.span
             key={character.id}
-            layoutId={character.id}
             className="inline-block"
             aria-hidden="true"
             initial="initial"
