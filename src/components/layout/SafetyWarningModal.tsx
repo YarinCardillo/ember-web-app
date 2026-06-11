@@ -1,8 +1,10 @@
 /**
- * SafetyWarningModal - Premium warning modal for potential feedback loops
+ * SafetyWarningModal - Warning modal for potential audio feedback loops (TE style).
  */
 
 import { motion, AnimatePresence } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
+import { Button } from "../ui/shadcn/button";
 
 interface SafetyWarningModalProps {
   deviceName: string;
@@ -17,80 +19,59 @@ export function SafetyWarningModal({
 }: SafetyWarningModalProps): JSX.Element {
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/85 flex items-center justify-center z-[100] backdrop-blur-sm"
-      >
+      <motion.div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="absolute inset-0 bg-foreground/20"
+          initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          animate={{ opacity: 1, backdropFilter: "blur(6px)" }}
+          exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          onClick={onCancel}
+        />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className="premium-card p-8 max-w-md mx-4 shadow-2xl relative"
-          style={{
-            border: "1px solid rgba(248, 113, 113, 0.3)",
-          }}
+          exit={{ opacity: 0, scale: 0.96, y: 16 }}
+          transition={{ type: "spring", stiffness: 360, damping: 26 }}
+          className="relative w-full max-w-md overflow-hidden rounded-xl border border-destructive/40 bg-card p-6 shadow-xl"
         >
-          {/* Warning Icon */}
-          <div
-            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-bg-secondary p-3 rounded-full"
-            style={{ border: "1px solid rgba(248, 113, 113, 0.3)" }}
-          >
-            <div className="text-3xl">Warning</div>
-          </div>
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="flex size-11 items-center justify-center rounded-full border border-destructive/40 text-destructive">
+              <AlertTriangle className="size-5" />
+            </div>
 
-          <div className="text-center mt-4">
-            <h2 className="text-2xl font-bold text-meter-red mb-4">
+            <h2 className="text-base font-semibold text-foreground">
               Microphone Detected
             </h2>
 
-            <div className="space-y-4 text-text-secondary">
+            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
               <p>
                 The selected device{" "}
-                <span className="text-accent-primary font-semibold">
+                <span className="font-semibold text-foreground">
                   "{deviceName}"
                 </span>{" "}
                 appears to be a physical microphone.
               </p>
-
-              <p className="text-sm bg-meter-red/10 border border-meter-red/20 p-3 rounded-lg">
-                <strong className="text-meter-red">Risk of Feedback:</strong>{" "}
-                Listening to the amp through speakers while using a microphone
-                will cause a loud feedback loop.
+              <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-left text-destructive">
+                <strong>Risk of feedback:</strong> Listening to the amp through
+                speakers while using a microphone will cause a loud feedback
+                loop.
               </p>
-
-              <p className="text-sm text-text-tertiary">
-                HF-1 is designed to be used with{" "}
-                <strong className="text-text-secondary">
-                  virtual audio cables
-                </strong>{" "}
-                (like BlackHole, VB-Cable, or PipeWire sinks).
+              <p>
+                HF-1 is designed for{" "}
+                <strong className="text-foreground">virtual audio cables</strong>{" "}
+                (BlackHole, VB-Cable, or PipeWire sinks).
               </p>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-8">
-            <motion.button
-              onClick={onCancel}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="noise-surface px-4 py-2.5 rounded-lg bg-bg-tertiary hover:bg-bg-hover text-text-primary font-medium transition-colors"
-              style={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}
-            >
-              Cancel
-            </motion.button>
-
-            <motion.button
-              onClick={onContinue}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="px-4 py-2.5 rounded-lg bg-meter-red/20 hover:bg-meter-red/30 text-meter-red font-medium transition-colors"
-              style={{ border: "1px solid rgba(248, 113, 113, 0.3)" }}
-            >
-              Continue Anyway
-            </motion.button>
+            <div className="mt-2 grid w-full grid-cols-2 gap-3">
+              <Button variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={onContinue}>
+                Continue anyway
+              </Button>
+            </div>
           </div>
         </motion.div>
       </motion.div>

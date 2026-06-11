@@ -67,7 +67,7 @@ A separate peak indicator LED lights up when the signal reaches **0 VU (-18 dBFS
 
 ### Why 0 VU and not closer to digital clipping?
 
-This threshold is intentional. In Ember Amp's signal chain, the tape machine and tube saturation stages are calibrated to begin saturating around 0 VU (-18 dBFS), matching real analog equipment behavior:
+This threshold is intentional. In HF-1's signal chain, the tape machine and tube saturation stages are calibrated to begin saturating around 0 VU (-18 dBFS), matching real analog equipment behavior:
 
 | Level | Analog behavior |
 |-------|-----------------|

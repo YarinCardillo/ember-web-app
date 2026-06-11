@@ -2,7 +2,7 @@
 
 ## Reference Level
 
-Ember Amp uses **-18 dBFS = 0 VU** as the reference level, matching broadcast/pro-audio standards.
+HF-1 uses **-18 dBFS = 0 VU** as the reference level, matching broadcast/pro-audio standards.
 
 ## Saturation Stages
 

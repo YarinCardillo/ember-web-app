@@ -96,40 +96,43 @@ function showUpdateToast(
   toast.id = "pwa-update-toast";
   Object.assign(toast.style, {
     position: "fixed",
-    bottom: "64px",
+    bottom: "24px",
     left: "50%",
     transform: "translateX(-50%)",
-    background: "#111113",
-    border: "1px solid rgba(245, 158, 11, 0.4)",
-    borderRadius: "8px",
-    padding: "12px 16px",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: "10px",
+    padding: "10px 12px 10px 16px",
     display: "flex",
     alignItems: "center",
-    gap: "12px",
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+    gap: "14px",
+    boxShadow: "0 18px 40px -24px rgba(20, 20, 16, 0.45)",
     zIndex: "9999",
-    fontFamily: "Inter, system-ui, sans-serif",
+    fontFamily: "'Space Grotesk', system-ui, sans-serif",
   });
 
   // Create text span
   const text = document.createElement("span");
   text.textContent = "New version available";
   Object.assign(text.style, {
-    color: "#e8dccc",
-    fontSize: "14px",
+    color: "hsl(var(--foreground))",
+    fontSize: "13px",
   });
 
   // Create refresh button
   const refreshBtn = document.createElement("button");
   refreshBtn.textContent = "Refresh";
   Object.assign(refreshBtn.style, {
-    background: "#F59E0B",
-    color: "#111113",
+    background: "hsl(var(--foreground))",
+    color: "hsl(var(--background))",
     border: "none",
-    borderRadius: "4px",
-    padding: "6px 12px",
-    fontSize: "13px",
-    fontWeight: "600",
+    borderRadius: "6px",
+    padding: "7px 12px",
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: "10.5px",
+    fontWeight: "500",
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
     cursor: "pointer",
   });
   refreshBtn.onclick = () => {
@@ -142,10 +145,13 @@ function showUpdateToast(
   dismissBtn.textContent = "Later";
   Object.assign(dismissBtn.style, {
     background: "transparent",
-    color: "#A1A1AA",
+    color: "hsl(var(--muted-foreground))",
     border: "none",
     padding: "4px 8px",
-    fontSize: "13px",
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: "10.5px",
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
     cursor: "pointer",
   });
   dismissBtn.onclick = () => {

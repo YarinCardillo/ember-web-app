@@ -1,6 +1,6 @@
-# Ember Amp Web - Architecture Documentation
+# HF-1 - Architecture Documentation
 
-This document provides detailed technical documentation of the Ember Amp Web architecture.
+This document provides detailed technical documentation of the HF-1 architecture.
 
 ---
 
@@ -18,7 +18,7 @@ This document provides detailed technical documentation of the Ember Amp Web arc
 
 ## System Overview
 
-Ember Amp Web is a client-side audio processing application built entirely with web technologies. The architecture follows a unidirectional data flow pattern with clear separation between:
+HF-1 is a client-side audio processing application built entirely with web technologies. The architecture follows a unidirectional data flow pattern with clear separation between:
 
 - **Audio Engine** - Manages Web Audio API lifecycle and signal routing
 - **DSP Nodes** - Individual audio processing modules
