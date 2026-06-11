@@ -23,7 +23,7 @@ const HOT_DB = 0;
 const PRECLIP_DB = -9; // ~3 segments below the hot zone
 const INK = "hsl(var(--foreground))";
 const ACCENT = "hsl(var(--brand))";
-const PRECLIP = "hsl(16 62% 60%)"; // accent hue, desaturated
+const PRECLIP = "hsl(222 9% 52%)"; // sidereal grey (cool steel)
 const REST_OPACITY = "0.2";
 
 const ATTACK_TIME = 5;
