@@ -1,14 +1,13 @@
 /**
- * SaturationStage - Premium Drive, harmonics, and mix controls
- * Supports both modern and vintage themes
+ * SaturationStage - Drive / Harmonics / Mix tube saturation controls (TE style).
  */
 
-import { Knob } from "../ui/Knob";
-import { Toggle } from "../ui/Toggle";
-import { Screws } from "../ui/Screw";
-import { PilotLight } from "../ui/PilotLight";
+import { TEBay } from "../ui/te/TEBay";
+import { TEKnob } from "../ui/te/TEKnob";
+import { Switch } from "../ui/shadcn/switch";
 import { useAudioStore } from "../../store/useAudioStore";
-import { useThemeStore } from "../../store/useThemeStore";
+
+const formatPercent = (value: number): string => `${Math.round(value * 100)} %`;
 
 export function SaturationStage(): JSX.Element {
   const drive = useAudioStore((state) => state.drive);
@@ -16,73 +15,57 @@ export function SaturationStage(): JSX.Element {
   const saturationMix = useAudioStore((state) => state.saturationMix);
   const bypassSaturation = useAudioStore((state) => state.bypassSaturation);
   const setParameter = useAudioStore((state) => state.setParameter);
-
-  const theme = useThemeStore((state) => state.theme);
-  const isVintage = theme === "vintage";
   const isActive = !bypassSaturation;
 
   return (
-    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden relative">
-      <Screws />
-
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          {isVintage && <PilotLight isActive={isActive} />}
-          <h3
-            className="font-semibold"
-            style={
-              isVintage
-                ? {
-                    fontFamily: "'Instrument Serif', Georgia, serif",
-                    fontSize: "20px",
-                    letterSpacing: "4px",
-                    color: "#c9a66b",
-                    fontWeight: 400,
-                  }
-                : { fontSize: "18px", color: "#e8dccc" }
-            }
-          >
-            TUBES
-          </h3>
-        </div>
-        <Toggle
+    <TEBay
+      label="Tube"
+      aux="triode"
+      action={
+        <Switch
           checked={isActive}
-          onChange={(checked) => setParameter("bypassSaturation", !checked)}
+          onCheckedChange={(checked) =>
+            setParameter("bypassSaturation", !checked)
+          }
+          aria-label="Tube saturation enabled"
         />
-      </div>
-
-      <div className="flex items-center justify-around gap-4 flex-1 my-auto pb-6 min-w-0 flex-wrap">
-        <Knob
+      }
+      contentClassName="justify-center"
+    >
+      <div className="grid grid-cols-2 place-items-center gap-x-5 gap-y-7">
+        <TEKnob
           label="Drive"
           value={drive}
           min={0}
           max={1}
           step={0.01}
-          formatValue={(value) => `${(value * 100).toFixed(0)}%`}
+          formatValue={formatPercent}
           onChange={(value) => setParameter("drive", value)}
           defaultValue={0.3}
         />
-        <Knob
+        <TEKnob
           label="Harmonics"
           value={harmonics}
           min={0}
           max={1}
           step={0.01}
-          formatValue={(value) => `${(value * 100).toFixed(0)}%`}
+          formatValue={formatPercent}
           onChange={(value) => setParameter("harmonics", value)}
           defaultValue={0.5}
         />
-        <Knob
-          label="Mix"
-          value={saturationMix}
-          min={0}
-          max={1}
-          step={0.01}
-          formatValue={(value) => `${(value * 100).toFixed(0)}%`}
-          onChange={(value) => setParameter("saturationMix", value)}
-          defaultValue={0.6}
-        />
+        <div className="col-span-2 flex justify-center">
+          <TEKnob
+            label="Mix"
+            value={saturationMix}
+            min={0}
+            max={1}
+            step={0.01}
+            formatValue={formatPercent}
+            onChange={(value) => setParameter("saturationMix", value)}
+            defaultValue={0.6}
+          />
+        </div>
       </div>
-    </div>
+    </TEBay>
   );
 }

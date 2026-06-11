@@ -1,14 +1,16 @@
 /**
- * ToneStage - Premium Bass/Mid/Treble/Presence knobs
- * Supports both modern and vintage themes (TONE STACK in vintage)
+ * ToneStage - Bass/Mid/Treble/Presence EQ knobs (TE flat style).
  */
 
-import { Knob } from "../ui/Knob";
-import { Toggle } from "../ui/Toggle";
-import { Screws } from "../ui/Screw";
-import { PilotLight } from "../ui/PilotLight";
+import { TEBay } from "../ui/te/TEBay";
+import { TEKnob } from "../ui/te/TEKnob";
+import { Switch } from "../ui/shadcn/switch";
 import { useAudioStore } from "../../store/useAudioStore";
-import { useThemeStore } from "../../store/useThemeStore";
+
+const formatDb = (value: number): string => {
+  const sign = value > 0 ? "+" : value < 0 ? "-" : " ";
+  return `${sign}${Math.abs(value).toFixed(1)} dB`;
+};
 
 export function ToneStage(): JSX.Element {
   const bass = useAudioStore((state) => state.bass);
@@ -17,83 +19,65 @@ export function ToneStage(): JSX.Element {
   const presence = useAudioStore((state) => state.presence);
   const setParameter = useAudioStore((state) => state.setParameter);
   const bypassToneStack = useAudioStore((state) => state.bypassToneStack);
-
-  const theme = useThemeStore((state) => state.theme);
-  const isVintage = theme === "vintage";
   const isActive = !bypassToneStack;
 
   return (
-    <div className="premium-card grain-texture flex flex-col gap-4 p-4 h-full min-w-0 overflow-hidden relative">
-      <Screws />
-
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          {isVintage && <PilotLight isActive={isActive} />}
-          <h3
-            className="font-semibold"
-            style={
-              isVintage
-                ? {
-                    fontFamily: "'Instrument Serif', Georgia, serif",
-                    fontSize: "20px",
-                    letterSpacing: "4px",
-                    color: "#c9a66b",
-                    fontWeight: 400,
-                  }
-                : { fontSize: "18px", color: "#e8dccc" }
-            }
-          >
-            {isVintage ? "TONE STACK" : "EQUALIZER"}
-          </h3>
-        </div>
-        <Toggle
+    <TEBay
+      label="Tone"
+      aux="passive"
+      action={
+        <Switch
           checked={isActive}
-          onChange={(checked) => setParameter("bypassToneStack", !checked)}
+          onCheckedChange={(checked) =>
+            setParameter("bypassToneStack", !checked)
+          }
+          aria-label="Tone stack enabled"
         />
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1 my-auto pb-6 min-w-0 place-items-center">
-        <Knob
+      }
+      contentClassName="justify-center"
+    >
+      <div className="grid grid-cols-2 gap-x-6 gap-y-7 place-items-center">
+        <TEKnob
           label="Bass"
           value={bass}
           min={-12}
           max={12}
           step={0.5}
-          unit=" dB"
+          formatValue={formatDb}
           onChange={(value) => setParameter("bass", value)}
           defaultValue={0}
         />
-        <Knob
+        <TEKnob
           label="Mid"
           value={mid}
           min={-12}
           max={12}
           step={0.5}
-          unit=" dB"
+          formatValue={formatDb}
           onChange={(value) => setParameter("mid", value)}
           defaultValue={0}
         />
-        <Knob
+        <TEKnob
           label="Treble"
           value={treble}
           min={-12}
           max={12}
           step={0.5}
-          unit=" dB"
+          formatValue={formatDb}
           onChange={(value) => setParameter("treble", value)}
           defaultValue={0}
         />
-        <Knob
+        <TEKnob
           label="Presence"
           value={presence}
           min={-12}
           max={12}
           step={0.5}
-          unit=" dB"
+          formatValue={formatDb}
           onChange={(value) => setParameter("presence", value)}
           defaultValue={0}
         />
       </div>
-    </div>
+    </TEBay>
   );
 }
