@@ -16,6 +16,10 @@ interface TEKnobProps {
     formatValue?: (value: number) => string;
     onChange: (value: number) => void;
     defaultValue?: number;
+    /** Horizontal nudge of the value readout (number + unit). Per-knob, so
+     *  different unit widths (e.g. " dB" vs "%") can be centered independently.
+     *  negative = left, positive = right. e.g. "-12px", "0.4ch". */
+    valueOffsetX?: string;
 }
 
 // --- Layout / tuning constants -------------------------------------------
@@ -27,9 +31,6 @@ const MIN_ANGLE = -135; // pointer angle at `min`
 const MAX_ANGLE = 135; // pointer angle at `max` (270deg sweep)
 const TICK_COUNT = 10; // tick marks around the ring
 const DRAG_RANGE_PX = 140; // vertical pixels for a full min->max drag
-/** Horizontal nudge of the whole value readout (number + unit). Tune to taste:
- *  negative = left, positive = right. e.g. "-3px", "0.4ch". */
-const VALUE_OFFSET_X = "-12px";
 
 /** Polar point on the knob face. 0deg points up; angle grows clockwise. */
 function polar(angleDeg: number, radius: number): [number, number] {
@@ -71,6 +72,7 @@ export function TEKnob({
     formatValue,
     onChange,
     defaultValue,
+    valueOffsetX = "0px",
 }: TEKnobProps): JSX.Element {
     const [isDragging, setIsDragging] = useState(false);
     const startYRef = useRef(0);
@@ -251,7 +253,7 @@ export function TEKnob({
                     className="relative inline-flex justify-center whitespace-pre font-mono text-[11px] tabular-nums text-foreground"
                     style={{
                         minWidth: `${numberWidthCh}ch`,
-                        transform: `translateX(${VALUE_OFFSET_X})`,
+                        transform: `translateX(${valueOffsetX})`,
                     }}
                 >
                     {valueNumber}

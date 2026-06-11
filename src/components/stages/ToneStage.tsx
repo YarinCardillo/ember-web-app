@@ -44,6 +44,7 @@ export function ToneStage(): JSX.Element {
           max={12}
           step={0.5}
           formatValue={formatDb}
+          valueOffsetX="-12px"
           onChange={(value) => setParameter("bass", value)}
           defaultValue={0}
         />
@@ -54,6 +55,7 @@ export function ToneStage(): JSX.Element {
           max={12}
           step={0.5}
           formatValue={formatDb}
+          valueOffsetX="-12px"
           onChange={(value) => setParameter("mid", value)}
           defaultValue={0}
         />
@@ -64,6 +66,7 @@ export function ToneStage(): JSX.Element {
           max={12}
           step={0.5}
           formatValue={formatDb}
+          valueOffsetX="-12px"
           onChange={(value) => setParameter("treble", value)}
           defaultValue={0}
         />
@@ -74,6 +77,7 @@ export function ToneStage(): JSX.Element {
           max={12}
           step={0.5}
           formatValue={formatDb}
+          valueOffsetX="-12px"
           onChange={(value) => setParameter("presence", value)}
           defaultValue={0}
         />
