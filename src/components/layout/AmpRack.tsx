@@ -9,6 +9,8 @@ import { HeaderMenu } from "./HeaderMenu";
 import { PresetSelector } from "../ui/PresetSelector";
 import { TEToggleButton } from "../ui/te/TEToggleButton";
 import { DotWaveMark } from "../ui/te/DotWaveMark";
+import { ZoomDial } from "../ui/te/ZoomDial";
+import { useUiZoomStore } from "../../store/useUiZoomStore";
 import { Power, CircleSlash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InputStage } from "../stages/InputStage";
@@ -132,6 +134,7 @@ export function AmpRack({
   const currentPreset = useAudioStore((state) => state.currentPreset);
   const loadPreset = useAudioStore((state) => state.loadPreset);
   const setParameter = useAudioStore((state) => state.setParameter);
+  const zoom = useUiZoomStore((state) => state.zoom);
 
   // Initialize audio engine and create nodes
   const initializeAudio = useCallback(async (): Promise<AudioNodes> => {
@@ -867,7 +870,14 @@ export function AmpRack({
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8 select-none md:py-12">
-      <main className="w-full max-w-[1100px] overflow-hidden rounded-xl border border-border bg-card shadow-[0_18px_40px_-28px_rgba(20,20,16,0.45)]">
+      <main
+        className="w-full max-w-[1100px] overflow-hidden rounded-xl border border-border bg-card shadow-[0_18px_40px_-28px_rgba(20,20,16,0.45)]"
+        style={
+          isMobile
+            ? undefined
+            : { transform: `scale(${zoom})`, transformOrigin: "center center" }
+        }
+      >
         {/* Head */}
         <div className="flex items-center gap-3.5 px-6 py-4">
           <DotWaveMark className="h-5 w-auto flex-shrink-0 fill-foreground" />
@@ -986,6 +996,9 @@ export function AmpRack({
 
         <Footer />
       </main>
+
+      {/* Right-side UI zoom dial (hidden on mobile) */}
+      <ZoomDial />
 
       {/* Safety Warning Modal */}
       {showSafetyModal && (
