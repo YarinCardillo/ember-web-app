@@ -28,7 +28,34 @@
         --ring: 16 84% 53%;
         --brand: 16 84% 53%;
         --brand-foreground: 0 0% 100%;
+        --bg-glow: 60 14% 95%;
         --radius: 0.75rem;
+    }
+
+    /* TE dark theme (mockup dark palette) */
+    .dark {
+        --background: 60 5% 8%;
+        --foreground: 60 8% 92%;
+        --card: 60 6% 11%;
+        --card-foreground: 60 8% 92%;
+        --popover: 48 5% 13%;
+        --popover-foreground: 60 8% 92%;
+        --primary: 60 8% 92%;
+        --primary-foreground: 60 6% 10%;
+        --secondary: 60 5% 15%;
+        --secondary-foreground: 60 8% 92%;
+        --muted: 60 5% 15%;
+        --muted-foreground: 50 5% 58%;
+        --accent: 60 5% 18%;
+        --accent-foreground: 60 8% 92%;
+        --destructive: 0 72% 55%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 60 6% 19%;
+        --input: 60 6% 19%;
+        --ring: 16 84% 53%;
+        --brand: 16 84% 53%;
+        --brand-foreground: 0 0% 100%;
+        --bg-glow: 60 5% 11%;
     }
 
     :root {
@@ -81,7 +108,7 @@
         @apply bg-background text-foreground font-sans;
         background-image: radial-gradient(
             120% 90% at 50% -10%,
-            hsl(60 14% 95%) 0%,
+            hsl(var(--bg-glow)) 0%,
             hsl(var(--background)) 60%
         );
         background-attachment: fixed;

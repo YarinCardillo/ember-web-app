@@ -4,8 +4,31 @@
 
 import { useState, useEffect } from "react";
 import { useAudioStore } from "../../store/useAudioStore";
+import { useUiThemeStore, type UiTheme } from "../../store/useUiThemeStore";
 import AudioEngine from "../../audio/AudioEngine";
 import { version } from "../../../package.json";
+
+const THEME_LABEL: Record<UiTheme, string> = {
+  system: "System",
+  light: "Light",
+  dark: "Dark",
+};
+
+function ThemeSwitch(): JSX.Element {
+  const theme = useUiThemeStore((state) => state.theme);
+  const cycleTheme = useUiThemeStore((state) => state.cycleTheme);
+
+  return (
+    <button
+      type="button"
+      onClick={cycleTheme}
+      aria-label={`Theme: ${THEME_LABEL[theme]}. Click to cycle.`}
+      className="rounded-md px-2 py-1 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {THEME_LABEL[theme]}
+    </button>
+  );
+}
 
 export function Footer(): JSX.Element {
   const isRunning = useAudioStore((state) => state.isRunning);
@@ -42,6 +65,8 @@ export function Footer(): JSX.Element {
         {isRunning ? "ready" : "standby"}
       </span>
       <span className="w-[48px] flex-shrink-0 text-right">v{version}</span>
+      <span className="h-4 w-px flex-shrink-0 bg-border" />
+      <ThemeSwitch />
     </div>
   );
 }
