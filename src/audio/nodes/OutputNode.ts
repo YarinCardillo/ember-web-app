@@ -118,6 +118,16 @@ export class OutputNode {
   }
 
   /**
+   * Entry point that lands on the meter at unity, skipping preGain (the OUT
+   * knob). Used by master bypass so the raw signal is metered by the output LED
+   * without any output gain applied.
+   * @returns the pre-clipper splitter (metering tap)
+   */
+  getBypassInput(): AudioNode {
+    return this.preClipperSplitter;
+  }
+
+  /**
    * Set pre-clipper gain in dB
    * Higher values drive more into the clipper for saturation
    * @param db - Gain in decibels (-12 to +12)
@@ -186,5 +196,22 @@ export class OutputNode {
    */
   getMasterGainNode(): GainNode {
     return this.gainNode;
+  }
+
+  /**
+   * Remove or restore the hard clipper while keeping preGain and both meters in
+   * the path. Used by master bypass so the raw signal is measured at the output
+   * meter but never limited.
+   * @param bypassed - True to route around the clipper, false to restore it
+   */
+  setClipperBypassed(bypassed: boolean): void {
+    this.preClipperMerger.disconnect();
+    this.clipperNode.disconnect();
+    if (bypassed) {
+      this.preClipperMerger.connect(this.gainNode);
+    } else {
+      this.preClipperMerger.connect(this.clipperNode);
+      this.clipperNode.connect(this.gainNode);
+    }
   }
 }

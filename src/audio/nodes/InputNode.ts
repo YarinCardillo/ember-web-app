@@ -140,6 +140,18 @@ export class InputNode {
   }
 
   /**
+   * Re-point the raw post-mute source to a single destination, replacing any
+   * previous one. Used by master bypass to send the raw input straight to the
+   * output stage (skipping the gain stage and the rest of the chain) and to
+   * restore it to the vinyl front-end afterwards.
+   * @param destination - AudioNode the raw source should feed
+   */
+  setRawDestination(destination: AudioNode): void {
+    this.inputMuteGain.disconnect();
+    this.inputMuteGain.connect(destination);
+  }
+
+  /**
    * Mute the input signal (for preview mode)
    */
   muteInput(): void {
