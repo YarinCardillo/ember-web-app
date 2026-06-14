@@ -36,7 +36,7 @@ export function ToneStage(): JSX.Element {
       }
       contentClassName="justify-center"
     >
-      <div className="grid grid-cols-2 gap-x-6 gap-y-7 place-items-center">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-7 place-items-center sm:grid-cols-4">
         <TEKnob
           label="Bass"
           value={bass}

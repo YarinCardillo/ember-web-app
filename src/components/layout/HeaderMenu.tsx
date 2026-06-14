@@ -1,18 +1,43 @@
 /**
- * HeaderMenu - Small dropdown in the device head for opening the setup guide
- * and the about panel.
+ * HeaderMenu - Dropdown in the device head: input / output device pickers under
+ * Settings, plus the setup guide and about panel.
  */
 
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+
+interface DeviceInfo {
+  deviceId: string;
+  label: string;
+}
 
 interface HeaderMenuProps {
   onSetupGuide: () => void;
   onAbout: () => void;
+  inputDevices: DeviceInfo[];
+  inputDeviceId: string | null;
+  onInputDeviceChange: (deviceId: string) => void;
+  outputDevices: DeviceInfo[];
+  outputDeviceId: string | null;
+  onOutputDeviceChange: (deviceId: string) => void;
+  isOutputDeviceSupported: boolean;
+  isMobileMode: boolean;
 }
+
+const SELECT_CLASS =
+  "w-full rounded-md border border-border bg-secondary px-2 py-1.5 font-mono text-[11px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function HeaderMenu({
   onSetupGuide,
   onAbout,
+  inputDevices,
+  inputDeviceId,
+  onInputDeviceChange,
+  outputDevices,
+  outputDeviceId,
+  onOutputDeviceChange,
+  isOutputDeviceSupported,
+  isMobileMode,
 }: HeaderMenuProps): JSX.Element {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -44,23 +69,92 @@ export function HeaderMenu({
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex size-8 items-center justify-center rounded-md border border-border bg-popover text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={cn(
+          "flex size-8 items-center justify-center transition-colors focus-visible:outline-none",
+          open ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+        )}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Menu"
+        aria-label={open ? "Close menu" : "Open menu"}
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-          <line x1="1" y1="3.5" x2="13" y2="3.5" stroke="currentColor" strokeWidth="1.4" />
-          <line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="1.4" />
-          <line x1="1" y1="10.5" x2="13" y2="10.5" stroke="currentColor" strokeWidth="1.4" />
-        </svg>
+        {/* Two bars that rotate into a thin X on open */}
+        <span className="relative block h-3 w-[18px]" aria-hidden="true">
+          <span
+            className={cn(
+              "absolute left-0 block h-[1.4px] w-[18px] bg-current transition-all duration-300 ease-out",
+              open ? "top-1/2 -translate-y-1/2 rotate-45" : "top-[3px]",
+            )}
+          />
+          <span
+            className={cn(
+              "absolute left-0 block h-[1.4px] w-[18px] bg-current transition-all duration-300 ease-out",
+              open ? "top-1/2 -translate-y-1/2 -rotate-45" : "bottom-[3px]",
+            )}
+          />
+        </span>
       </button>
 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-md border border-border bg-card shadow-lg"
+          className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-md border border-border bg-card shadow-lg"
         >
+          <div className="border-b border-border px-3 py-2.5">
+            <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Settings
+            </p>
+            <label className="mb-1 block text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              Input
+            </label>
+            {isMobileMode ? (
+              <div className="mb-2.5 rounded-md border border-border bg-secondary px-2 py-1.5 font-mono text-[11px] text-muted-foreground">
+                Mic disabled on mobile
+              </div>
+            ) : (
+              <select
+                value={inputDeviceId || ""}
+                onChange={(e) => {
+                  if (e.target.value) onInputDeviceChange(e.target.value);
+                }}
+                className={`mb-2.5 ${SELECT_CLASS}`}
+              >
+                <option value="" disabled>
+                  Select input...
+                </option>
+                {inputDevices.map((d) => (
+                  <option key={d.deviceId} value={d.deviceId}>
+                    {d.label || `Device ${d.deviceId.slice(0, 8)}`}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <label className="mb-1 block text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              Output
+            </label>
+            {isMobileMode ? (
+              <div className="rounded-md border border-border bg-secondary px-2 py-1.5 font-mono text-[11px] text-muted-foreground">
+                Default (mobile)
+              </div>
+            ) : isOutputDeviceSupported ? (
+              <select
+                value={outputDeviceId || "default"}
+                onChange={(e) => onOutputDeviceChange(e.target.value)}
+                className={SELECT_CLASS}
+              >
+                {outputDevices.map((d) => (
+                  <option key={d.deviceId} value={d.deviceId}>
+                    {d.label || `Device ${d.deviceId.slice(0, 8)}`}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="font-mono text-[11px] text-muted-foreground">
+                Not supported in this browser
+              </p>
+            )}
+          </div>
+
           <button
             role="menuitem"
             onClick={() => select(onSetupGuide)}

@@ -1,35 +1,31 @@
 /**
- * OutputStage - Output bar (mockup layout): output fader + segmented meter,
- * output device selector, status LEDs, and LUFS readout.
+ * OutputStage - Output bar: power and bypass transport on the left, the
+ * segmented output meter in the middle, and the short-term LUFS readout with
+ * signal / clip status on the right. Output level lives on the center Out knob
+ * now, so there is no fader here; device pickers moved to the header menu.
  */
 
 import { useState, useEffect, useRef } from "react";
-import { TEFader } from "../ui/te/TEFader";
+import { Power } from "lucide-react";
 import { TESegmentMeter } from "../ui/te/TESegmentMeter";
-import { useAudioStore } from "../../store/useAudioStore";
 import {
     createLufsState,
     calculateShortTermLufs,
     formatLufs,
 } from "../../utils/lufs-meter";
 import { cn } from "@/lib/utils";
-import type { AudioDeviceInfo } from "../../types/audio.types";
 import type { LufsState } from "../../utils/lufs-meter";
 
 const CLIP_HOLD_MS = 50; // short hold so brief clips stay visible
-
-const SELECT_CLASS =
-    "w-full cursor-pointer rounded-md border border-border bg-popover px-3 py-2 font-mono text-[11px] tracking-tight text-foreground transition-colors hover:bg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 interface OutputStageProps {
     preClipperAnalyserLeft: AnalyserNode | null;
     preClipperAnalyserRight: AnalyserNode | null;
     postGainAnalyserLeft: AnalyserNode | null;
-    postGainAnalyserRight: AnalyserNode | null;
-    outputDevices: AudioDeviceInfo[];
-    onOutputDeviceChange: (deviceId: string) => void;
-    isOutputDeviceSupported: boolean;
-    isMobileMode?: boolean;
+    isRunning: boolean;
+    onPowerToggle: () => void;
+    bypassAll: boolean;
+    onBypassToggle: () => void;
 }
 
 interface StatusDotProps {
@@ -65,15 +61,11 @@ export function OutputStage({
     preClipperAnalyserLeft,
     preClipperAnalyserRight,
     postGainAnalyserLeft,
-    outputDevices,
-    onOutputDeviceChange,
-    isOutputDeviceSupported,
-    isMobileMode = false,
+    isRunning,
+    onPowerToggle,
+    bypassAll,
+    onBypassToggle,
 }: OutputStageProps): JSX.Element {
-    const preGain = useAudioStore((state) => state.preGain);
-    const outputDeviceId = useAudioStore((state) => state.outputDeviceId);
-    const setParameter = useAudioStore((state) => state.setParameter);
-
     const [outputLufs, setOutputLufs] = useState(-Infinity);
     const [hasSignal, setHasSignal] = useState(false);
     const [isClipping, setIsClipping] = useState(false);
@@ -153,76 +145,51 @@ export function OutputStage({
         };
     }, [preClipperAnalyserLeft, preClipperAnalyserRight]);
 
-    const formatGainValue = (value: number): string =>
-        value <= -90 ? "-Inf dB" : `${value.toFixed(1)} dB`;
-
     return (
-        <div className="grid grid-cols-1 gap-6 px-6 py-5 md:grid-cols-[1.6fr_1fr_auto] md:items-start md:gap-8">
-            {/* Output fader + segmented meter */}
-            <div className="flex flex-col gap-2.5">
-                <div className="flex h-[22px] items-center">
-                    <TEFader
-                        label="Output"
-                        value={preGain}
-                        min={-36}
-                        max={36}
-                        step={0.1}
-                        formatValue={formatGainValue}
-                        onChange={(value) => setParameter("preGain", value)}
-                        defaultValue={0}
-                    />
-                </div>
+        <div className="flex flex-col gap-5 px-6 py-5 md:flex-row md:items-center md:gap-8">
+            {/* Transport: power (red when on) + bypass (yellow when active) */}
+            <div className="flex shrink-0 items-center gap-5">
+                <button
+                    onClick={onPowerToggle}
+                    aria-label={isRunning ? "Power off" : "Power on"}
+                    aria-pressed={isRunning}
+                    title={isRunning ? "Power off" : "Power on"}
+                    className={cn(
+                        "flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        isRunning
+                            ? "text-red-500"
+                            : "text-muted-foreground hover:text-foreground",
+                    )}
+                >
+                    <Power className="size-5" strokeWidth={2.25} />
+                </button>
+                <button
+                    onClick={onBypassToggle}
+                    aria-label="Bypass"
+                    aria-pressed={bypassAll}
+                    title="Bypass all processing"
+                    className={cn(
+                        "text-[11px] font-medium uppercase tracking-[0.16em] transition-colors focus-visible:outline-none",
+                        bypassAll
+                            ? "text-yellow-500"
+                            : "text-muted-foreground hover:text-foreground",
+                    )}
+                >
+                    Bypass
+                </button>
+            </div>
+
+            {/* Output meter */}
+            <div className="min-w-0 flex-1">
                 <TESegmentMeter
                     analyserLeft={preClipperAnalyserLeft}
                     analyserRight={preClipperAnalyserRight}
                 />
             </div>
 
-            {/* Output device */}
-            <div className="flex flex-col gap-2.5">
-                <div className="flex h-[22px] items-center">
-                    <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                        Out
-                    </span>
-                </div>
-                {isMobileMode ? (
-                    <div className="rounded-md border border-border bg-secondary px-3 py-2 font-mono text-[11px] text-muted-foreground">
-                        Default (mobile)
-                    </div>
-                ) : isOutputDeviceSupported ? (
-                    <select
-                        value={outputDeviceId || "default"}
-                        onChange={(e) => {
-                            const deviceId = e.target.value;
-                            useAudioStore
-                                .getState()
-                                .setOutputDevice(deviceId === "default" ? null : deviceId);
-                            if (deviceId !== "default") onOutputDeviceChange(deviceId);
-                        }}
-                        className={SELECT_CLASS}
-                    >
-                        {outputDevices.map((device) => (
-                            <option key={device.deviceId} value={device.deviceId}>
-                                {device.label || `Device ${device.deviceId.slice(0, 8)}`}
-                            </option>
-                        ))}
-                    </select>
-                ) : (
-                    <p className="font-mono text-[11px] text-muted-foreground">
-                        Not supported in this browser
-                    </p>
-                )}
-            </div>
-
-            {/* Status + LUFS metric. On small (stacked) the bar is a row with
-                Signal/Clip left and a larger LUFS right, vertically centered;
-                on md+ it becomes the right-aligned column. */}
-            <div className="flex items-center justify-between gap-4 md:flex-col md:items-end md:gap-3">
-                <div className="flex h-[22px] items-center gap-4">
-                    <StatusDot label="Signal" active={hasSignal} tone="brand" />
-                    <StatusDot label="Clip" active={isClipping} tone="destructive" />
-                </div>
-                <div className="flex flex-col items-end gap-0.5">
+            {/* LUFS short-term + Signal / Clip status */}
+            <div className="flex shrink-0 items-center justify-between gap-6 md:justify-end md:gap-8">
+                <div className="flex flex-col items-start gap-0.5 md:items-end">
                     <span className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground/80">
                         Short Term
                     </span>
@@ -234,6 +201,10 @@ export function OutputStage({
                             LUFS
                         </span>
                     </div>
+                </div>
+                <div className="flex items-center gap-4">
+                    <StatusDot label="Signal" active={hasSignal} tone="brand" />
+                    <StatusDot label="Clip" active={isClipping} tone="destructive" />
                 </div>
             </div>
         </div>

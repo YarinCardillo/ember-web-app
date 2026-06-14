@@ -56,11 +56,7 @@ export function Footer(): JSX.Element {
   return (
     <div className="flex items-center gap-4 px-6 py-3 font-mono text-[10.5px] tracking-[0.04em] text-muted-foreground">
       <span className="min-w-0 flex-1 truncate">
-        in <b className="font-medium text-foreground">line</b> &middot; out{" "}
-        <b className="font-medium text-foreground">
-          {outputDeviceId ? "device" : "default"}
-        </b>
-        {sampleRate && <> &middot; {formatSampleRate(sampleRate)}</>}
+        {sampleRate ? formatSampleRate(sampleRate) : null}
       </span>
       <span className="w-[64px] flex-shrink-0 text-center uppercase tracking-[0.1em]">
         {isRunning ? "ready" : "standby"}

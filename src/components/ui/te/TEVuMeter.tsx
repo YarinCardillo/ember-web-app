@@ -1,16 +1,17 @@
 /**
  * TEVuMeter - Flat, TE/Braun-styled analog VU instrument with a large, shallow
  * arc, fine major/minor ticks, a corner peak ("+") indicator with a clip LED,
- * and dual L/R needles. DSP preserved: -20..+3 VU, -18 dBFS reference, IEC-style
- * ballistics, peak hold/fade.
+ * and a single needle tracking one channel. DSP preserved: -20..+3 VU,
+ * -18 dBFS reference, IEC-style ballistics, peak hold/fade. Two instances make
+ * a stereo pair (one per channel).
  */
 
 import { useEffect, useMemo, useRef } from "react";
 import { linearToDb } from "../../../utils/dsp-math";
 
 interface TEVuMeterProps {
-  analyserLeft: AnalyserNode | null;
-  analyserRight: AnalyserNode | null;
+  analyser: AnalyserNode | null;
+  label?: string;
 }
 
 // Geometry: large radius, center far below the viewBox -> shallow, wide arc.
@@ -58,16 +59,11 @@ const arc = (r: number, fromDeg: number, toDeg: number): string => {
   return `M ${sx.toFixed(1)} ${sy.toFixed(1)} A ${r} ${r} 0 0 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`;
 };
 
-export function TEVuMeter({
-  analyserLeft,
-  analyserRight,
-}: TEVuMeterProps): JSX.Element {
-  const needleLRef = useRef<SVGLineElement>(null);
-  const needleRRef = useRef<SVGLineElement>(null);
+export function TEVuMeter({ analyser, label }: TEVuMeterProps): JSX.Element {
+  const needleRef = useRef<SVGLineElement>(null);
   const peakRef = useRef<SVGCircleElement>(null);
   const rafRef = useRef<number>();
-  const angleLRef = useRef(MIN_ANGLE);
-  const angleRRef = useRef(MIN_ANGLE);
+  const angleRef = useRef(MIN_ANGLE);
   const lastTimeRef = useRef(Date.now());
   const peakLevelRef = useRef(0);
   const peakHoldRef = useRef(0);
@@ -97,24 +93,19 @@ export function TEVuMeter({
 
   useEffect(() => {
     const rest = (): void => {
-      const t = `rotate(${MIN_ANGLE}deg)`;
-      if (needleLRef.current) needleLRef.current.style.transform = t;
-      if (needleRRef.current) needleRRef.current.style.transform = t;
+      if (needleRef.current)
+        needleRef.current.style.transform = `rotate(${MIN_ANGLE}deg)`;
       if (peakRef.current) peakRef.current.style.opacity = "0";
     };
 
-    if (!analyserLeft || !analyserRight) {
+    if (!analyser) {
       rest();
       return;
     }
 
-    const bufL = new Float32Array(analyserLeft.fftSize);
-    const bufR = new Float32Array(analyserRight.fftSize);
+    const buf = new Float32Array(analyser.fftSize);
 
-    const measure = (
-      analyser: AnalyserNode,
-      buf: Float32Array<ArrayBuffer>,
-    ): { rms: number; peak: number } => {
+    const measure = (): { rms: number; peak: number } => {
       analyser.getFloatTimeDomainData(buf);
       let sum = 0;
       let peak = 0;
@@ -137,25 +128,18 @@ export function TEVuMeter({
       const dt = now - lastTimeRef.current;
       lastTimeRef.current = now;
 
-      const left = measure(analyserLeft, bufL);
-      const right = measure(analyserRight, bufR);
-
-      const vuL = linearToDb(left.rms) - VU_REFERENCE_DBFS;
-      const vuR = linearToDb(right.rms) - VU_REFERENCE_DBFS;
-      const peakVu =
-        linearToDb(Math.max(left.peak, right.peak)) - VU_REFERENCE_DBFS;
+      const { rms, peak } = measure();
+      const vu = linearToDb(rms) - VU_REFERENCE_DBFS;
+      const peakVu = linearToDb(peak) - VU_REFERENCE_DBFS;
 
       const smooth = (current: number, target: number): number => {
         const tau = target > current ? ATTACK_TIME : RELEASE_TIME;
         return current + (target - current) * (1 - Math.exp(-dt / tau));
       };
-      angleLRef.current = smooth(angleLRef.current, vuToAngle(vuL));
-      angleRRef.current = smooth(angleRRef.current, vuToAngle(vuR));
+      angleRef.current = smooth(angleRef.current, vuToAngle(vu));
 
-      if (needleLRef.current)
-        needleLRef.current.style.transform = `rotate(${angleLRef.current}deg)`;
-      if (needleRRef.current)
-        needleRRef.current.style.transform = `rotate(${angleRRef.current}deg)`;
+      if (needleRef.current)
+        needleRef.current.style.transform = `rotate(${angleRef.current}deg)`;
 
       if (peakVu >= PEAK_THRESHOLD_VU) {
         peakLevelRef.current = 1;
@@ -176,11 +160,10 @@ export function TEVuMeter({
     draw();
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      angleLRef.current = MIN_ANGLE;
-      angleRRef.current = MIN_ANGLE;
+      angleRef.current = MIN_ANGLE;
       peakLevelRef.current = 0;
     };
-  }, [analyserLeft, analyserRight]);
+  }, [analyser]);
 
   const needleStyle = {
     transformOrigin: `${CX}px ${CY}px`,
@@ -196,7 +179,7 @@ export function TEVuMeter({
       viewBox={`0 0 ${W} ${H}`}
       className="h-auto w-full"
       role="meter"
-      aria-label="Input VU meter"
+      aria-label={label ? `VU meter ${label}` : "VU meter"}
       aria-valuemin={MIN_VU}
       aria-valuemax={MAX_VU}
       aria-valuenow={0}
@@ -260,18 +243,7 @@ export function TEVuMeter({
       </defs>
       <g mask="url(#vuNeedleMask)">
         <line
-          ref={needleRRef}
-          x1={CX}
-          y1={CY}
-          x2={CX}
-          y2={CY - NEEDLE_LEN}
-          className="stroke-muted-foreground"
-          strokeWidth={1.4}
-          strokeLinecap="round"
-          style={needleStyle}
-        />
-        <line
-          ref={needleLRef}
+          ref={needleRef}
           x1={CX}
           y1={CY}
           x2={CX}
@@ -291,7 +263,7 @@ export function TEVuMeter({
         className="fill-muted-foreground font-sans font-semibold"
         style={{ fontSize: "11px", letterSpacing: "0.4em" }}
       >
-        VU
+        {label ? `VU ${label}` : "VU"}
       </text>
 
       {/* "+" on the scale continuation, clip LED at the VU label height */}

@@ -25,7 +25,6 @@ const formatDb = (value: number): string => {
 interface InputStageProps {
   devices: AudioDeviceInfo[];
   inputAnalyserLeft: AnalyserNode | null;
-  inputAnalyserRight: AnalyserNode | null;
   onDeviceChange: (deviceId: string) => void;
   onVinylModeActivate?: () => void;
   onVinylModeDeactivate?: () => void;
@@ -40,7 +39,6 @@ interface InputStageProps {
 export function InputStage({
   devices,
   inputAnalyserLeft,
-  inputAnalyserRight,
   onDeviceChange,
   onVinylModeActivate,
   onVinylModeDeactivate,
@@ -67,10 +65,7 @@ export function InputStage({
   return (
     <TEBay label="Input" aux="line" contentClassName="gap-5">
       <div className="flex justify-center">
-        <TEVuMeter
-          analyserLeft={inputAnalyserLeft}
-          analyserRight={inputAnalyserRight}
-        />
+        <TEVuMeter analyser={inputAnalyserLeft} label="L" />
       </div>
 
       <TEFader
