@@ -19,7 +19,7 @@ export class VinylModeNode {
   private reverbGain: GainNode;
   private dryGain: GainNode;
   private vinylMixerGain: GainNode;
-  private vinylBoostGain: GainNode; // +8dB boost when vinyl active
+  private vinylBoostGain: GainNode; // fixed trim on the vinyl path (see VINYL_TRIM)
 
   // Bypass routing
   private bypassGain: GainNode;
@@ -29,8 +29,9 @@ export class VinylModeNode {
   // State
   private currentReverbWet: number = 0;
 
-  // Gain boost for reverb volume loss (8dB ≈ 2.5 linear)
-  private static readonly REVERB_GAIN_COMPENSATION = 2.5;
+  // The reverb's early-reflection taps sum coherently on sustained material and
+  // lift the vinyl path ~3 dB. Trim it back so enabling vinyl stays level-matched.
+  private static readonly VINYL_TRIM = 0.708; // -3 dB
 
   // Full vinyl ratio: 33⅓ / 45 ≈ 0.733 (authentic 45→33 RPM)
   private static readonly VINYL_RATIO_FULL = 33 / 45;
@@ -43,6 +44,9 @@ export class VinylModeNode {
     this.outputGain = ctx.createGain();
     this.bypassGain = ctx.createGain();
     this.convolver = ctx.createConvolver();
+    // Keep the raw IR amplitudes: with normalize on, a short/sparse IR would be
+    // boosted back to equal loudness, hiding the faster decay we want.
+    this.convolver.normalize = false;
     this.reverbGain = ctx.createGain();
     this.dryGain = ctx.createGain();
     this.vinylMixerGain = ctx.createGain();
@@ -52,7 +56,7 @@ export class VinylModeNode {
     this.reverbGain.gain.value = 0; // Reverb starts off
     this.dryGain.gain.value = 1; // Dry signal full
     this.vinylMixerGain.gain.value = 0; // Vinyl path muted (bypassed)
-    this.vinylBoostGain.gain.value = 1; // No boost initially
+    this.vinylBoostGain.gain.value = VinylModeNode.VINYL_TRIM; // -3 dB trim
     this.bypassGain.gain.value = 1; // Bypass path active
 
     // Connect bypass path (default) - bypass goes to output
@@ -101,28 +105,45 @@ export class VinylModeNode {
   }
 
   /**
-   * Create a short synthetic reverb impulse response
-   * Low CPU, ~0.8 second decay, warm character
+   * Create a short synthetic reverb impulse response: discrete early
+   * reflections with a fast decay and almost no diffuse late tail. Gives a
+   * close "in the room" slap rather than a long wash.
    */
   private createShortReverb(): AudioBuffer {
     const sampleRate = this.ctx.sampleRate;
-    const length = Math.floor(sampleRate * 0.8); // 0.8 seconds
+    const length = Math.floor(sampleRate * 0.16); // short: fast decay
     const buffer = this.ctx.createBuffer(2, length, sampleRate);
+
+    // Discrete early reflections (delay in ms, amplitude), no long diffuse tail.
+    const earlyReflections = [
+      { ms: 7, amp: 0.5 },
+      { ms: 13, amp: 0.4 },
+      { ms: 21, amp: 0.3 },
+      { ms: 31, amp: 0.22 },
+      { ms: 43, amp: 0.14 },
+    ];
+    const DECAY = 24; // fast amplitude decay of the faint diffuse fill
 
     for (let channel = 0; channel < 2; channel++) {
       const data = buffer.getChannelData(channel);
+      const stereoOffset = channel === 0 ? 0.95 : 1.05;
+      const skew = channel === 0 ? 0 : 2; // sample skew for stereo width
+
+      // Faint, fast-decaying diffuse fill so the IR is not a bare comb.
       for (let i = 0; i < length; i++) {
-        // Exponential decay with random noise
         const t = i / sampleRate;
-        const decay = Math.exp(-5 * t); // Fast decay (~0.8s to near-silent)
-        const noise = Math.random() * 2 - 1;
-        // Add slight stereo difference for width
-        const stereoOffset = channel === 0 ? 0.95 : 1.05;
-        data[i] = noise * decay * 0.5 * stereoOffset;
+        const noise = (Math.random() * 2 - 1) * 0.08;
+        data[i] = noise * Math.exp(-DECAY * t) * stereoOffset;
+      }
+
+      // Stamp the discrete early reflections on top.
+      for (const r of earlyReflections) {
+        const idx = Math.floor((r.ms / 1000) * sampleRate) + skew;
+        if (idx < length) data[idx] += r.amp * stereoOffset;
       }
     }
 
-    console.log("[VinylModeNode] Created synthetic short reverb");
+    console.log("[VinylModeNode] Created early-reflection reverb (fast decay)");
     return buffer;
   }
 
@@ -215,7 +236,7 @@ export class VinylModeNode {
         console.debug("[VinylModeNode] Buffer connection already established");
       }
 
-      // Fade vinyl mixer in - start at 1.0, compensation will be applied by rampReverbMix
+      // Fade vinyl mixer in (no level compensation: vinyl stays level-matched)
       this.vinylMixerGain.gain.cancelScheduledValues(now);
       this.vinylMixerGain.gain.setValueAtTime(
         this.vinylMixerGain.gain.value,
@@ -260,13 +281,6 @@ export class VinylModeNode {
       this.ctx.currentTime,
     );
     this.dryGain.gain.setValueAtTime(dry, this.ctx.currentTime);
-
-    // Set boost proportionally: 0% wet = 1.0x, 75% wet = 2.5x (+8dB)
-    const TARGET_WET = 0.75;
-    const normalizedWet = Math.min(1, wet / TARGET_WET);
-    const boostAmount =
-      1.0 + normalizedWet * (VinylModeNode.REVERB_GAIN_COMPENSATION - 1.0);
-    this.vinylBoostGain.gain.setValueAtTime(boostAmount, this.ctx.currentTime);
   }
 
   /**
@@ -281,14 +295,9 @@ export class VinylModeNode {
     // Cancel any previous ramps
     this.reverbGain.gain.cancelScheduledValues(now);
     this.dryGain.gain.cancelScheduledValues(now);
-    this.vinylBoostGain.gain.cancelScheduledValues(now);
 
     this.reverbGain.gain.setValueAtTime(this.reverbGain.gain.value, now);
     this.dryGain.gain.setValueAtTime(this.dryGain.gain.value, now);
-    this.vinylBoostGain.gain.setValueAtTime(
-      this.vinylBoostGain.gain.value,
-      now,
-    );
 
     // Ramp wet/dry mix
     this.reverbGain.gain.linearRampToValueAtTime(
@@ -297,16 +306,7 @@ export class VinylModeNode {
     );
     this.dryGain.gain.linearRampToValueAtTime(dry, endTime);
 
-    // Ramp boost gradually with reverb: 0% wet = 1.0x, 75% wet = 2.5x (+8dB)
-    const TARGET_WET = 0.75;
-    const normalizedWet = Math.min(1, wet / TARGET_WET);
-    const boostAmount =
-      1.0 + normalizedWet * (VinylModeNode.REVERB_GAIN_COMPENSATION - 1.0);
-    this.vinylBoostGain.gain.linearRampToValueAtTime(boostAmount, endTime);
-
-    console.log(
-      `[VinylModeNode] Ramping: wet=${wet}, boost=${boostAmount.toFixed(2)}x`,
-    );
+    console.log(`[VinylModeNode] Ramping reverb: wet=${wet}`);
   }
 
   /**
