@@ -178,6 +178,7 @@ export const useAudioStore = create<AudioState>()(
       name: "ember-amp-storage",
       partialize: (state) => ({
         inputGain: state.inputGain,
+        preGain: state.preGain,
         bass: state.bass,
         mid: state.mid,
         treble: state.treble,
